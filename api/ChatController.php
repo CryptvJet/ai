@@ -17,7 +17,7 @@ class ChatController{
         $res=$db->query('SELECT body FROM canned_responses ORDER BY id LIMIT 1');
         if($row=$res->fetch()) $reply=$row['body'];
         $stmt->execute([$cid,'assistant',$reply,strlen($reply)]);
-        json_response(['ok'=>true,'data'=>['conversation_id'=>$cid]]);
+        json_response(['ok'=>true,'data'=>['conversation_id'=>$cid,'reply'=>$reply]]);
     }
     function conversation(){
         $id=$_GET['id']??0; $db=ai_db();
