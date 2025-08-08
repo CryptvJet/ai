@@ -2,6 +2,16 @@
 require __DIR__.'/bootstrap.php';
 
 $path=trim($_SERVER['PATH_INFO'] ?? '', '/');
+// Fallback for servers that don't populate PATH_INFO
+if(!$path && isset($_SERVER['REQUEST_URI'])){
+    $uri=parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $base=rtrim(dirname($_SERVER['SCRIPT_NAME']),'/');
+    if($base && str_starts_with($uri,$base)){
+        $path=trim(substr($uri,strlen($base)),'/');
+    } else {
+        $path=trim($uri,'/');
+    }
+}
 $parts=explode('/', $path);
 $controller=ucfirst($parts[0] ?? '');
 $action=str_replace('-','_',$parts[1] ?? '');
