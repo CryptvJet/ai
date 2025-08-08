@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /ai/
+
+# API requests
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Serve public assets directly
+RewriteRule ^public/(.*)$ public/$1 [L]
+
+# Root index
+RewriteRule ^$ public/index.html [L]
+
+# Fallback to public files
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

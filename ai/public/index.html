@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PulseCore AI</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.ico">
+</head>
+<body>
+  <header>
+    <nav id="tabs">
+      <button data-tab="chat" class="active">Chat</button>
+      <button data-tab="analytics">Analytics</button>
+      <button data-tab="admin" id="admin-tab" class="hidden">Admin</button>
+    </nav>
+  </header>
+  <main>
+    <section id="chat" class="tab active">
+      <div id="conversation-list"></div>
+      <div id="chat-pane">
+        <div id="messages"></div>
+        <textarea id="chat-input" placeholder="Type your message..."></textarea>
+        <button id="send-btn">Send</button>
+      </div>
+    </section>
+    <section id="analytics" class="tab">
+      <div id="analytics-controls">
+        <select id="range-select">
+          <option value="24h">24h</option>
+          <option value="7d">7d</option>
+          <option value="30d">30d</option>
+          <option value="all">All</option>
+        </select>
+        <select id="metric-select">
+          <option value="novas_per_hour">Novas / hour</option>
+          <option value="novas_per_day">Novas / day</option>
+        </select>
+        <button id="refresh-btn">Refresh</button>
+        <label><input type="checkbox" id="auto-refresh"> Auto refresh</label>
+      </div>
+      <div id="stats-cards"></div>
+      <canvas id="chart" width="600" height="200"></canvas>
+    </section>
+    <section id="admin" class="tab">
+      <div id="admin-content"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script src="chat.js"></script>
+  <script src="analytics.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
