@@ -26,11 +26,22 @@ async function loadConversation(id){
 document.getElementById('send-btn').addEventListener('click',sendMessage);
 
 async function sendMessage(){
-  const content=document.getElementById('chat-input').value;
+  const content=document.getElementById('chat-input').value.trim();
   if(!content) return;
   const r=await api('chat/send','POST',{conversation_id:window.currentConversation,content});
   document.getElementById('chat-input').value='';
   if(r.ok){
-    loadConversation(r.data.conversation_id);
+    window.currentConversation=r.data.conversation_id;
+    const msgs=document.getElementById('messages');
+    const userDiv=document.createElement('div');
+    userDiv.className='msg user';
+    userDiv.textContent='user: '+content;
+    msgs.appendChild(userDiv);
+    const assistantDiv=document.createElement('div');
+    assistantDiv.className='msg assistant';
+    assistantDiv.textContent='assistant: '+r.data.reply;
+    msgs.appendChild(assistantDiv);
+  } else {
+    alert(r.error||'Failed to send message');
   }
 }
