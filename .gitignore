@@ -1,0 +1,5 @@
+# Local database configuration; contains real credentials.
+api/db_config.php
+
+# Environment variable files for local development.
+.env
