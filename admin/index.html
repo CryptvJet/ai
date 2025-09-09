@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Admin Panel</title>
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>🛠️ AI Admin Panel</h1>
+            <div class="header-actions">
+                <button onclick="location.href='../index.html'" class="btn-back">← Back to Chat</button>
+                <button onclick="saveAllSettings()" class="btn-save">💾 Save All</button>
+            </div>
+        </header>
+
+        <nav class="admin-nav">
+            <button class="nav-btn active" onclick="showSection('identity')">🤖 Identity</button>
+            <button class="nav-btn" onclick="showSection('responses')">💬 Responses</button>
+            <button class="nav-btn" onclick="showSection('conversations')">📊 Conversations</button>
+            <button class="nav-btn" onclick="showSection('integrations')">🔗 Integrations</button>
+            <button class="nav-btn" onclick="showSection('learning')">🧠 Learning</button>
+        </nav>
+
+        <main class="admin-content">
+            <!-- Identity Section -->
+            <section id="identity" class="admin-section active">
+                <h2>AI Identity & Personality</h2>
+                
+                <div class="form-group">
+                    <label for="aiName">AI Name:</label>
+                    <input type="text" id="aiName" value="ai" placeholder="Current AI name">
+                    <small>The AI can suggest its own name based on conversations</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="personality">Personality Traits:</label>
+                    <textarea id="personality" rows="3" placeholder="helpful,analytical,curious,friendly">helpful,analytical,curious</textarea>
+                    <small>Comma-separated personality traits</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="responseStyle">Response Style:</label>
+                    <select id="responseStyle">
+                        <option value="conversational">Conversational</option>
+                        <option value="formal">Formal</option>
+                        <option value="casual">Casual</option>
+                        <option value="technical">Technical</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="systemPrompt">System Prompt:</label>
+                    <textarea id="systemPrompt" rows="5" placeholder="Base instructions for the AI...">You are an AI assistant specialized in analyzing PulseCore simulations and helping with data analysis. You have access to nova events, pattern data, and variables calculations.</textarea>
+                </div>
+            </section>
+
+            <!-- Responses Section -->
+            <section id="responses" class="admin-section">
+                <h2>Response Templates</h2>
+                
+                <div class="responses-controls">
+                    <button onclick="addNewTemplate()" class="btn-primary">+ Add Template</button>
+                    <button onclick="importTemplates()" class="btn-secondary">📥 Import</button>
+                    <button onclick="exportTemplates()" class="btn-secondary">📤 Export</button>
+                </div>
+
+                <div class="templates-container" id="templatesContainer">
+                    <!-- Response templates will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Conversations Section -->
+            <section id="conversations" class="admin-section">
+                <h2>Conversation Analytics</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Conversations</h3>
+                        <div class="stat-value" id="totalConversations">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Messages</h3>
+                        <div class="stat-value" id="totalMessages">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg. Response Time</h3>
+                        <div class="stat-value" id="avgResponseTime">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Success Rate</h3>
+                        <div class="stat-value" id="successRate">-</div>
+                    </div>
+                </div>
+
+                <div class="conversations-table">
+                    <h3>Recent Conversations</h3>
+                    <table id="conversationsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Started</th>
+                                <th>Messages</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conversations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Integrations Section -->
+            <section id="integrations" class="admin-section">
+                <h2>Database Integrations</h2>
+                
+                <div class="integration-grid">
+                    <div class="integration-card">
+                        <h3>🌊 PulseCore</h3>
+                        <div class="integration-status" id="pulsecoreStatus">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                        <div class="integration-stats">
+                            <p>Nova Events: <span id="novaCount">-</span></p>
+                            <p>Climax Groups: <span id="climaxCount">-</span></p>
+                            <p>Last Update: <span id="lastNovaTime">-</span></p>
+                        </div>
+                        <button onclick="testPulseCoreConnection()" class="btn-test">Test Connection</button>
+                    </div>
+
+                    <div class="integration-card">
+                        <h3>📊 Variables</h3>
+                        <div class="integration-status" id="variablesStatus">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                        <div class="integration-stats">
+                            <p>Variables: <span id="variableCount">-</span></p>
+                            <p>Calculations: <span id="calculationCount">-</span></p>
+                            <p>Last Update: <span id="lastVarTime">-</span></p>
+                        </div>
+                        <button onclick="testVariablesConnection()" class="btn-test">Test Connection</button>
+                    </div>
+
+                    <div class="integration-card">
+                        <h3>🖥️ PC AI Server</h3>
+                        <div class="integration-status" id="pcaiStatus">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                        <div class="integration-stats">
+                            <p>Model: <span id="currentModel">-</span></p>
+                            <p>GPU Memory: <span id="gpuMemory">-</span></p>
+                            <p>Response Time: <span id="pcResponseTime">-</span></p>
+                        </div>
+                        <button onclick="testPCAIConnection()" class="btn-test">Test Connection</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Learning Section -->
+            <section id="learning" class="admin-section">
+                <h2>AI Learning & Patterns</h2>
+                
+                <div class="learning-controls">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="learningEnabled" checked>
+                        <span class="toggle-slider"></span>
+                        Enable Learning from Conversations
+                    </label>
+                </div>
+
+                <div class="learning-stats">
+                    <h3>Learned Patterns</h3>
+                    <div class="patterns-container" id="patternsContainer">
+                        <!-- Learned patterns will be displayed here -->
+                    </div>
+                </div>
+
+                <div class="learning-actions">
+                    <button onclick="analyzeConversations()" class="btn-primary">🔍 Analyze Conversations</button>
+                    <button onclick="clearLearningData()" class="btn-danger">🗑️ Clear Learning Data</button>
+                    <button onclick="exportLearningData()" class="btn-secondary">📤 Export Patterns</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+    <div class="container">
+        <header class="chat-header">
+            <div class="ai-info">
+                <div class="ai-avatar">🤖</div>
+                <div class="ai-details">
+                    <h1 id="aiName">AI Assistant</h1>
+                    <div class="status-indicators">
+                        <span id="aiMode" class="mode-indicator chill">Chill Mode</span>
+                        <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
+                        <span id="pcStatus" class="connection-status">PC AI: <span class="status-dot"></span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ Admin</button>
+                <button id="clearBtn" class="btn-clear" onclick="clearChat()">🗑️ Clear</button>
+            </div>
+        </header>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message ai-message" id="welcomeMessage">
+                <div class="message-content">
+                    <strong>AI:</strong> <span id="welcomeText">Hello! I'm your AI assistant. I can analyze PulseCore data, help with calculations, and chat about your projects.</span>
+                </div>
+                <div class="message-time"></div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="pulsecore-stats" id="statsPanel">
+                <div class="stat-item">
+                    <span class="stat-label">Total Novas:</span>
+                    <span class="stat-value" id="totalNovas">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Complexity:</span>
+                    <span class="stat-value" id="lastComplexity">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Avg Energy:</span>
+                    <span class="stat-value" id="avgEnergy">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active Sessions:</span>
+                    <span class="stat-value" id="activeSessions">1</span>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Type your message or press the microphone to speak..."
+                    autocomplete="off"
+                />
+                <button id="voiceBtn" class="btn-voice" onclick="toggleVoice()" title="Voice input">
+                    🎤
+                </button>
+                <button id="sendBtn" class="btn-send" onclick="sendMessage()" title="Send message">
+                    ➤
+                </button>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="quickMessage('What are my recent novas?')">Recent Novas</button>
+                <button class="quick-btn" onclick="quickMessage('Analyze my patterns')">Pattern Analysis</button>
+                <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
+                <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="voiceIndicator" class="voice-indicator hidden">
+        <div class="voice-animation"></div>
+        <p>Listening... Speak now</p>
+    </div>
+
+    <script src="js/chat.js"></script>
+</body>
+</html>

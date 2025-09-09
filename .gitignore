@@ -3,3 +3,16 @@ api/db_config.php
 
 # Environment variable files for local development.
 .env
+
+# Backup files
+*.bak
+*.backup
+
+# Log files
+*.log
+error.log
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
