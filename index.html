@@ -7,58 +7,124 @@
     <link rel="stylesheet" href="css/chat.css">
 </head>
 <body>
-    <div class="container">
-        <header class="chat-header">
-            <div class="ai-info">
-                <div class="ai-avatar">🤖</div>
-                <div class="ai-details">
+    <div class="app-layout">
+        <!-- Left Sidebar (1/6 width) -->
+        <div class="left-sidebar">
+            <!-- Future left sidebar content -->
+        </div>
+
+        <!-- Main Chat Area (2/3 width) -->
+        <div class="chat-main">
+            <header class="chat-header">
+                <div class="header-left">
+                    <div class="ai-avatar">🤖</div>
                     <h1 id="aiName">AI Assistant</h1>
-                    <div class="status-indicators">
-                        <span id="aiMode" class="mode-indicator chill">Chill Mode</span>
-                        <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
-                        <span id="pcStatus" class="connection-status">PC AI: <span class="status-dot"></span></span>
+                    <span id="aiMode" class="mode-indicator chill">Chill Mode</span>
+                    <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
+                    <span id="pcStatus" class="connection-status">PC AI: <span class="status-dot"></span></span>
+                </div>
+                <div class="controls">
+                    <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ My Admin</button>
+                    <button id="clearBtn" class="btn-clear" onclick="clearChat()">🗑️ Clear</button>
+                </div>
+            </header>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="message ai-message" id="welcomeMessage">
+                    <div class="message-content">
+                        <strong id="aiNameLabel">AI:</strong> <span id="welcomeText">Hi! I'm your AI Assistant. I hope you are doing well today! What should I call you?</span>
+                    </div>
+                    <div class="message-time"></div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message or press the microphone to speak..."
+                        autocomplete="off"
+                    />
+                    <button id="voiceBtn" class="btn-voice" onclick="toggleVoice()" title="Voice input">
+                        🎤
+                    </button>
+                    <button id="sendBtn" class="btn-send" onclick="sendMessage()" title="Send message">
+                        ➤
+                    </button>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="quickMessage('What are my recent novas?')">Recent Novas</button>
+                    <button class="quick-btn" onclick="quickMessage('Analyze my patterns')">Pattern Analysis</button>
+                    <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
+                    <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
+                </div>
+
+                <div class="voice-toggle-section">
+                    <button id="voiceControlsToggle" class="voice-controls-toggle" onclick="toggleVoiceControls()">
+                        🎛️ Voice Settings
+                        <span class="toggle-arrow" id="toggleArrow">▼</span>
+                    </button>
+                </div>
+
+                <div class="voice-controls collapsed" id="voiceControlsPanel">
+                    <div class="voice-settings">
+                        <div class="voice-row">
+                            <select id="voiceSelect" class="voice-dropdown">
+                                <option value="">Loading voices...</option>
+                            </select>
+                            <div class="voice-speed">
+                                <label for="speechRate">Speed:</label>
+                                <input type="range" id="speechRate" min="0.5" max="2.5" step="0.1" value="1.2" class="speed-slider">
+                                <span id="speedValue">1.2x</span>
+                            </div>
+                        </div>
+                        
+                        <div class="voice-row">
+                            <div class="voice-pitch">
+                                <label for="speechPitch">Pitch:</label>
+                                <input type="range" id="speechPitch" min="0.5" max="2.0" step="0.1" value="1.0" class="pitch-slider">
+                                <span id="pitchValue">1.0</span>
+                            </div>
+                            <div class="voice-volume">
+                                <label for="speechVolume">Volume:</label>
+                                <input type="range" id="speechVolume" min="0.1" max="1.0" step="0.1" value="0.8" class="volume-slider">
+                                <span id="volumeValue">0.8</span>
+                            </div>
+                        </div>
+
+                        <div class="voice-row">
+                            <label class="voice-toggle">
+                                <input type="checkbox" id="autoSpeak" checked>
+                                <span class="toggle-slider-mini"></span>
+                                Auto-speak
+                            </label>
+                            
+                            <div class="voice-timeout">
+                                <label for="voiceTimeout">Listen Duration:</label>
+                                <select id="voiceTimeout" class="timeout-dropdown">
+                                    <option value="normal">Normal</option>
+                                    <option value="30">30 seconds</option>
+                                    <option value="60">60 seconds</option>
+                                    <option value="continuous">Continuous</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="voice-test">
+                            <button id="testVoiceBtn" class="btn-test-voice">🎵 Test Voice</button>
+                            <button id="voiceSettingsBtn" class="btn-voice-settings">⚙️ Advanced</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="controls">
-                <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ My Admin</button>
-                <button id="clearBtn" class="btn-clear" onclick="clearChat()">🗑️ Clear</button>
-            </div>
-        </header>
-
-        <div class="chat-container" id="chatContainer">
-            <div class="message ai-message" id="welcomeMessage">
-                <div class="message-content">
-                    <strong id="aiNameLabel">AI:</strong> <span id="welcomeText">Hi! I'm your AI Assistant. I hope you are doing well today! What should I call you?</span>
-                </div>
-                <div class="message-time"></div>
-            </div>
         </div>
 
-        <div class="input-section">
-            <div class="input-container">
-                <input 
-                    type="text" 
-                    id="messageInput" 
-                    placeholder="Type your message or press the microphone to speak..."
-                    autocomplete="off"
-                />
-                <button id="voiceBtn" class="btn-voice" onclick="toggleVoice()" title="Voice input">
-                    🎤
-                </button>
-                <button id="sendBtn" class="btn-send" onclick="sendMessage()" title="Send message">
-                    ➤
-                </button>
-            </div>
-
-            <div class="quick-actions">
-                <button class="quick-btn" onclick="quickMessage('What are my recent novas?')">Recent Novas</button>
-                <button class="quick-btn" onclick="quickMessage('Analyze my patterns')">Pattern Analysis</button>
-                <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
-                <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
-            </div>
-
-            <div class="pulsecore-stats" id="statsPanel">
+        <!-- Right Stats Sidebar (1/6 width) -->
+        <div class="right-sidebar">
+            <div class="stats-card">
+                <h3 class="stats-title">📊 PulseCore Stats</h3>
                 <div class="stat-item">
                     <span class="stat-label">Total Climaxes:</span>
                     <span class="stat-value" id="totalClimaxes">-</span>
@@ -74,64 +140,6 @@
                 <div class="stat-item">
                     <span class="stat-label">Total Sessions:</span>
                     <span class="stat-value" id="totalSessions">-</span>
-                </div>
-            </div>
-
-            <div class="voice-toggle-section">
-                <button id="voiceControlsToggle" class="voice-controls-toggle" onclick="toggleVoiceControls()">
-                    🎛️ Voice Settings
-                    <span class="toggle-arrow" id="toggleArrow">▼</span>
-                </button>
-            </div>
-
-            <div class="voice-controls collapsed" id="voiceControlsPanel">
-                <div class="voice-settings">
-                    <div class="voice-row">
-                        <select id="voiceSelect" class="voice-dropdown">
-                            <option value="">Loading voices...</option>
-                        </select>
-                        <div class="voice-speed">
-                            <label for="speechRate">Speed:</label>
-                            <input type="range" id="speechRate" min="0.5" max="2.5" step="0.1" value="1.2" class="speed-slider">
-                            <span id="speedValue">1.2x</span>
-                        </div>
-                    </div>
-                    
-                    <div class="voice-row">
-                        <div class="voice-pitch">
-                            <label for="speechPitch">Pitch:</label>
-                            <input type="range" id="speechPitch" min="0.5" max="2.0" step="0.1" value="1.0" class="pitch-slider">
-                            <span id="pitchValue">1.0</span>
-                        </div>
-                        <div class="voice-volume">
-                            <label for="speechVolume">Volume:</label>
-                            <input type="range" id="speechVolume" min="0.1" max="1.0" step="0.1" value="0.8" class="volume-slider">
-                            <span id="volumeValue">0.8</span>
-                        </div>
-                    </div>
-
-                    <div class="voice-row">
-                        <label class="voice-toggle">
-                            <input type="checkbox" id="autoSpeak" checked>
-                            <span class="toggle-slider-mini"></span>
-                            Auto-speak
-                        </label>
-                        
-                        <div class="voice-timeout">
-                            <label for="voiceTimeout">Listen Duration:</label>
-                            <select id="voiceTimeout" class="timeout-dropdown">
-                                <option value="normal">Normal</option>
-                                <option value="30">30 seconds</option>
-                                <option value="60">60 seconds</option>
-                                <option value="continuous">Continuous</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="voice-test">
-                        <button id="testVoiceBtn" class="btn-test-voice">🎵 Test Voice</button>
-                        <button id="voiceSettingsBtn" class="btn-voice-settings">⚙️ Advanced</button>
-                    </div>
                 </div>
             </div>
         </div>
