@@ -177,7 +177,12 @@ class AIChat {
                 if (event.error === 'not-allowed') {
                     alert('Microphone access denied. Please allow microphone permissions and try again.');
                 } else if (event.error === 'network') {
-                    alert('Network error during speech recognition. Please check your connection.');
+                    console.warn('Speech recognition network error - continuing without voice input');
+                    // Don't show alert, just log the issue
+                } else if (event.error === 'no-speech') {
+                    console.log('No speech detected, timeout reached');
+                } else {
+                    console.warn('Speech recognition error:', event.error);
                 }
             };
         } else {
@@ -654,9 +659,15 @@ I'd love to get to know you better - what's your name?`;
         const speechPitch = document.getElementById('speechPitch');
         const speechVolume = document.getElementById('speechVolume');
         
-        utterance.rate = speechRate ? parseFloat(speechRate.value) : 1.2;
-        utterance.pitch = speechPitch ? parseFloat(speechPitch.value) : 1.0;
-        utterance.volume = speechVolume ? parseFloat(speechVolume.value) : 0.8;
+        // Constrain values to safe ranges
+        let rate = speechRate ? parseFloat(speechRate.value) : 1.2;
+        let pitch = speechPitch ? parseFloat(speechPitch.value) : 1.0;
+        let volume = speechVolume ? parseFloat(speechVolume.value) : 0.8;
+        
+        // Limit rate to prevent interruption errors
+        utterance.rate = Math.min(Math.max(rate, 0.5), 2.0);
+        utterance.pitch = Math.min(Math.max(pitch, 0.5), 2.0);
+        utterance.volume = Math.min(Math.max(volume, 0.1), 1.0);
         
         console.log('Voice settings:', {
             rate: utterance.rate,
@@ -665,9 +676,17 @@ I'd love to get to know you better - what's your name?`;
             selectedVoice: this.selectedVoice ? this.selectedVoice.name : 'default'
         });
         
-        // Use selected voice if available
+        // Use selected voice if available, or find a good English voice
         if (this.selectedVoice) {
             utterance.voice = this.selectedVoice;
+        } else {
+            // Try to find an English voice if none selected
+            const englishVoices = this.voices.filter(voice => 
+                voice.lang.startsWith('en-') || voice.name.toLowerCase().includes('english')
+            );
+            if (englishVoices.length > 0) {
+                utterance.voice = englishVoices[0];
+            }
         }
         
         // Add event listeners for debugging
@@ -676,7 +695,15 @@ I'd love to get to know you better - what's your name?`;
         utterance.onerror = (e) => console.error('Speech error:', e);
         
         console.log('Starting speech synthesis...');
-        this.synthesis.speak(utterance);
+        
+        // Small delay to ensure synthesis is ready
+        setTimeout(() => {
+            try {
+                this.synthesis.speak(utterance);
+            } catch (error) {
+                console.error('Speech synthesis failed:', error);
+            }
+        }, 100);
     }
 
     quickMessage(message) {
