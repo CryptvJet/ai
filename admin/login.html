@@ -163,6 +163,11 @@
             <div class="error-message" id="errorMessage">
                 Invalid credentials. Please try again.
             </div>
+            
+            <div id="debugInfo" style="background: rgba(0,255,0,0.1); border: 1px solid rgba(0,255,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-family: monospace; font-size: 12px; color: #00ff00; display: none;">
+                <strong>Debug Info:</strong><br>
+                <div id="debugLog"></div>
+            </div>
 
             <div class="form-group">
                 <label for="username">Username</label>
@@ -189,6 +194,14 @@
     </div>
 
     <script>
+        function debugLog(message) {
+            const debugDiv = document.getElementById('debugLog');
+            const debugInfo = document.getElementById('debugInfo');
+            debugDiv.innerHTML += message + '<br>';
+            debugInfo.style.display = 'block';
+            console.log('DEBUG:', message);
+        }
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -196,7 +209,11 @@
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
             
-            console.log('Attempting login for username:', username);
+            // Clear previous debug info
+            document.getElementById('debugLog').innerHTML = '';
+            document.getElementById('debugInfo').style.display = 'none';
+            
+            debugLog('🔑 Starting login for username: ' + username);
             
             // Temporary offline mode credentials check (remove when APIs work)
             const offlineCredentials = {
@@ -205,6 +222,7 @@
             };
             
             try {
+                debugLog('📡 Trying server API login...');
                 const response = await fetch('../api/login.php', {
                     method: 'POST',
                     headers: {
@@ -217,17 +235,26 @@
                 });
                 
                 const result = await response.json();
-                console.log('Login API result:', result);
+                debugLog('📡 Server response: ' + JSON.stringify(result));
                 
                 if (result.success) {
-                    console.log('API login successful');
+                    debugLog('✅ Server login successful!');
+                    debugLog('🎫 Token: ' + result.token.substring(0,10) + '...');
+                    debugLog('⏰ Expires: ' + new Date(result.expires).toLocaleString());
+                    
                     // Store session token
                     localStorage.setItem('admin_token', result.token);
                     localStorage.setItem('admin_expires', result.expires);
                     
+                    debugLog('💾 Token saved to localStorage');
+                    debugLog('🔄 Redirecting to admin panel...');
+                    
                     // Redirect to admin panel
-                    window.location.href = 'index.html';
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
                 } else {
+                    debugLog('❌ Server rejected login: ' + result.error);
                     // Show error
                     errorDiv.textContent = result.error || 'Invalid credentials. Please try again.';
                     errorDiv.style.display = 'block';
@@ -236,22 +263,32 @@
                     document.getElementById('password').value = '';
                 }
             } catch (error) {
-                console.warn('Login API failed, trying offline mode:', error);
+                debugLog('🔌 Server API failed: ' + error.message);
+                debugLog('🔄 Trying offline mode...');
                 
                 // Fallback to offline credential check
                 if (offlineCredentials[username] && offlineCredentials[username] === password) {
-                    console.log('Offline login successful');
+                    debugLog('✅ Offline credentials valid!');
                     
                     // Create temporary local session (4 hours)
                     const expires = Date.now() + (4 * 60 * 60 * 1000);
-                    const token = 'offline_' + Date.now() + '_' + Math.random().toString(36);
+                    const token = 'offline_' + Date.now() + '_' + Math.random().toString(36).substring(0,8);
+                    
+                    debugLog('🎫 Creating offline token: ' + token);
+                    debugLog('⏰ Expires: ' + new Date(expires).toLocaleString());
                     
                     localStorage.setItem('admin_token', token);
                     localStorage.setItem('admin_expires', expires.toString());
                     
+                    debugLog('💾 Offline token saved to localStorage');
+                    debugLog('🔄 Redirecting to admin panel...');
+                    
                     // Redirect to admin panel
-                    window.location.href = 'index.html';
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
                 } else {
+                    debugLog('❌ Invalid offline credentials');
                     errorDiv.textContent = 'Invalid credentials. Please try again.';
                     errorDiv.style.display = 'block';
                     

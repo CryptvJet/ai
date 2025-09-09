@@ -26,6 +26,10 @@
         </nav>
 
         <main class="admin-content">
+            <div id="debugInfo" style="background: rgba(0,255,0,0.05); border: 1px solid rgba(0,255,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-family: monospace; font-size: 11px; color: #00ff88; display: none;">
+                <strong>🔍 Debug Info:</strong><br>
+                <div id="debugLog"></div>
+            </div>
             <!-- Identity Section -->
             <section id="identity" class="admin-section active">
                 <h2>AI Identity & Personality</h2>
@@ -194,21 +198,37 @@
     </div>
 
     <script>
+        function debugLog(message) {
+            const debugDiv = document.getElementById('debugLog');
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugDiv && debugInfo) {
+                debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+                debugInfo.style.display = 'block';
+                // Auto-scroll to bottom
+                debugDiv.scrollTop = debugDiv.scrollHeight;
+            }
+            console.log('ADMIN DEBUG:', message);
+        }
+        
         // Check authentication before loading admin
         async function checkAuth() {
             const token = localStorage.getItem('admin_token');
             const expires = localStorage.getItem('admin_expires');
             
-            console.log('Checking auth - Token exists:', !!token, 'Expires:', expires);
+            debugLog('🔍 Checking auth - Token exists: ' + !!token);
+            debugLog('⏰ Token expires: ' + (expires ? new Date(parseInt(expires)).toLocaleString() : 'none'));
+            debugLog('🕐 Current time: ' + new Date().toLocaleString());
             
             // Check if token exists and hasn't expired
             if (!token || !expires || Date.now() > parseInt(expires)) {
-                console.log('No valid local token, redirecting to login');
-                window.location.href = 'login.html';
+                debugLog('❌ No valid local token, redirecting to login');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
                 return false;
             }
             
-            console.log('Local token valid, checking with server...');
+            debugLog('✅ Local token valid, checking with server...');
             
             // Try to validate token with server, but don't fail if server is down
             try {
