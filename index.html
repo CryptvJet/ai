@@ -29,32 +29,13 @@
         <div class="chat-container" id="chatContainer">
             <div class="message ai-message" id="welcomeMessage">
                 <div class="message-content">
-                    <strong>AI:</strong> <span id="welcomeText">Hello! I'm your AI assistant. I can analyze PulseCore data, help with calculations, and chat about your projects.</span>
+                    <strong id="aiNameLabel">AI:</strong> <span id="welcomeText">Hi! I'm your AI Assistant. I hope you are doing well today! What should I call you?</span>
                 </div>
                 <div class="message-time"></div>
             </div>
         </div>
 
         <div class="input-section">
-            <div class="pulsecore-stats" id="statsPanel">
-                <div class="stat-item">
-                    <span class="stat-label">Total Novas:</span>
-                    <span class="stat-value" id="totalNovas">-</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Last Complexity:</span>
-                    <span class="stat-value" id="lastComplexity">-</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Avg Energy:</span>
-                    <span class="stat-value" id="avgEnergy">-</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Active Sessions:</span>
-                    <span class="stat-value" id="activeSessions">1</span>
-                </div>
-            </div>
-
             <div class="input-container">
                 <input 
                     type="text" 
@@ -88,6 +69,25 @@
                 <button class="quick-btn" onclick="quickMessage('Analyze my patterns')">Pattern Analysis</button>
                 <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
                 <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
+            </div>
+
+            <div class="pulsecore-stats" id="statsPanel">
+                <div class="stat-item">
+                    <span class="stat-label">Total Novas:</span>
+                    <span class="stat-value" id="totalNovas">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Complexity:</span>
+                    <span class="stat-value" id="lastComplexity">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Avg Energy:</span>
+                    <span class="stat-value" id="avgEnergy">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Sessions:</span>
+                    <span class="stat-value" id="totalSessions">-</span>
+                </div>
             </div>
         </div>
     </div>

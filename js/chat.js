@@ -45,7 +45,7 @@ class AIChat {
             messageInput.style.height = messageInput.scrollHeight + 'px';
         });
 
-        this.addMessage('ai', 'Hello! I\'m your AI assistant. I can analyze PulseCore data, help with calculations, and chat about your projects. How can I help you today?');
+        // Welcome message will be set by loadAISettings() and the HTML
     }
 
     async loadAISettings() {
@@ -54,8 +54,10 @@ class AIChat {
             const settings = await response.json();
             
             if (settings.success) {
-                document.getElementById('aiName').textContent = settings.data.ai_name || 'AI Assistant';
-                document.getElementById('welcomeText').textContent = settings.data.welcome_message || 'Hello! I\'m your AI assistant.';
+                const aiName = settings.data.ai_name || 'AI Assistant';
+                document.getElementById('aiName').textContent = aiName;
+                document.getElementById('aiNameLabel').textContent = aiName + ':';
+                document.getElementById('welcomeText').textContent = settings.data.welcome_message || 'Hi! I\'m your AI Assistant. I hope you are doing well today! What should I call you?';
             }
         } catch (error) {
             console.warn('Could not load AI settings:', error);
@@ -143,6 +145,7 @@ class AIChat {
                 document.getElementById('totalNovas').textContent = stats.data.total_novas || 0;
                 document.getElementById('lastComplexity').textContent = stats.data.last_complexity || 'N/A';
                 document.getElementById('avgEnergy').textContent = stats.data.avg_energy ? stats.data.avg_energy.toFixed(2) : 'N/A';
+                document.getElementById('totalSessions').textContent = stats.data.total_sessions || 0;
             }
         } catch (error) {
             console.warn('Could not load PulseCore stats:', error);
@@ -195,8 +198,8 @@ class AIChat {
             if (result.success) {
                 this.addMessage('ai', result.response);
                 
-                // Speak response if enabled
-                if (result.speak && this.synthesis) {
+                // Speak response if auto-speak is enabled
+                if (this.autoSpeak && this.synthesis) {
                     this.speakText(result.response);
                 }
             } else {
@@ -348,7 +351,7 @@ class AIChat {
             chatContainer.innerHTML = `
                 <div class="message ai-message" id="welcomeMessage">
                     <div class="message-content">
-                        <strong>AI:</strong> <span id="welcomeText">Chat cleared! How can I help you?</span>
+                        <strong id="aiNameLabel">AI:</strong> <span id="welcomeText">Hi! I'm your AI Assistant. I hope you are doing well today! What should I call you?</span>
                     </div>
                     <div class="message-time"></div>
                 </div>

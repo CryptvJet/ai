@@ -298,8 +298,144 @@ function testPCAIConnection() {
     window.aiAdmin.checkIntegrations();
 }
 
-function analyzeConversations() {
-    window.aiAdmin.showNotification('Conversation analysis not yet implemented', 'info');
+async function analyzeConversations() {
+    try {
+        const response = await fetch('../api/conversation-analysis.php');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayConversationAnalysis(result.data);
+            window.aiAdmin.showNotification('Conversation analysis completed!', 'success');
+        } else {
+            window.aiAdmin.showNotification('Analysis failed: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Analysis error:', error);
+        window.aiAdmin.showNotification('Failed to run conversation analysis', 'error');
+    }
+}
+
+function displayConversationAnalysis(data) {
+    const analysisHtml = `
+        <div class="analysis-results">
+            <div class="analysis-header">
+                <h3>📊 Conversation Analysis Report</h3>
+                <p><strong>Period:</strong> ${data.time_period} (as of ${data.analysis_date})</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>💬 Overall Statistics</h4>
+                    <ul>
+                        <li><strong>Total Conversations:</strong> ${data.overall_stats.total_conversations}</li>
+                        <li><strong>Total Messages:</strong> ${data.overall_stats.total_messages}</li>
+                        <li><strong>Unique Users:</strong> ${data.overall_stats.unique_users}</li>
+                        <li><strong>Avg Conversation Length:</strong> ${data.overall_stats.avg_conversation_length_minutes} min</li>
+                        <li><strong>Avg Messages per Chat:</strong> ${data.overall_stats.avg_messages_per_conversation}</li>
+                        <li><strong>Avg Response Time:</strong> ${data.overall_stats.avg_response_time_ms}ms</li>
+                    </ul>
+                </div>
+                
+                <div class="stat-card">
+                    <h4>🎯 Topic Analysis</h4>
+                    <ul>
+                        <li><strong>PulseCore Queries:</strong> ${data.topic_analysis.pulsecore || 0}</li>
+                        <li><strong>Variables/Math:</strong> ${data.topic_analysis.variables || 0}</li>
+                        <li><strong>General Help:</strong> ${data.topic_analysis.general_help || 0}</li>
+                    </ul>
+                </div>
+                
+                <div class="stat-card">
+                    <h4>🤖 AI Mode Usage</h4>
+                    <ul>
+                        ${data.ai_mode_usage.map(mode => 
+                            `<li><strong>${mode.ai_mode} Mode:</strong> ${mode.count} (${mode.percentage}%)</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+                
+                <div class="stat-card">
+                    <h4>👥 User Engagement</h4>
+                    <ul>
+                        <li><strong>Users with Names:</strong> ${data.user_engagement.users_with_names} / ${data.user_engagement.total_named_users}</li>
+                        <li><strong>Avg Days Between Visits:</strong> ${data.user_engagement.avg_days_between_interactions}</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="activity-charts">
+                <div class="chart-section">
+                    <h4>📈 Daily Activity (Last 14 Days)</h4>
+                    <div class="daily-chart">
+                        ${data.daily_activity.map(day => `
+                            <div class="day-bar">
+                                <div class="bar" style="height: ${(day.conversations / Math.max(...data.daily_activity.map(d => d.conversations))) * 100}px"></div>
+                                <div class="day-label">${new Date(day.date).toLocaleDateString()}</div>
+                                <div class="day-stats">${day.conversations} chats, ${day.total_messages} msgs</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="chart-section">
+                    <h4>🕐 Most Active Hours</h4>
+                    <div class="hour-chart">
+                        ${data.hourly_activity.slice(0, 5).map(hour => `
+                            <div class="hour-item">
+                                <strong>${hour.hour}:00</strong> - ${hour.conversations} conversations, ${hour.messages} messages
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-conversations">
+                <h4>💭 Recent Conversations</h4>
+                <div class="conversation-list">
+                    ${data.recent_conversations.map(conv => `
+                        <div class="conversation-item">
+                            <div class="conv-header">
+                                <strong>User:</strong> ${conv.user_id || 'Anonymous'} 
+                                <span class="conv-date">${new Date(conv.started_at).toLocaleDateString()}</span>
+                                <span class="conv-messages">${conv.total_messages} messages</span>
+                            </div>
+                            <div class="conv-preview">
+                                <strong>First message:</strong> "${conv.first_user_message ? conv.first_user_message.substring(0, 100) + '...' : 'N/A'}"
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Show analysis in a modal or replace page content
+    const analysisContainer = document.getElementById('analysisResults') || createAnalysisModal();
+    analysisContainer.innerHTML = analysisHtml;
+    analysisContainer.style.display = 'block';
+}
+
+function createAnalysisModal() {
+    const modal = document.createElement('div');
+    modal.id = 'analysisModal';
+    modal.className = 'analysis-modal';
+    modal.innerHTML = `
+        <div class="analysis-modal-content">
+            <div class="analysis-modal-header">
+                <span class="analysis-close" onclick="closeAnalysisModal()">&times;</span>
+            </div>
+            <div id="analysisResults"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return document.getElementById('analysisResults');
+}
+
+function closeAnalysisModal() {
+    const modal = document.getElementById('analysisModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function clearLearningData() {
@@ -317,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.aiAdmin = new AIAdmin();
 });
 
-// Add notification styles
+// Add notification and analysis styles
 const notificationStyles = `
 .notification {
     position: fixed;
@@ -356,6 +492,227 @@ const notificationStyles = `
     padding: 0;
     width: 20px;
     height: 20px;
+}
+
+/* Analysis Modal Styles */
+.analysis-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    overflow: auto;
+}
+
+.analysis-modal-content {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    margin: 2% auto;
+    padding: 0;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 1200px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    color: white;
+}
+
+.analysis-modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.analysis-close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.analysis-close:hover {
+    color: white;
+}
+
+.analysis-results {
+    padding: 20px;
+}
+
+.analysis-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.analysis-header h3 {
+    font-size: 2.2em;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #00d4ff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.stat-card h4 {
+    margin-bottom: 15px;
+    color: #00d4ff;
+    font-size: 1.2em;
+}
+
+.stat-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.stat-card li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-card li:last-child {
+    border-bottom: none;
+}
+
+.activity-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.chart-section h4 {
+    color: #00d4ff;
+    margin-bottom: 15px;
+}
+
+.daily-chart {
+    display: flex;
+    gap: 5px;
+    align-items: flex-end;
+    height: 150px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.day-bar {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.bar {
+    background: linear-gradient(180deg, #00d4ff, #0099cc);
+    border-radius: 3px 3px 0 0;
+    min-height: 10px;
+    width: 100%;
+}
+
+.day-label {
+    font-size: 0.7em;
+    margin-top: 5px;
+    transform: rotate(45deg);
+    white-space: nowrap;
+}
+
+.day-stats {
+    font-size: 0.6em;
+    color: #aaa;
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.day-bar:hover .day-stats {
+    opacity: 1;
+}
+
+.hour-chart {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.hour-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hour-item:last-child {
+    border-bottom: none;
+}
+
+.conversation-list {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.conversation-item {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+}
+
+.conversation-item:last-child {
+    border-bottom: none;
+}
+
+.conv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.conv-date, .conv-messages {
+    color: #aaa;
+    font-size: 0.8em;
+}
+
+.conv-preview {
+    font-size: 0.85em;
+    color: #ccc;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .activity-charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .analysis-modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
 }
 `;
 

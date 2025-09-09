@@ -69,6 +69,16 @@ try {
         // Variables DB might not be available
     }
     
+    // AI Conversations count
+    $total_sessions = 0;
+    try {
+        $stmt = $ai_pdo->query("SELECT COUNT(*) as count FROM ai_conversations");
+        $sessions_result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $total_sessions = $sessions_result['count'];
+    } catch (Exception $e) {
+        // AI tables might not be created yet
+    }
+    
     echo json_encode([
         'success' => true,
         'data' => [
@@ -81,6 +91,7 @@ try {
             'recent_novas_24h' => (int)$recent_stats['recent_novas'],
             'recent_complexity' => $recent_stats['recent_complexity'] ? round($recent_stats['recent_complexity'], 1) : null,
             'variables_count' => $vars_count,
+            'total_sessions' => $total_sessions,
             'genesis_modes' => $genesis_modes,
             'complexity_trend' => $complexity_trend,
             'last_updated' => date('c')
