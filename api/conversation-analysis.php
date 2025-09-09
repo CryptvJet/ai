@@ -21,16 +21,31 @@ try {
         SELECT 
             COUNT(DISTINCT c.id) as total_conversations,
             COUNT(m.id) as total_messages,
-            AVG(TIMESTAMPDIFF(MINUTE, c.started_at, MAX(m.timestamp))) as avg_conversation_length_minutes,
             AVG(c.total_messages) as avg_messages_per_conversation,
             COUNT(DISTINCT c.session_id) as unique_users,
-            SUM(CASE WHEN m.processing_time_ms IS NOT NULL THEN m.processing_time_ms ELSE 0 END) / 
-                COUNT(CASE WHEN m.processing_time_ms IS NOT NULL THEN 1 END) as avg_response_time_ms
+            AVG(CASE WHEN m.processing_time_ms IS NOT NULL THEN m.processing_time_ms END) as avg_response_time_ms
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON c.id = m.conversation_id
         WHERE c.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
     ");
     $overall_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Get average conversation length separately
+    $stmt = $ai_pdo->query("
+        SELECT AVG(conversation_length_minutes) as avg_conversation_length_minutes
+        FROM (
+            SELECT 
+                c.id,
+                TIMESTAMPDIFF(MINUTE, c.started_at, MAX(m.timestamp)) as conversation_length_minutes
+            FROM ai_conversations c
+            INNER JOIN ai_messages m ON c.id = m.conversation_id
+            WHERE c.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY c.id
+            HAVING conversation_length_minutes > 0
+        ) as conv_lengths
+    ");
+    $length_result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $overall_stats['avg_conversation_length_minutes'] = $length_result['avg_conversation_length_minutes'];
     
     // Message type breakdown
     $stmt = $ai_pdo->query("
@@ -171,7 +186,7 @@ try {
                 'total_conversations' => (int)$overall_stats['total_conversations'],
                 'total_messages' => (int)$overall_stats['total_messages'],
                 'unique_users' => (int)$overall_stats['unique_users'],
-                'avg_conversation_length_minutes' => round($overall_stats['avg_conversation_length_minutes'], 1),
+                'avg_conversation_length_minutes' => $overall_stats['avg_conversation_length_minutes'] ? round($overall_stats['avg_conversation_length_minutes'], 1) : 0,
                 'avg_messages_per_conversation' => round($overall_stats['avg_messages_per_conversation'], 1),
                 'avg_response_time_ms' => round($overall_stats['avg_response_time_ms'])
             ],
