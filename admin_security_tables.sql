@@ -1,7 +1,7 @@
 -- Admin Security Tables
 -- Run this to add login functionality to your AI system
 
-USE vemite5_pulse_core;
+USE `vemite5_pulse-core`;
 
 -- Admin sessions table
 CREATE TABLE IF NOT EXISTS ai_admin_sessions (

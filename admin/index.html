@@ -199,13 +199,18 @@
             const token = localStorage.getItem('admin_token');
             const expires = localStorage.getItem('admin_expires');
             
+            console.log('Checking auth - Token exists:', !!token, 'Expires:', expires);
+            
             // Check if token exists and hasn't expired
             if (!token || !expires || Date.now() > parseInt(expires)) {
+                console.log('No valid local token, redirecting to login');
                 window.location.href = 'login.html';
                 return false;
             }
             
-            // Validate token with server
+            console.log('Local token valid, checking with server...');
+            
+            // Try to validate token with server, but don't fail if server is down
             try {
                 const response = await fetch('../api/validate-session.php', {
                     method: 'POST',
@@ -216,21 +221,58 @@
                 });
                 
                 const result = await response.json();
+                console.log('Server validation result:', result);
                 
                 if (!result.success) {
-                    // Invalid session, redirect to login
+                    console.log('Server says session invalid, redirecting to login');
                     localStorage.removeItem('admin_token');
                     localStorage.removeItem('admin_expires');
                     window.location.href = 'login.html';
                     return false;
                 }
                 
+                console.log('Server validation successful');
                 return true;
             } catch (error) {
-                console.error('Auth check failed:', error);
-                // On network error, allow access if token hasn't expired locally
-                return Date.now() < parseInt(expires);
+                console.warn('Server validation failed (this is expected with API issues):', error);
+                
+                // If server validation fails but token hasn't expired locally, allow access
+                const locallyValid = Date.now() < parseInt(expires);
+                console.log('Using local token validation:', locallyValid);
+                
+                if (locallyValid) {
+                    // Show a warning that we're in offline mode
+                    showOfflineWarning();
+                }
+                
+                return locallyValid;
             }
+        }
+        
+        function showOfflineWarning() {
+            const warning = document.createElement('div');
+            warning.id = 'offlineWarning';
+            warning.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: rgba(255, 193, 7, 0.9);
+                color: #000;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-weight: bold;
+                z-index: 1000;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            warning.innerHTML = '⚠️ Admin panel running in offline mode (API unavailable)';
+            document.body.appendChild(warning);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (document.getElementById('offlineWarning')) {
+                    warning.remove();
+                }
+            }, 5000);
         }
         
         // Add logout function

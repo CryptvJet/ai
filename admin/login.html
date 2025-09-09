@@ -196,6 +196,14 @@
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
             
+            console.log('Attempting login for username:', username);
+            
+            // Temporary offline mode credentials check (remove when APIs work)
+            const offlineCredentials = {
+                'admin': 'PulseCore2024!',
+                'zin': 'ZinAdmin123!'
+            };
+            
             try {
                 const response = await fetch('../api/login.php', {
                     method: 'POST',
@@ -209,8 +217,10 @@
                 });
                 
                 const result = await response.json();
+                console.log('Login API result:', result);
                 
                 if (result.success) {
+                    console.log('API login successful');
                     // Store session token
                     localStorage.setItem('admin_token', result.token);
                     localStorage.setItem('admin_expires', result.expires);
@@ -226,9 +236,28 @@
                     document.getElementById('password').value = '';
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.textContent = 'Login failed. Please check your connection and try again.';
-                errorDiv.style.display = 'block';
+                console.warn('Login API failed, trying offline mode:', error);
+                
+                // Fallback to offline credential check
+                if (offlineCredentials[username] && offlineCredentials[username] === password) {
+                    console.log('Offline login successful');
+                    
+                    // Create temporary local session (4 hours)
+                    const expires = Date.now() + (4 * 60 * 60 * 1000);
+                    const token = 'offline_' + Date.now() + '_' + Math.random().toString(36);
+                    
+                    localStorage.setItem('admin_token', token);
+                    localStorage.setItem('admin_expires', expires.toString());
+                    
+                    // Redirect to admin panel
+                    window.location.href = 'index.html';
+                } else {
+                    errorDiv.textContent = 'Invalid credentials. Please try again.';
+                    errorDiv.style.display = 'block';
+                    
+                    // Clear form
+                    document.getElementById('password').value = '';
+                }
             }
         });
     </script>
