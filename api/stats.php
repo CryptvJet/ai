@@ -20,7 +20,7 @@ try {
             COUNT(CASE WHEN m.message_type = 'ai' THEN 1 END) as total_ai_responses
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON c.id = m.conversation_id
-        WHERE c.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
+        WHERE c.started_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
     ");
     $stats = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -35,10 +35,12 @@ try {
         SELECT 
             c.id,
             c.session_id,
+            c.user_id,
             c.started_at,
             c.ended_at,
             c.total_messages,
             c.status,
+            TIMESTAMPDIFF(MINUTE, c.started_at, COALESCE(c.ended_at, NOW())) as duration_minutes,
             COUNT(m.id) as actual_message_count
         FROM ai_conversations c
         LEFT JOIN ai_messages m ON c.id = m.conversation_id
@@ -46,7 +48,21 @@ try {
         ORDER BY c.started_at DESC
         LIMIT 10
     ");
-    $recent_conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $conversations_raw = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Format conversations for display
+    $recent_conversations = array_map(function($conv) {
+        return [
+            'id' => $conv['id'],
+            'session_id' => $conv['session_id'],
+            'user_id' => $conv['user_id'],
+            'started_at' => $conv['started_at'],
+            'ended_at' => $conv['ended_at'],
+            'total_messages' => $conv['total_messages'],
+            'status' => $conv['status'],
+            'duration_minutes' => $conv['duration_minutes']
+        ];
+    }, $conversations_raw);
     
     echo json_encode([
         'success' => true,
