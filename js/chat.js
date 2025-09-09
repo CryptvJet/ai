@@ -731,15 +731,13 @@ function toggleVoiceControls() {
     const button = document.getElementById('voiceControlsToggle');
     
     if (panel.classList.contains('collapsed')) {
-        // Show voice controls
+        // Show voice controls - when expanded, arrow points up (can collapse)
         panel.classList.remove('collapsed');
-        arrow.classList.remove('rotated');
-        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow" id="toggleArrow">▼</span>';
+        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow" id="toggleArrow">▲</span>';
     } else {
-        // Hide voice controls
+        // Hide voice controls - when collapsed, arrow points down (can expand)
         panel.classList.add('collapsed');
-        arrow.classList.add('rotated');
-        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow rotated" id="toggleArrow">▲</span>';
+        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow" id="toggleArrow">▼</span>';
     }
 }
 
@@ -749,13 +747,13 @@ function toggleStats() {
     const button = document.getElementById('statsToggle');
     
     if (panel.classList.contains('collapsed')) {
-        // Show stats
+        // Show stats - when expanded, arrow points up (can collapse)
         panel.classList.remove('collapsed');
-        arrow.textContent = '▼';
-    } else {
-        // Hide stats
-        panel.classList.add('collapsed');
         arrow.textContent = '▲';
+    } else {
+        // Hide stats - when collapsed, arrow points down (can expand)
+        panel.classList.add('collapsed');
+        arrow.textContent = '▼';
     }
 }
 
