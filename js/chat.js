@@ -243,7 +243,8 @@ class AIChat {
         try {
             const response = await fetch('api/pulsecore-status.php');
             const status = await response.json();
-            this.updateConnectionStatus('pulseStatus', status.connected);
+            const isConnected = status.success && status.status === 'connected';
+            this.updateConnectionStatus('pulseStatus', isConnected);
         } catch (error) {
             this.updateConnectionStatus('pulseStatus', false);
         }
