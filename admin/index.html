@@ -293,9 +293,12 @@
         
         // Essential navigation functions (needed before admin.js loads)
         function showSection(sectionName) {
+            console.log('showSection called with:', sectionName);
+            
             // Hide all sections
             document.querySelectorAll('.admin-section').forEach(section => {
                 section.classList.remove('active');
+                console.log('Removing active from:', section.id);
             });
             
             // Remove active class from all nav buttons
@@ -307,14 +310,23 @@
             const targetSection = document.getElementById(sectionName);
             if (targetSection) {
                 targetSection.classList.add('active');
+                console.log('Adding active to:', targetSection.id);
+            } else {
+                console.error('Target section not found:', sectionName);
             }
             
             // Highlight active nav button
             const activeBtn = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
+                console.log('Activated button for:', sectionName);
+            } else {
+                console.error('Active button not found for:', sectionName);
             }
         }
+        
+        // Make showSection available globally
+        window.showSection = showSection;
         
         // PulseCore timeframe toggle
         let currentTimeframe = 'week';
@@ -367,6 +379,18 @@
                 // Load admin script
                 const script = document.createElement('script');
                 script.src = '../js/admin.js';
+                script.onload = function() {
+                    console.log('Admin.js loaded successfully');
+                    // Ensure tab functionality is working
+                    if (typeof showSection === 'function') {
+                        console.log('showSection function is available');
+                    } else {
+                        console.error('showSection function not found after loading admin.js');
+                    }
+                };
+                script.onerror = function() {
+                    console.error('Failed to load admin.js');
+                };
                 document.body.appendChild(script);
             }
         });

@@ -150,11 +150,12 @@ body {
 }
 
 .admin-section {
-    display: none;
+    display: none !important;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .admin-section.active {
-    display: block;
+    display: block !important;
 }
 
 .admin-section h2 {

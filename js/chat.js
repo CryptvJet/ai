@@ -331,6 +331,11 @@ class AIChat {
 
         // Clear input and disable send button temporarily
         input.value = '';
+        
+        // Reset input styling in case it was used for voice
+        input.style.fontStyle = 'normal';
+        input.style.color = '#e2e8f0';
+        
         const sendBtn = document.getElementById('sendBtn');
         sendBtn.disabled = true;
 
@@ -377,6 +382,8 @@ class AIChat {
             this.addMessage('ai', 'Sorry, I\'m having trouble connecting right now. Please check your connection and try again.');
         } finally {
             sendBtn.disabled = false;
+            // Ensure input focus is maintained for continuous typing
+            input.focus();
         }
     }
 
@@ -395,7 +402,14 @@ class AIChat {
         `;
         
         chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Smooth scroll to bottom with a slight delay to ensure DOM is updated
+        setTimeout(() => {
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 10);
     }
 
     loadVoices() {
