@@ -46,6 +46,10 @@ class AIChat {
         });
 
         // Welcome message will be set by loadAISettings() and the HTML
+        // After a short delay, add a welcome message if chat is empty
+        setTimeout(() => {
+            this.addWelcomeMessage();
+        }, 1000);
     }
 
     async loadAISettings() {
@@ -410,6 +414,25 @@ class AIChat {
                 behavior: 'smooth'
             });
         }, 10);
+    }
+
+    addWelcomeMessage() {
+        const chatContainer = document.getElementById('chatContainer');
+        
+        // Check if chat is empty (no messages yet)
+        if (chatContainer.children.length === 0) {
+            const welcomeMessage = `Hello! I'm your AI assistant specializing in PulseCore analysis and data exploration. 
+
+I can help you with:
+• Analyzing your nova events and patterns
+• Exploring complexity and energy data  
+• Searching through your variables database
+• General conversations about your simulations
+
+I'd love to get to know you better - what's your name?`;
+
+            this.addMessage('ai', welcomeMessage);
+        }
     }
 
     loadVoices() {

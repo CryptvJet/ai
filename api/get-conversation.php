@@ -40,7 +40,7 @@ try {
             status,
             metadata,
             TIMESTAMPDIFF(MINUTE, started_at, COALESCE(ended_at, NOW())) as duration_minutes
-        FROM conversations 
+        FROM ai_conversations 
         WHERE id = ?
     ");
     $stmt->execute([$conversationId]);
@@ -65,7 +65,7 @@ try {
             processing_time_ms,
             ai_mode,
             source
-        FROM messages 
+        FROM ai_messages 
         WHERE conversation_id = ?
         ORDER BY timestamp ASC
     ");
