@@ -1054,45 +1054,25 @@ window.viewConversation = async function(conversationId) {
     threadContainer.innerHTML = '<div class="loading-spinner">Loading conversation...</div>';
     
     try {
-        // Simulate API call - replace with actual endpoint when available
-        const mockConversation = {
-            id: conversationId,
-            started_at: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-            total_messages: Math.floor(Math.random() * 20) + 5,
-            duration_minutes: Math.floor(Math.random() * 180) + 15,
-            status: Math.random() > 0.3 ? 'ended' : 'active',
-            messages: [
-                {
-                    role: 'user',
-                    content: 'Hello, I need help analyzing my PulseCore data.',
-                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
-                },
-                {
-                    role: 'assistant', 
-                    content: 'I\'d be happy to help you analyze your PulseCore data! I can examine your nova events, climax patterns, and variable calculations. What specific aspect would you like to focus on?',
-                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
-                },
-                {
-                    role: 'user',
-                    content: 'Can you show me my recent nova patterns and any interesting trends?',
-                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
-                },
-                {
-                    role: 'assistant',
-                    content: 'Based on your recent data, I can see several interesting patterns:\n\n1. Your nova events have increased by 23% over the last week\n2. There\'s a notable clustering pattern around specific time periods\n3. The complexity scores show an upward trend\n\nWould you like me to dive deeper into any of these patterns?',
-                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
-                }
-            ]
-        };
+        // Fetch real conversation data from database
+        const response = await fetch(`../api/get-conversation.php?id=${conversationId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to load conversation');
+        }
+        
+        const conversation = result.data.conversation;
+        const messages = result.data.messages;
         
         // Update conversation info
-        document.getElementById('conversationId').textContent = conversationId;
-        document.getElementById('conversationStarted').textContent = new Date(mockConversation.started_at).toLocaleString();
-        document.getElementById('conversationMessages').textContent = mockConversation.total_messages;
-        document.getElementById('conversationDuration').textContent = mockConversation.duration_minutes + ' minutes';
+        document.getElementById('conversationId').textContent = conversation.id;
+        document.getElementById('conversationStarted').textContent = new Date(conversation.started_at).toLocaleString();
+        document.getElementById('conversationMessages').textContent = conversation.total_messages;
+        document.getElementById('conversationDuration').textContent = conversation.duration_minutes + ' minutes';
         
-        // Display messages
-        displayConversationThread(mockConversation.messages);
+        // Display real messages
+        displayConversationThread(messages);
         
     } catch (error) {
         console.error('Error loading conversation:', error);
