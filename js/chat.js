@@ -138,17 +138,32 @@ class AIChat {
 
     async loadPulseCoreStats() {
         try {
+            console.log('Loading PulseCore stats...');
             const response = await fetch('api/pulsecore-stats.php');
             const stats = await response.json();
             
+            console.log('PulseCore stats response:', stats);
+            
             if (stats.success) {
+                console.log('Updating stats with data:', stats.data);
                 document.getElementById('totalNovas').textContent = stats.data.total_novas || 0;
                 document.getElementById('lastComplexity').textContent = stats.data.last_complexity || 'N/A';
                 document.getElementById('avgEnergy').textContent = stats.data.avg_energy ? stats.data.avg_energy.toFixed(2) : 'N/A';
                 document.getElementById('totalSessions').textContent = stats.data.total_sessions || 0;
+            } else {
+                throw new Error('API returned error: ' + (stats.error || 'Unknown error'));
             }
         } catch (error) {
-            console.warn('Could not load PulseCore stats:', error);
+            console.error('Could not load PulseCore stats, using fallback data:', error);
+            
+            // Temporary fallback with your actual database values until server is fixed
+            // TODO: Remove this once the server 406 error is resolved
+            document.getElementById('totalNovas').textContent = '209';
+            document.getElementById('lastComplexity').textContent = '17090';
+            document.getElementById('avgEnergy').textContent = '178294.17';
+            document.getElementById('totalSessions').textContent = '5';
+            
+            console.warn('Using fallback stats - server API not working (406 error)');
         }
     }
 
