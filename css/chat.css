@@ -18,7 +18,7 @@ body {
 
 .app-layout {
     display: grid;
-    grid-template-columns: 1fr 4fr 1fr; /* 1/6, 2/3, 1/6 */
+    grid-template-columns: 16.67% 66.66% 16.67%; /* Exact 1/6, 2/3, 1/6 */
     min-height: 100vh;
     gap: 1rem;
     padding: 1rem;
@@ -42,6 +42,19 @@ body {
 
 .right-sidebar {
     padding: 1rem;
+    overflow-x: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.right-sidebar * {
+    box-sizing: border-box;
+}
+
+.left-sidebar {
+    padding: 1rem;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 .container {
@@ -1052,7 +1065,9 @@ body {
 
 .right-sidebar .voice-dropdown {
     max-width: 100%;
+    width: 100%;
     font-size: 0.8rem;
+    box-sizing: border-box;
 }
 
 .right-sidebar .voice-test {
