@@ -1041,3 +1041,101 @@ window.dismissPattern = function(patternId) {
         }
     }
 };
+
+// View Conversation Modal Functions
+window.viewConversation = async function(conversationId) {
+    const modal = document.getElementById('conversationModal');
+    const threadContainer = document.getElementById('threadContainer');
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Set loading state
+    threadContainer.innerHTML = '<div class="loading-spinner">Loading conversation...</div>';
+    
+    try {
+        // Simulate API call - replace with actual endpoint when available
+        const mockConversation = {
+            id: conversationId,
+            started_at: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
+            total_messages: Math.floor(Math.random() * 20) + 5,
+            duration_minutes: Math.floor(Math.random() * 180) + 15,
+            status: Math.random() > 0.3 ? 'ended' : 'active',
+            messages: [
+                {
+                    role: 'user',
+                    content: 'Hello, I need help analyzing my PulseCore data.',
+                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
+                },
+                {
+                    role: 'assistant', 
+                    content: 'I\'d be happy to help you analyze your PulseCore data! I can examine your nova events, climax patterns, and variable calculations. What specific aspect would you like to focus on?',
+                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
+                },
+                {
+                    role: 'user',
+                    content: 'Can you show me my recent nova patterns and any interesting trends?',
+                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
+                },
+                {
+                    role: 'assistant',
+                    content: 'Based on your recent data, I can see several interesting patterns:\n\n1. Your nova events have increased by 23% over the last week\n2. There\'s a notable clustering pattern around specific time periods\n3. The complexity scores show an upward trend\n\nWould you like me to dive deeper into any of these patterns?',
+                    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString()
+                }
+            ]
+        };
+        
+        // Update conversation info
+        document.getElementById('conversationId').textContent = conversationId;
+        document.getElementById('conversationStarted').textContent = new Date(mockConversation.started_at).toLocaleString();
+        document.getElementById('conversationMessages').textContent = mockConversation.total_messages;
+        document.getElementById('conversationDuration').textContent = mockConversation.duration_minutes + ' minutes';
+        
+        // Display messages
+        displayConversationThread(mockConversation.messages);
+        
+    } catch (error) {
+        console.error('Error loading conversation:', error);
+        threadContainer.innerHTML = '<div class="loading-spinner" style="color: #ef4444;">Error loading conversation. Please try again.</div>';
+    }
+};
+
+window.closeConversationModal = function() {
+    const modal = document.getElementById('conversationModal');
+    modal.classList.add('hidden');
+};
+
+function displayConversationThread(messages) {
+    const threadContainer = document.getElementById('threadContainer');
+    
+    if (!messages || messages.length === 0) {
+        threadContainer.innerHTML = '<div class="loading-spinner">No messages found in this conversation.</div>';
+        return;
+    }
+    
+    threadContainer.innerHTML = messages.map(message => {
+        const timestamp = new Date(message.timestamp);
+        const timeStr = timestamp.toLocaleDateString() + ' ' + timestamp.toLocaleTimeString();
+        
+        return `
+            <div class="thread-message ${message.role}">
+                <div class="message-meta">
+                    <span class="message-role">${message.role}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-content">${message.content}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Auto-scroll to bottom
+    threadContainer.scrollTop = threadContainer.scrollHeight;
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('conversationModal');
+    if (event.target === modal) {
+        closeConversationModal();
+    }
+});

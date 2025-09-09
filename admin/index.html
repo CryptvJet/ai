@@ -202,6 +202,42 @@
         </main>
     </div>
 
+    <!-- Conversation View Modal -->
+    <div id="conversationModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 id="conversationTitle">Conversation Details</h2>
+                <button class="modal-close" onclick="closeConversationModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="conversation-info">
+                    <div class="info-row">
+                        <span class="info-label">Conversation ID:</span>
+                        <span id="conversationId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Started:</span>
+                        <span id="conversationStarted">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Messages:</span>
+                        <span id="conversationMessages">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Duration:</span>
+                        <span id="conversationDuration">-</span>
+                    </div>
+                </div>
+                <div class="conversation-thread">
+                    <h3>Message Thread</h3>
+                    <div class="thread-container" id="threadContainer">
+                        <div class="loading-spinner">Loading conversation...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function debugLog(message) {
             const debugDiv = document.getElementById('debugLog');
