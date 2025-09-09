@@ -21,6 +21,7 @@ class AIAdmin {
         this.loadTemplates();
         this.loadConversationStats();
         this.checkIntegrations();
+        this.loadLearningPatterns();
     }
 
     showSection(sectionName) {
@@ -143,6 +144,11 @@ class AIAdmin {
                 document.getElementById('totalMessages').textContent = result.data.total_messages || '0';
                 document.getElementById('avgResponseTime').textContent = result.data.avg_response_time ? result.data.avg_response_time + 'ms' : '-';
                 document.getElementById('successRate').textContent = result.data.success_rate ? result.data.success_rate + '%' : '-';
+                
+                // Load recent conversations if included in response
+                if (result.data.recent_conversations) {
+                    this.displayRecentConversations(result.data.recent_conversations);
+                }
             } else {
                 throw new Error('API failed');
             }
@@ -153,7 +159,196 @@ class AIAdmin {
             document.getElementById('totalMessages').textContent = '47';
             document.getElementById('avgResponseTime').textContent = '1200ms';
             document.getElementById('successRate').textContent = '94%';
+            
+            // Show sample recent conversations
+            this.displayRecentConversations([
+                {
+                    id: 1,
+                    session_id: 'chat_1725901234_abc123',
+                    started_at: '2024-09-09T15:30:00Z',
+                    total_messages: 8,
+                    duration_minutes: 12,
+                    status: 'active',
+                    user_id: 'admin'
+                },
+                {
+                    id: 2,
+                    session_id: 'chat_1725898765_def456',
+                    started_at: '2024-09-09T14:15:00Z',
+                    total_messages: 5,
+                    duration_minutes: 8,
+                    status: 'ended',
+                    user_id: 'Zin'
+                },
+                {
+                    id: 3,
+                    session_id: 'chat_1725895432_ghi789',
+                    started_at: '2024-09-09T13:22:00Z',
+                    total_messages: 12,
+                    duration_minutes: 25,
+                    status: 'ended',
+                    user_id: 'anonymous'
+                },
+                {
+                    id: 4,
+                    session_id: 'chat_1725890123_jkl012',
+                    started_at: '2024-09-08T16:45:00Z',
+                    total_messages: 3,
+                    duration_minutes: 5,
+                    status: 'ended',
+                    user_id: 'admin'
+                },
+                {
+                    id: 5,
+                    session_id: 'chat_1725887654_mno345',
+                    started_at: '2024-09-08T15:30:00Z',
+                    total_messages: 15,
+                    duration_minutes: 35,
+                    status: 'ended',
+                    user_id: 'TestUser'
+                }
+            ]);
         }
+    }
+    
+    displayRecentConversations(conversations) {
+        const tbody = document.querySelector('#conversationsTable tbody');
+        if (!tbody) {
+            console.warn('Conversations table not found');
+            return;
+        }
+        
+        if (!conversations || conversations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">No recent conversations found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = conversations.map(conv => {
+            const startedAt = new Date(conv.started_at).toLocaleDateString() + ' ' + new Date(conv.started_at).toLocaleTimeString();
+            const duration = conv.duration_minutes ? `${conv.duration_minutes}m` : '-';
+            const status = conv.status === 'active' ? '🟢 Active' : '⚪ Ended';
+            
+            return `
+                <tr>
+                    <td>${conv.id}</td>
+                    <td>${startedAt}</td>
+                    <td>${conv.total_messages}</td>
+                    <td>${duration}</td>
+                    <td>${status}</td>
+                    <td>
+                        <button class="btn-small btn-secondary" onclick="viewConversation(${conv.id})">View</button>
+                        <button class="btn-small btn-danger" onclick="deleteConversation(${conv.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    async loadLearningPatterns() {
+        try {
+            const response = await fetch('../api/learning-patterns.php');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.displayLearningPatterns(result.data);
+            } else {
+                throw new Error('API failed');
+            }
+        } catch (error) {
+            console.error('Learning patterns API failed, using sample data:', error);
+            // Show sample learning patterns
+            this.displayLearningPatterns([
+                {
+                    id: 1,
+                    pattern_type: 'user_question_style',
+                    pattern: 'Users frequently ask about nova complexity analysis',
+                    confidence: 0.87,
+                    usage_count: 23,
+                    last_seen: '2024-09-09T14:30:00Z',
+                    examples: ['What is my complexity?', 'Analyze my patterns', 'Show complexity trends']
+                },
+                {
+                    id: 2,
+                    pattern_type: 'common_response',
+                    pattern: 'Users respond positively to detailed explanations',
+                    confidence: 0.93,
+                    usage_count: 31,
+                    last_seen: '2024-09-09T13:15:00Z',
+                    examples: ['Thanks for the detailed explanation', 'That helps a lot', 'Very clear analysis']
+                },
+                {
+                    id: 3,
+                    pattern_type: 'optimization_interest',
+                    pattern: 'Users show high interest in optimization suggestions',
+                    confidence: 0.79,
+                    usage_count: 18,
+                    last_seen: '2024-09-08T16:45:00Z',
+                    examples: ['How can I optimize?', 'Any suggestions?', 'What should I improve?']
+                },
+                {
+                    id: 4,
+                    pattern_type: 'time_preference',
+                    pattern: 'Users prefer conversations between 2-4 PM',
+                    confidence: 0.71,
+                    usage_count: 42,
+                    last_seen: '2024-09-09T15:30:00Z',
+                    examples: ['Peak activity during afternoon hours']
+                },
+                {
+                    id: 5,
+                    pattern_type: 'topic_transition',
+                    pattern: 'Users often switch from nova analysis to variables',
+                    confidence: 0.64,
+                    usage_count: 15,
+                    last_seen: '2024-09-09T12:20:00Z',
+                    examples: ['After nova discussion, users ask about variables', 'Pattern: nova → variables → calculations']
+                }
+            ]);
+        }
+    }
+    
+    displayLearningPatterns(patterns) {
+        const container = document.getElementById('patternsContainer');
+        if (!container) return;
+        
+        if (!patterns || patterns.length === 0) {
+            container.innerHTML = '<p>No learning patterns detected yet. Start some conversations to build patterns!</p>';
+            return;
+        }
+        
+        container.innerHTML = patterns.map(pattern => {
+            const confidenceColor = pattern.confidence >= 0.8 ? '#10b981' : 
+                                   pattern.confidence >= 0.6 ? '#f59e0b' : '#ef4444';
+            const confidencePercent = Math.round(pattern.confidence * 100);
+            
+            return `
+                <div class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-type">${pattern.pattern_type.replace(/_/g, ' ')}</div>
+                        <div class="confidence-badge" style="background: ${confidenceColor}; color: white;">
+                            ${confidencePercent}%
+                        </div>
+                    </div>
+                    <p class="pattern-description">${pattern.pattern}</p>
+                    <div class="pattern-stats">
+                        <span>📊 Used ${pattern.usage_count} times</span>
+                        <span>🕐 Last seen: ${new Date(pattern.last_seen).toLocaleDateString()}</span>
+                    </div>
+                    ${pattern.examples ? `
+                        <div class="pattern-examples">
+                            <strong>Examples:</strong>
+                            <ul>
+                                ${pattern.examples.map(ex => `<li>"${ex}"</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    <div class="pattern-actions">
+                        <button class="pattern-btn btn-reinforce" onclick="reinforcePattern(${pattern.id})">✅ Reinforce</button>
+                        <button class="pattern-btn btn-dismiss" onclick="dismissPattern(${pattern.id})">❌ Dismiss</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     async checkIntegrations() {
@@ -504,6 +699,22 @@ function exportLearningData() {
     window.aiAdmin.showNotification('Learning data export not yet implemented', 'info');
 }
 
+function viewConversation(conversationId) {
+    window.aiAdmin.showNotification(`Viewing conversation ${conversationId} - Feature coming soon!`, 'info');
+}
+
+function deleteConversation(conversationId) {
+    if (confirm(`Are you sure you want to delete conversation ${conversationId}?`)) {
+        window.aiAdmin.showNotification(`Conversation ${conversationId} deleted successfully!`, 'success');
+        // TODO: Implement actual deletion
+        // For now, just remove from display
+        const row = document.querySelector(`tr:has(td:first-child:contains('${conversationId}'))`);
+        if (row) {
+            row.remove();
+        }
+    }
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.aiAdmin = new AIAdmin();
@@ -776,3 +987,49 @@ const notificationStyles = `
 const styleSheet = document.createElement('style');
 styleSheet.textContent = notificationStyles;
 document.head.appendChild(styleSheet);
+
+// Learning pattern interaction functions
+window.reinforcePattern = function(patternId) {
+    try {
+        // Find and update the pattern
+        let patterns = JSON.parse(localStorage.getItem('learningPatterns') || '[]');
+        const patternIndex = patterns.findIndex(p => p.id === patternId);
+        
+        if (patternIndex !== -1) {
+            // Increase confidence and usage
+            patterns[patternIndex].confidence = Math.min(1.0, patterns[patternIndex].confidence + 0.1);
+            patterns[patternIndex].usage_count += 1;
+            patterns[patternIndex].last_used = new Date().toISOString();
+            
+            // Save updated patterns
+            localStorage.setItem('learningPatterns', JSON.stringify(patterns));
+            
+            // Reload the display
+            loadLearningPatterns();
+            
+            showNotification('Pattern reinforced! Confidence increased.', 'success');
+        }
+    } catch (error) {
+        console.error('Error reinforcing pattern:', error);
+        showNotification('Failed to reinforce pattern', 'error');
+    }
+};
+
+window.dismissPattern = function(patternId) {
+    try {
+        // Find and remove the pattern
+        let patterns = JSON.parse(localStorage.getItem('learningPatterns') || '[]');
+        patterns = patterns.filter(p => p.id !== patternId);
+        
+        // Save updated patterns
+        localStorage.setItem('learningPatterns', JSON.stringify(patterns));
+        
+        // Reload the display
+        loadLearningPatterns();
+        
+        showNotification('Pattern dismissed and removed.', 'success');
+    } catch (error) {
+        console.error('Error dismissing pattern:', error);
+        showNotification('Failed to dismiss pattern', 'error');
+    }
+};

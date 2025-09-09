@@ -21,7 +21,7 @@
                 </div>
             </div>
             <div class="controls">
-                <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ Admin</button>
+                <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ My Admin</button>
                 <button id="clearBtn" class="btn-clear" onclick="clearChat()">🗑️ Clear</button>
             </div>
         </header>
@@ -58,35 +58,73 @@
                 <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
             </div>
 
-            <div class="voice-controls">
-                <div class="voice-settings">
-                    <select id="voiceSelect" class="voice-dropdown">
-                        <option value="">Loading voices...</option>
-                    </select>
-                    <label class="voice-toggle">
-                        <input type="checkbox" id="autoSpeak" checked>
-                        <span class="toggle-slider-mini"></span>
-                        Auto-speak
-                    </label>
-                </div>
-            </div>
-
             <div class="pulsecore-stats" id="statsPanel">
+                <div class="stat-item">
+                    <span class="stat-label">Total Climaxes:</span>
+                    <span class="stat-value" id="totalClimaxes">-</span>
+                </div>
                 <div class="stat-item">
                     <span class="stat-label">Total Novas:</span>
                     <span class="stat-value" id="totalNovas">-</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Last Complexity:</span>
-                    <span class="stat-value" id="lastComplexity">-</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Avg Energy:</span>
-                    <span class="stat-value" id="avgEnergy">-</span>
+                    <span class="stat-label">Average Complexity:</span>
+                    <span class="stat-value" id="avgComplexity">-</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Total Sessions:</span>
                     <span class="stat-value" id="totalSessions">-</span>
+                </div>
+            </div>
+
+            <div class="voice-controls">
+                <div class="voice-settings">
+                    <div class="voice-row">
+                        <select id="voiceSelect" class="voice-dropdown">
+                            <option value="">Loading voices...</option>
+                        </select>
+                        <div class="voice-speed">
+                            <label for="speechRate">Speed:</label>
+                            <input type="range" id="speechRate" min="0.5" max="2.5" step="0.1" value="1.2" class="speed-slider">
+                            <span id="speedValue">1.2x</span>
+                        </div>
+                    </div>
+                    
+                    <div class="voice-row">
+                        <div class="voice-pitch">
+                            <label for="speechPitch">Pitch:</label>
+                            <input type="range" id="speechPitch" min="0.5" max="2.0" step="0.1" value="1.0" class="pitch-slider">
+                            <span id="pitchValue">1.0</span>
+                        </div>
+                        <div class="voice-volume">
+                            <label for="speechVolume">Volume:</label>
+                            <input type="range" id="speechVolume" min="0.1" max="1.0" step="0.1" value="0.8" class="volume-slider">
+                            <span id="volumeValue">0.8</span>
+                        </div>
+                    </div>
+
+                    <div class="voice-row">
+                        <label class="voice-toggle">
+                            <input type="checkbox" id="autoSpeak" checked>
+                            <span class="toggle-slider-mini"></span>
+                            Auto-speak
+                        </label>
+                        
+                        <div class="voice-timeout">
+                            <label for="voiceTimeout">Listen Duration:</label>
+                            <select id="voiceTimeout" class="timeout-dropdown">
+                                <option value="normal">Normal</option>
+                                <option value="30">30 seconds</option>
+                                <option value="60">60 seconds</option>
+                                <option value="continuous">Continuous</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="voice-test">
+                        <button id="testVoiceBtn" class="btn-test-voice">🎵 Test Voice</button>
+                        <button id="voiceSettingsBtn" class="btn-voice-settings">⚙️ Advanced</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -68,27 +68,65 @@ class AIChat {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRecognition();
+            this.voiceTimeout = 'normal'; // Initialize voice timeout
+            this.recognitionTimer = null;
             
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
+            this.recognition.continuous = true; // Enable continuous recognition for extended listening
+            this.recognition.interimResults = true; // Show interim results for better UX
             this.recognition.lang = 'en-US';
+            this.recognition.maxAlternatives = 3;
 
             this.recognition.onstart = () => {
                 this.isListening = true;
                 document.getElementById('voiceBtn').classList.add('listening');
                 document.getElementById('voiceIndicator').classList.remove('hidden');
+                
+                // Set timeout based on user preference
+                this.setVoiceRecognitionTimeout();
             };
 
             this.recognition.onend = () => {
                 this.isListening = false;
                 document.getElementById('voiceBtn').classList.remove('listening');
                 document.getElementById('voiceIndicator').classList.add('hidden');
+                
+                // Clear timeout
+                if (this.recognitionTimer) {
+                    clearTimeout(this.recognitionTimer);
+                    this.recognitionTimer = null;
+                }
             };
 
             this.recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('messageInput').value = transcript;
-                this.sendMessage();
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                const messageInput = document.getElementById('messageInput');
+                if (finalTranscript) {
+                    messageInput.value = finalTranscript;
+                    messageInput.style.fontStyle = 'normal';
+                    messageInput.style.color = '#e2e8f0';
+                    
+                    // For normal mode, auto-send and stop
+                    if (this.voiceTimeout === 'normal') {
+                        this.sendMessage();
+                        this.stopListening();
+                    }
+                } else if (interimTranscript) {
+                    // Show interim results with different styling
+                    messageInput.value = interimTranscript;
+                    messageInput.style.fontStyle = 'italic';
+                    messageInput.style.color = '#94a3b8';
+                }
             };
 
             this.recognition.onerror = (event) => {
@@ -96,10 +134,58 @@ class AIChat {
                 this.isListening = false;
                 document.getElementById('voiceBtn').classList.remove('listening');
                 document.getElementById('voiceIndicator').classList.add('hidden');
+                
+                // Show user-friendly error message
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone permissions and try again.');
+                } else if (event.error === 'network') {
+                    alert('Network error during speech recognition. Please check your connection.');
+                }
             };
         } else {
             document.getElementById('voiceBtn').style.display = 'none';
             console.warn('Speech recognition not supported');
+        }
+    }
+    
+    setVoiceRecognitionTimeout() {
+        // Clear existing timer
+        if (this.recognitionTimer) {
+            clearTimeout(this.recognitionTimer);
+        }
+        
+        let timeout;
+        switch (this.voiceTimeout) {
+            case '30':
+                timeout = 30000; // 30 seconds
+                break;
+            case '60':
+                timeout = 60000; // 60 seconds
+                break;
+            case 'continuous':
+                return; // No timeout for continuous mode
+            default: // 'normal'
+                timeout = 5000; // 5 seconds (normal browser default)
+        }
+        
+        this.recognitionTimer = setTimeout(() => {
+            if (this.isListening) {
+                this.stopListening();
+                
+                // For extended modes, send message if there's content
+                const messageInput = document.getElementById('messageInput');
+                if (messageInput.value.trim()) {
+                    messageInput.style.fontStyle = 'normal';
+                    messageInput.style.color = '#e2e8f0';
+                    this.sendMessage();
+                }
+            }
+        }, timeout);
+    }
+    
+    stopListening() {
+        if (this.recognition && this.isListening) {
+            this.recognition.stop();
         }
     }
 
@@ -146,9 +232,9 @@ class AIChat {
             
             if (stats.success) {
                 console.log('Updating stats with data:', stats.data);
+                document.getElementById('totalClimaxes').textContent = stats.data.total_climaxes || 0;
                 document.getElementById('totalNovas').textContent = stats.data.total_novas || 0;
-                document.getElementById('lastComplexity').textContent = stats.data.last_complexity || 'N/A';
-                document.getElementById('avgEnergy').textContent = stats.data.avg_energy ? stats.data.avg_energy.toFixed(2) : 'N/A';
+                document.getElementById('avgComplexity').textContent = stats.data.avg_complexity ? stats.data.avg_complexity.toFixed(0) : 'N/A';
                 document.getElementById('totalSessions').textContent = stats.data.total_sessions || 0;
             } else {
                 throw new Error('API returned error: ' + (stats.error || 'Unknown error'));
@@ -158,10 +244,10 @@ class AIChat {
             
             // Temporary fallback with your actual database values until server is fixed
             // TODO: Remove this once the server 406 error is resolved
-            document.getElementById('totalNovas').textContent = '209';
-            document.getElementById('lastComplexity').textContent = '17090';
-            document.getElementById('avgEnergy').textContent = '178294.17';
-            document.getElementById('totalSessions').textContent = '5';
+            document.getElementById('totalClimaxes').textContent = '2101';
+            document.getElementById('totalNovas').textContent = '3352';
+            document.getElementById('avgComplexity').textContent = '17090';
+            document.getElementById('totalSessions').textContent = '144';
             
             console.warn('Using fallback stats - server API not working (406 error)');
         }
@@ -174,9 +260,32 @@ class AIChat {
         }
 
         if (this.isListening) {
-            this.recognition.stop();
+            this.stopListening();
         } else {
-            this.recognition.start();
+            // Get current timeout setting before starting
+            const voiceTimeout = document.getElementById('voiceTimeout');
+            if (voiceTimeout) {
+                this.voiceTimeout = voiceTimeout.value;
+            }
+            
+            // Clear input and reset styling before starting
+            const messageInput = document.getElementById('messageInput');
+            messageInput.value = '';
+            messageInput.style.fontStyle = 'normal';
+            messageInput.style.color = '#e2e8f0';
+            
+            try {
+                this.recognition.start();
+            } catch (error) {
+                console.error('Failed to start voice recognition:', error);
+                if (error.name === 'InvalidStateError') {
+                    // Recognition is already running, stop it first
+                    this.recognition.stop();
+                    setTimeout(() => {
+                        this.recognition.start();
+                    }, 100);
+                }
+            }
         }
     }
 
@@ -334,6 +443,101 @@ class AIChat {
                 localStorage.setItem('autoSpeak', this.autoSpeak);
             });
         }
+        
+        // Set up voice controls
+        this.setupAdvancedVoiceControls();
+    }
+
+    setupAdvancedVoiceControls() {
+        // Speech rate control
+        const speechRate = document.getElementById('speechRate');
+        const speedValue = document.getElementById('speedValue');
+        if (speechRate && speedValue) {
+            const savedRate = localStorage.getItem('speechRate') || '1.2';
+            speechRate.value = savedRate;
+            speedValue.textContent = savedRate + 'x';
+            
+            speechRate.addEventListener('input', (e) => {
+                const value = e.target.value;
+                speedValue.textContent = value + 'x';
+                localStorage.setItem('speechRate', value);
+            });
+        }
+        
+        // Speech pitch control
+        const speechPitch = document.getElementById('speechPitch');
+        const pitchValue = document.getElementById('pitchValue');
+        if (speechPitch && pitchValue) {
+            const savedPitch = localStorage.getItem('speechPitch') || '1.0';
+            speechPitch.value = savedPitch;
+            pitchValue.textContent = savedPitch;
+            
+            speechPitch.addEventListener('input', (e) => {
+                const value = e.target.value;
+                pitchValue.textContent = value;
+                localStorage.setItem('speechPitch', value);
+            });
+        }
+        
+        // Speech volume control
+        const speechVolume = document.getElementById('speechVolume');
+        const volumeValue = document.getElementById('volumeValue');
+        if (speechVolume && volumeValue) {
+            const savedVolume = localStorage.getItem('speechVolume') || '0.8';
+            speechVolume.value = savedVolume;
+            volumeValue.textContent = savedVolume;
+            
+            speechVolume.addEventListener('input', (e) => {
+                const value = e.target.value;
+                volumeValue.textContent = value;
+                localStorage.setItem('speechVolume', value);
+            });
+        }
+        
+        // Voice timeout selector
+        const voiceTimeout = document.getElementById('voiceTimeout');
+        if (voiceTimeout) {
+            const savedTimeout = localStorage.getItem('voiceTimeout') || 'normal';
+            voiceTimeout.value = savedTimeout;
+            this.voiceTimeout = savedTimeout;
+            
+            voiceTimeout.addEventListener('change', (e) => {
+                this.voiceTimeout = e.target.value;
+                localStorage.setItem('voiceTimeout', e.target.value);
+            });
+        }
+        
+        // Test voice button
+        const testVoiceBtn = document.getElementById('testVoiceBtn');
+        if (testVoiceBtn) {
+            testVoiceBtn.addEventListener('click', () => {
+                this.testCurrentVoiceSettings();
+            });
+        }
+        
+        // Voice settings button (for future advanced modal)
+        const voiceSettingsBtn = document.getElementById('voiceSettingsBtn');
+        if (voiceSettingsBtn) {
+            voiceSettingsBtn.addEventListener('click', () => {
+                this.showAdvancedVoiceSettings();
+            });
+        }
+    }
+    
+    testCurrentVoiceSettings() {
+        const testMessages = [
+            "Hello! This is a test of your current voice settings.",
+            "I'm speaking at the configured speed, pitch, and volume levels.",
+            "How do I sound to you?"
+        ];
+        
+        const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+        this.speakText(randomMessage);
+    }
+    
+    showAdvancedVoiceSettings() {
+        // Future enhancement: show modal with more voice options
+        alert('Advanced voice settings coming soon! For now, use the controls above to customize your voice experience.');
     }
 
     speakText(text) {
@@ -343,9 +547,15 @@ class AIChat {
         this.synthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.8;
+        
+        // Get current voice settings
+        const speechRate = document.getElementById('speechRate');
+        const speechPitch = document.getElementById('speechPitch');
+        const speechVolume = document.getElementById('speechVolume');
+        
+        utterance.rate = speechRate ? parseFloat(speechRate.value) : 1.2;
+        utterance.pitch = speechPitch ? parseFloat(speechPitch.value) : 1.0;
+        utterance.volume = speechVolume ? parseFloat(speechVolume.value) : 0.8;
         
         // Use selected voice if available
         if (this.selectedVoice) {
