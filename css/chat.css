@@ -41,7 +41,7 @@ body {
 }
 
 .right-sidebar {
-    padding: 1rem;
+    padding: 1rem 15px 1rem 1rem;
     overflow-x: hidden;
     max-width: 100%;
     box-sizing: border-box;
