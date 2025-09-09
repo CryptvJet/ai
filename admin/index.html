@@ -13,6 +13,7 @@
             <div class="header-actions">
                 <button onclick="location.href='../index.html'" class="btn-back">← Back to Chat</button>
                 <button onclick="saveAllSettings()" class="btn-save">💾 Save All</button>
+                <button onclick="logout()" class="btn-logout">🚪 Logout</button>
             </div>
         </header>
 
@@ -192,6 +193,78 @@
         </main>
     </div>
 
-    <script src="../js/admin.js"></script>
+    <script>
+        // Check authentication before loading admin
+        async function checkAuth() {
+            const token = localStorage.getItem('admin_token');
+            const expires = localStorage.getItem('admin_expires');
+            
+            // Check if token exists and hasn't expired
+            if (!token || !expires || Date.now() > parseInt(expires)) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Validate token with server
+            try {
+                const response = await fetch('../api/validate-session.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    // Invalid session, redirect to login
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_expires');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // On network error, allow access if token hasn't expired locally
+                return Date.now() < parseInt(expires);
+            }
+        }
+        
+        // Add logout function
+        async function logout() {
+            const token = localStorage.getItem('admin_token');
+            
+            // Call logout API
+            try {
+                await fetch('../api/logout.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+            } catch (error) {
+                console.error('Logout API failed:', error);
+            }
+            
+            // Clear local storage
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_expires');
+            
+            // Redirect to login
+            window.location.href = 'login.html';
+        }
+        
+        // Check auth on page load
+        checkAuth().then(isAuthenticated => {
+            if (isAuthenticated) {
+                // Load admin script
+                const script = document.createElement('script');
+                script.src = '../js/admin.js';
+                document.body.appendChild(script);
+            }
+        });
+    </script>
 </body>
 </html>
