@@ -8,13 +8,8 @@ class AIAdmin {
         // Show default section
         this.showSection('identity');
         
-        // Set up navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const section = e.target.getAttribute('onclick').match(/'([^']+)'/)[1];
-                this.showSection(section);
-            });
-        });
+        // Don't set up additional event listeners - use the onclick attributes
+        console.log('Admin initialized - using onclick handlers for navigation');
 
         // Load current settings
         this.loadSettings();
@@ -25,9 +20,12 @@ class AIAdmin {
     }
 
     showSection(sectionName) {
+        console.log('Admin.showSection called with:', sectionName);
+        
         // Hide all sections
         document.querySelectorAll('.admin-section').forEach(section => {
             section.classList.remove('active');
+            console.log('Removing active from admin section:', section.id);
         });
         
         // Remove active class from all nav buttons
@@ -39,12 +37,18 @@ class AIAdmin {
         const targetSection = document.getElementById(sectionName);
         if (targetSection) {
             targetSection.classList.add('active');
+            console.log('Adding active to admin section:', targetSection.id);
+        } else {
+            console.error('Admin target section not found:', sectionName);
         }
         
         // Highlight active nav button
         const activeBtn = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
         if (activeBtn) {
             activeBtn.classList.add('active');
+            console.log('Activated admin button for:', sectionName);
+        } else {
+            console.error('Admin active button not found for:', sectionName);
         }
     }
 
@@ -462,12 +466,8 @@ class AIAdmin {
     }
 }
 
-// Global functions
-function showSection(sectionName) {
-    if (window.aiAdmin) {
-        window.aiAdmin.showSection(sectionName);
-    }
-}
+// Global functions - use the one defined in index.html
+// Don't override it here
 
 function saveAllSettings() {
     if (window.aiAdmin) {

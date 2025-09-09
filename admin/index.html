@@ -293,7 +293,16 @@
         
         // Essential navigation functions (needed before admin.js loads)
         function showSection(sectionName) {
-            console.log('showSection called with:', sectionName);
+            console.log('Global showSection called with:', sectionName);
+            
+            // If admin class is loaded, use it, otherwise use direct DOM manipulation
+            if (window.aiAdmin && typeof window.aiAdmin.showSection === 'function') {
+                console.log('Using aiAdmin.showSection');
+                window.aiAdmin.showSection(sectionName);
+                return;
+            }
+            
+            console.log('Using direct DOM manipulation for showSection');
             
             // Hide all sections
             document.querySelectorAll('.admin-section').forEach(section => {
@@ -381,11 +390,26 @@
                 script.src = '../js/admin.js';
                 script.onload = function() {
                     console.log('Admin.js loaded successfully');
-                    // Ensure tab functionality is working
-                    if (typeof showSection === 'function') {
-                        console.log('showSection function is available');
-                    } else {
-                        console.error('showSection function not found after loading admin.js');
+                    
+                    // Initialize admin class and make it globally available
+                    try {
+                        window.aiAdmin = new AdminPanel();
+                        console.log('AdminPanel class instantiated and available globally');
+                        
+                        // Test the showSection function
+                        if (typeof showSection === 'function') {
+                            console.log('Global showSection function is available');
+                        } else {
+                            console.error('Global showSection function not found');
+                        }
+                        
+                        if (window.aiAdmin && typeof window.aiAdmin.showSection === 'function') {
+                            console.log('AdminPanel showSection method is available');
+                        } else {
+                            console.error('AdminPanel showSection method not found');
+                        }
+                    } catch (error) {
+                        console.error('Failed to instantiate AdminPanel:', error);
                     }
                 };
                 script.onerror = function() {
