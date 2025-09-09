@@ -131,8 +131,10 @@
     </div>
 
     <div id="voiceIndicator" class="voice-indicator hidden">
+        <button class="voice-close-btn" onclick="closeVoiceIndicator()">✕</button>
         <div class="voice-animation"></div>
         <p>Listening... Speak now</p>
+        <div class="voice-status" id="voiceStatus">Ready to listen...</div>
     </div>
 
     <script src="js/chat.js"></script>

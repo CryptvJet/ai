@@ -598,11 +598,13 @@ body {
     border: 1px solid rgba(148, 163, 184, 0.3);
     backdrop-filter: blur(25px);
     color: #e2e8f0;
-    padding: 2rem;
-    border-radius: 1.5rem;
+    padding: 4rem;
+    border-radius: 2rem;
     text-align: center;
     z-index: 1000;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+    min-width: 400px;
+    position: relative;
 }
 
 .voice-indicator.hidden {
@@ -610,20 +612,56 @@ body {
 }
 
 .voice-animation {
-    width: 60px;
-    height: 60px;
-    border: 3px solid transparent;
+    width: 120px;
+    height: 120px;
+    border: 6px solid transparent;
     border-radius: 50%;
-    margin: 0 auto 1rem;
+    margin: 0 auto 2rem;
     background: linear-gradient(135deg, #a855f7, #06b6d4) padding-box,
                 linear-gradient(135deg, #7c3aed, #ec4899, #06b6d4) border-box;
     animation: voicePulse 1.5s infinite;
 }
 
 .voice-indicator p {
-    font-size: 1.1rem;
+    font-size: 2.2rem;
     font-weight: 600;
     color: #06b6d4;
+    margin-bottom: 1rem;
+}
+
+.voice-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.voice-close-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.voice-status {
+    font-size: 1rem;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-top: 1rem;
+    font-style: italic;
 }
 
 @keyframes voicePulse {

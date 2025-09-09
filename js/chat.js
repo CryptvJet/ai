@@ -81,6 +81,16 @@ class AIChat {
                 document.getElementById('voiceBtn').classList.add('listening');
                 document.getElementById('voiceIndicator').classList.remove('hidden');
                 
+                // Update status
+                const voiceStatus = document.getElementById('voiceStatus');
+                if (voiceStatus) {
+                    const timeoutText = this.voiceTimeout === 'continuous' ? 'Continuous listening...' :
+                                      this.voiceTimeout === '30' ? '30 second timeout' :
+                                      this.voiceTimeout === '60' ? '60 second timeout' :
+                                      '5 second timeout';
+                    voiceStatus.textContent = `Listening active - ${timeoutText}`;
+                }
+                
                 // Set timeout based on user preference
                 this.setVoiceRecognitionTimeout();
             };
@@ -88,12 +98,20 @@ class AIChat {
             this.recognition.onend = () => {
                 this.isListening = false;
                 document.getElementById('voiceBtn').classList.remove('listening');
-                document.getElementById('voiceIndicator').classList.add('hidden');
+                
+                // Don't automatically hide the voice indicator anymore
+                // User must manually close it with the X button
                 
                 // Clear timeout
                 if (this.recognitionTimer) {
                     clearTimeout(this.recognitionTimer);
                     this.recognitionTimer = null;
+                }
+                
+                // Update status
+                const voiceStatus = document.getElementById('voiceStatus');
+                if (voiceStatus) {
+                    voiceStatus.textContent = 'Voice recognition stopped. Click X to close or 🎤 to start again.';
                 }
             };
 
@@ -111,21 +129,37 @@ class AIChat {
                 }
                 
                 const messageInput = document.getElementById('messageInput');
+                const voiceStatus = document.getElementById('voiceStatus');
+                
                 if (finalTranscript) {
                     messageInput.value = finalTranscript;
                     messageInput.style.fontStyle = 'normal';
                     messageInput.style.color = '#e2e8f0';
                     
+                    if (voiceStatus) {
+                        voiceStatus.textContent = '✓ Message captured! Sending...';
+                    }
+                    
                     // For normal mode, auto-send and stop
                     if (this.voiceTimeout === 'normal') {
                         this.sendMessage();
                         this.stopListening();
+                    } else {
+                        // For extended modes, send message but keep listening
+                        this.sendMessage();
+                        if (voiceStatus) {
+                            voiceStatus.textContent = 'Message sent! Still listening...';
+                        }
                     }
                 } else if (interimTranscript) {
                     // Show interim results with different styling
                     messageInput.value = interimTranscript;
                     messageInput.style.fontStyle = 'italic';
                     messageInput.style.color = '#94a3b8';
+                    
+                    if (voiceStatus) {
+                        voiceStatus.textContent = '🎤 Speaking detected...';
+                    }
                 }
             };
 
@@ -611,6 +645,27 @@ function clearChat() {
 
 function openAdmin() {
     window.aiChat.openAdmin();
+}
+
+function closeVoiceIndicator() {
+    // Stop any active voice recognition
+    if (window.aiChat.isListening) {
+        window.aiChat.stopListening();
+    }
+    
+    // Hide the voice indicator
+    document.getElementById('voiceIndicator').classList.add('hidden');
+    
+    // Reset input styling
+    const messageInput = document.getElementById('messageInput');
+    messageInput.style.fontStyle = 'normal';
+    messageInput.style.color = '#e2e8f0';
+    
+    // Reset voice status
+    const voiceStatus = document.getElementById('voiceStatus');
+    if (voiceStatus) {
+        voiceStatus.textContent = 'Ready to listen...';
+    }
 }
 
 // Initialize when page loads
