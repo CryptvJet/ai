@@ -70,15 +70,21 @@ class AIChat {
 
     setupVoiceRecognition() {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
-            this.voiceTimeout = 'normal'; // Initialize voice timeout
-            this.recognitionTimer = null;
-            
-            this.recognition.continuous = true; // Enable continuous recognition for extended listening
-            this.recognition.interimResults = true; // Show interim results for better UX
-            this.recognition.lang = 'en-US';
-            this.recognition.maxAlternatives = 3;
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                this.voiceTimeout = 'normal'; // Initialize voice timeout
+                this.recognitionTimer = null;
+                
+                this.recognition.continuous = true; // Enable continuous recognition for extended listening
+                this.recognition.interimResults = true; // Show interim results for better UX
+                this.recognition.lang = 'en-US';
+                this.recognition.maxAlternatives = 3;
+            } catch (error) {
+                console.warn('Failed to initialize speech recognition:', error);
+                this.recognition = null;
+                return;
+            }
 
             this.recognition.onstart = () => {
                 this.isListening = true;
@@ -242,14 +248,23 @@ class AIChat {
             this.updateConnectionStatus('pulseStatus', false);
         }
 
-        // Check PC AI connection
+        // Check PC AI connection (optional local AI server)
         try {
-            const response = await fetch('http://localhost:8000/health');
-            this.updateConnectionStatus('pcStatus', true);
-            this.currentMode = 'full-power';
-            document.getElementById('aiMode').textContent = 'Full Power';
-            document.getElementById('aiMode').className = 'mode-indicator full-power';
+            const response = await fetch('http://localhost:8000/health', {
+                method: 'GET',
+                timeout: 2000 // 2 second timeout
+            });
+            if (response.ok) {
+                this.updateConnectionStatus('pcStatus', true);
+                this.currentMode = 'full-power';
+                document.getElementById('aiMode').textContent = 'Full Power';
+                document.getElementById('aiMode').className = 'mode-indicator full-power';
+            } else {
+                throw new Error('PC AI server not responding');
+            }
         } catch (error) {
+            // PC AI server not running - this is normal, use chill mode
+            console.log('PC AI server not available, using chill mode');
             this.updateConnectionStatus('pcStatus', false);
             this.currentMode = 'chill';
         }
