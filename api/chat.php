@@ -94,7 +94,7 @@ class AIChat {
     
     private function generateResponse($message, $conversation_id, $mode) {
         // Check for template responses first
-        $template_response = $this->checkTemplateResponses($message);
+        $template_response = $this->checkTemplateResponses($message, $conversation_id);
         if ($template_response) {
             return $template_response;
         }
@@ -123,9 +123,9 @@ class AIChat {
         return $this->generateBasicResponse($message, $conversation_id);
     }
     
-    private function checkTemplateResponses($message) {
+    private function checkTemplateResponses($message, $conversation_id) {
         $stmt = $this->ai_pdo->prepare("
-            SELECT response_text, id FROM ai_response_templates 
+            SELECT response_text, id, category FROM ai_response_templates 
             WHERE active = 1 AND ? REGEXP trigger_pattern 
             ORDER BY priority DESC, usage_count ASC 
             LIMIT 1
@@ -138,10 +138,102 @@ class AIChat {
             $stmt = $this->ai_pdo->prepare("UPDATE ai_response_templates SET usage_count = usage_count + 1 WHERE id = ?");
             $stmt->execute([$template['id']]);
             
-            return $template['response_text'];
+            // Handle name collection
+            if ($template['category'] === 'name_collection') {
+                $extracted_name = $this->extractNameFromMessage($message);
+                if ($extracted_name) {
+                    $this->storeUserName($conversation_id, $extracted_name);
+                }
+            }
+            
+            // Get user name and personalize response
+            $user_name = $this->getUserName($conversation_id);
+            $response = $this->personalizeResponse($template['response_text'], $user_name, $extracted_name ?? null);
+            
+            return $response;
         }
         
         return null;
+    }
+    
+    private function extractNameFromMessage($message) {
+        $patterns = [
+            '/my name is\s+(.+?)(?:\.|$|,|\s+and)/i',
+            '/i\'m\s+(.+?)(?:\.|$|,|\s+and)/i', 
+            '/call me\s+(.+?)(?:\.|$|,|\s+and)/i',
+            '/i am\s+(.+?)(?:\.|$|,|\s+and)/i',
+            '/(.+?)\s+is my name/i'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $message, $matches)) {
+                $name = trim($matches[1]);
+                // Clean up the name (remove common words)
+                $name = preg_replace('/\b(a|an|the|just|really|very|quite)\b/i', '', $name);
+                $name = trim($name);
+                
+                // Only accept reasonable names (2-30 chars, letters and spaces)
+                if (strlen($name) >= 2 && strlen($name) <= 30 && preg_match('/^[a-zA-Z\s]+$/', $name)) {
+                    return ucwords(strtolower($name));
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private function storeUserName($conversation_id, $name) {
+        // Get session_id from conversation
+        $stmt = $this->ai_pdo->prepare("SELECT session_id FROM ai_conversations WHERE id = ?");
+        $stmt->execute([$conversation_id]);
+        $session = $stmt->fetch();
+        
+        if ($session) {
+            // Update conversation with user name
+            $stmt = $this->ai_pdo->prepare("UPDATE ai_conversations SET user_id = ? WHERE id = ?");
+            $stmt->execute([$name, $conversation_id]);
+            
+            // Store in user preferences
+            $stmt = $this->ai_pdo->prepare("
+                INSERT INTO ai_user_preferences (session_id, user_name, last_interaction) 
+                VALUES (?, ?, NOW()) 
+                ON DUPLICATE KEY UPDATE user_name = VALUES(user_name), last_interaction = NOW()
+            ");
+            $stmt->execute([$session['session_id'], $name]);
+        }
+    }
+    
+    private function getUserName($conversation_id) {
+        $stmt = $this->ai_pdo->prepare("
+            SELECT c.user_id, up.user_name 
+            FROM ai_conversations c 
+            LEFT JOIN ai_user_preferences up ON c.session_id = up.session_id 
+            WHERE c.id = ?
+        ");
+        $stmt->execute([$conversation_id]);
+        $result = $stmt->fetch();
+        
+        if ($result) {
+            return $result['user_name'] ?: ($result['user_id'] !== 'anonymous' ? $result['user_id'] : null);
+        }
+        
+        return null;
+    }
+    
+    private function personalizeResponse($response, $user_name, $new_name = null) {
+        // Use the newly extracted name if available, otherwise fall back to stored name
+        $name_to_use = $new_name ?: $user_name;
+        
+        if ($name_to_use) {
+            $response = str_replace('[NAME]', $name_to_use, $response);
+        } else {
+            // Remove [NAME] tokens if no name is available
+            $response = str_replace('[NAME], ', '', $response);
+            $response = str_replace(', [NAME]', '', $response);
+            $response = str_replace('[NAME]', 'there', $response);
+        }
+        
+        return $response;
     }
     
     private function checkPulseCoreQueries($message) {
@@ -323,12 +415,18 @@ class AIChat {
     }
     
     private function generateBasicResponse($message, $conversation_id) {
+        $user_name = $this->getUserName($conversation_id);
+        $name_part = $user_name ? $user_name . ', ' : '';
+        
         $responses = [
-            "That's interesting! Can you tell me more about what you're trying to accomplish with your PulseCore simulations?",
-            "I'd be happy to help! Could you be more specific about what data or analysis you're looking for?",
-            "Let me think about that... Are you looking for pattern analysis, optimization suggestions, or something else?",
-            "I can help with PulseCore data analysis, variables exploration, or general questions about your simulations. What would you like to focus on?",
-            "That's a great question! I can access your nova events and variables data to help provide insights. What specific aspect interests you most?"
+            "That's really interesting, {$name_part}! Can you tell me more about what you're thinking? I'd love to understand your perspective better.",
+            "I'm curious about that, {$name_part}! Could you help me understand what specifically you're looking for? I want to give you the most helpful response.",
+            "Hmm, let me think about that, {$name_part}... Are you exploring PulseCore patterns, working on calculations, or something else entirely?",
+            "That's a great point, {$name_part}! I can help with data analysis, pattern exploration, or just have a good conversation. What sounds most interesting to you right now?",
+            "I find that fascinating, {$name_part}! What made you think of that? I'd love to dive deeper into whatever's on your mind.",
+            "You know, {$name_part}, that reminds me of some interesting patterns I've seen in your data. What's sparking your curiosity today?",
+            "That's really thoughtful, {$name_part}! I'm always eager to learn from your insights. Can you elaborate on what you're thinking?",
+            "I appreciate you sharing that, {$name_part}! What aspects of your PulseCore work are you most excited about lately?"
         ];
         
         return $responses[array_rand($responses)];
