@@ -668,6 +668,24 @@ function closeVoiceIndicator() {
     }
 }
 
+function toggleVoiceControls() {
+    const panel = document.getElementById('voiceControlsPanel');
+    const arrow = document.getElementById('toggleArrow');
+    const button = document.getElementById('voiceControlsToggle');
+    
+    if (panel.classList.contains('collapsed')) {
+        // Show voice controls
+        panel.classList.remove('collapsed');
+        arrow.classList.remove('rotated');
+        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow" id="toggleArrow">▼</span>';
+    } else {
+        // Hide voice controls
+        panel.classList.add('collapsed');
+        arrow.classList.add('rotated');
+        button.innerHTML = '🎛️ Voice Settings <span class="toggle-arrow rotated" id="toggleArrow">▲</span>';
+    }
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.aiChat = new AIChat();

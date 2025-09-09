@@ -251,8 +251,58 @@ body {
     margin-top: 0.25rem;
 }
 
+.voice-toggle-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.voice-controls-toggle {
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    color: #e2e8f0;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.voice-controls-toggle:hover {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: rgba(124, 58, 237, 0.4);
+    color: #a855f7;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+}
+
+.toggle-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+}
+
+.toggle-arrow.rotated {
+    transform: rotate(180deg);
+}
+
 .voice-controls {
     margin-bottom: 1rem;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+.voice-controls.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
 }
 
 .voice-settings {
@@ -603,8 +653,10 @@ body {
     text-align: center;
     z-index: 1000;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
-    min-width: 400px;
-    position: relative;
+    width: 450px;
+    height: auto;
+    max-width: 90vw;
+    max-height: 90vh;
 }
 
 .voice-indicator.hidden {
