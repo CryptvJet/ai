@@ -357,8 +357,16 @@ class AIChat {
                 this.addMessage('ai', result.response);
                 
                 // Speak response if auto-speak is enabled
+                console.log('Checking auto-speak conditions:', {
+                    autoSpeak: this.autoSpeak,
+                    synthesis: !!this.synthesis,
+                    response: result.response
+                });
+                
                 if (this.autoSpeak && this.synthesis) {
                     this.speakText(result.response);
+                } else {
+                    console.log('Auto-speak skipped - conditions not met');
                 }
             } else {
                 this.addMessage('ai', 'Sorry, I encountered an error processing your message. Please try again.');
@@ -469,13 +477,24 @@ class AIChat {
         // Set up auto-speak toggle
         const autoSpeakToggle = document.getElementById('autoSpeak');
         if (autoSpeakToggle) {
-            autoSpeakToggle.checked = localStorage.getItem('autoSpeak') !== 'false';
-            this.autoSpeak = autoSpeakToggle.checked;
+            const savedAutoSpeak = localStorage.getItem('autoSpeak');
+            console.log('Saved autoSpeak setting:', savedAutoSpeak);
+            
+            // Default to true if not set, false only if explicitly set to 'false'
+            this.autoSpeak = savedAutoSpeak !== 'false';
+            autoSpeakToggle.checked = this.autoSpeak;
+            
+            console.log('Auto-speak initialized to:', this.autoSpeak);
             
             autoSpeakToggle.addEventListener('change', (e) => {
                 this.autoSpeak = e.target.checked;
-                localStorage.setItem('autoSpeak', this.autoSpeak);
+                localStorage.setItem('autoSpeak', this.autoSpeak.toString());
+                console.log('Auto-speak changed to:', this.autoSpeak);
             });
+        } else {
+            console.warn('Auto-speak toggle element not found!');
+            // Default to true if toggle not found
+            this.autoSpeak = true;
         }
         
         // Set up voice controls
@@ -575,7 +594,18 @@ class AIChat {
     }
 
     speakText(text) {
-        if (!this.autoSpeak) return;
+        console.log('speakText called with:', text);
+        console.log('autoSpeak status:', this.autoSpeak);
+        
+        if (!this.autoSpeak) {
+            console.log('Auto-speak is disabled, not speaking');
+            return;
+        }
+        
+        if (!this.synthesis) {
+            console.log('Speech synthesis not available');
+            return;
+        }
         
         // Cancel any ongoing speech
         this.synthesis.cancel();
@@ -591,11 +621,24 @@ class AIChat {
         utterance.pitch = speechPitch ? parseFloat(speechPitch.value) : 1.0;
         utterance.volume = speechVolume ? parseFloat(speechVolume.value) : 0.8;
         
+        console.log('Voice settings:', {
+            rate: utterance.rate,
+            pitch: utterance.pitch,
+            volume: utterance.volume,
+            selectedVoice: this.selectedVoice ? this.selectedVoice.name : 'default'
+        });
+        
         // Use selected voice if available
         if (this.selectedVoice) {
             utterance.voice = this.selectedVoice;
         }
         
+        // Add event listeners for debugging
+        utterance.onstart = () => console.log('Speech started');
+        utterance.onend = () => console.log('Speech ended');
+        utterance.onerror = (e) => console.error('Speech error:', e);
+        
+        console.log('Starting speech synthesis...');
         this.synthesis.speak(utterance);
     }
 
