@@ -2,7 +2,6 @@
 class AIAdmin {
     constructor() {
         this.initializeAdmin();
-        this.loadInitialData();
     }
 
     initializeAdmin() {
@@ -168,32 +167,59 @@ class AIAdmin {
             this.updateIntegrationStatus('pulsecoreStatus', false, 'Connection failed');
         }
 
-        // Check Variables connection (same database, different table)
+        // Check Variables connection
         try {
             const response = await fetch('../api/variables-stats.php');
             if (response.ok) {
                 const result = await response.json();
-                this.updateIntegrationStatus('variablesStatus', true, 'Connected');
-                document.getElementById('variableCount').textContent = result.data?.variable_count || '0';
+                if (result.success) {
+                    this.updateIntegrationStatus('variablesStatus', true, 'Connected');
+                    if (document.getElementById('variableCount')) {
+                        document.getElementById('variableCount').textContent = result.data?.variable_count || '0';
+                    }
+                    if (document.getElementById('calculationCount')) {
+                        document.getElementById('calculationCount').textContent = result.data?.category_count || '0';
+                    }
+                } else {
+                    this.updateIntegrationStatus('variablesStatus', false, 'Error: ' + result.error);
+                }
             } else {
-                this.updateIntegrationStatus('variablesStatus', false, 'API not found');
+                this.updateIntegrationStatus('variablesStatus', false, 'API Error (' + response.status + ')');
             }
         } catch (error) {
+            console.warn('Variables API not available:', error.message);
             this.updateIntegrationStatus('variablesStatus', false, 'Connection failed');
         }
 
-        // Check PC AI connection
+        // Check PC AI connection (optional - won't error if not available)
         try {
-            const response = await fetch('http://localhost:8000/health');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+            
+            const response = await fetch('http://localhost:8000/health', {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
             if (response.ok) {
                 const result = await response.json();
                 this.updateIntegrationStatus('pcaiStatus', true, 'Connected');
-                document.getElementById('currentModel').textContent = result.model || 'Unknown';
+                if (document.getElementById('currentModel')) {
+                    document.getElementById('currentModel').textContent = result.model || 'Local AI';
+                }
+                if (document.getElementById('gpuMemory')) {
+                    document.getElementById('gpuMemory').textContent = result.gpu_memory || 'N/A';
+                }
             } else {
                 this.updateIntegrationStatus('pcaiStatus', false, 'PC AI offline');
             }
         } catch (error) {
+            // This is expected if PC AI isn't running
+            console.info('PC AI not available (this is normal):', error.message);
             this.updateIntegrationStatus('pcaiStatus', false, 'PC AI not running');
+            if (document.getElementById('currentModel')) {
+                document.getElementById('currentModel').textContent = 'Not connected';
+            }
         }
     }
 
