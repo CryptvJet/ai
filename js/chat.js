@@ -5,10 +5,14 @@ class AIChat {
         this.isListening = false;
         this.recognition = null;
         this.synthesis = window.speechSynthesis;
+        this.voices = [];
+        this.selectedVoice = null;
+        this.autoSpeak = true;
         this.currentMode = 'chill'; // 'chill' or 'full-power'
         
         this.initializeChat();
         this.setupVoiceRecognition();
+        this.loadVoices();
         this.checkConnections();
         this.loadPulseCoreStats();
     }
@@ -225,7 +229,98 @@ class AIChat {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
+    loadVoices() {
+        // Load available voices
+        const loadVoicesList = () => {
+            this.voices = this.synthesis.getVoices();
+            this.populateVoiceDropdown();
+        };
+        
+        // Voices might not be loaded immediately
+        if (this.synthesis.getVoices().length !== 0) {
+            loadVoicesList();
+        } else {
+            this.synthesis.addEventListener('voiceschanged', loadVoicesList);
+        }
+    }
+    
+    populateVoiceDropdown() {
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (!voiceSelect) return;
+        
+        // Clear existing options
+        voiceSelect.innerHTML = '<option value="">Default Voice</option>';
+        
+        // Group voices by language for better organization
+        const voicesByLang = {};
+        this.voices.forEach((voice, index) => {
+            const lang = voice.lang.split('-')[0];
+            if (!voicesByLang[lang]) voicesByLang[lang] = [];
+            voicesByLang[lang].push({voice, index});
+        });
+        
+        // Add voices to dropdown, prioritizing English
+        const addVoiceGroup = (langCode, label) => {
+            if (voicesByLang[langCode]) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = label;
+                voicesByLang[langCode].forEach(({voice, index}) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    optgroup.appendChild(option);
+                });
+                voiceSelect.appendChild(optgroup);
+            }
+        };
+        
+        addVoiceGroup('en', 'English');
+        
+        // Add other languages
+        Object.keys(voicesByLang).forEach(lang => {
+            if (lang !== 'en') {
+                const langName = new Intl.DisplayNames(['en'], {type: 'language'}).of(lang) || lang;
+                addVoiceGroup(lang, langName);
+            }
+        });
+        
+        // Set up event listener for voice selection
+        voiceSelect.addEventListener('change', (e) => {
+            const voiceIndex = e.target.value;
+            this.selectedVoice = voiceIndex ? this.voices[voiceIndex] : null;
+            
+            // Save preference
+            localStorage.setItem('selectedVoice', voiceIndex);
+            
+            // Test the voice with a short phrase
+            if (this.selectedVoice) {
+                this.speakText('Voice changed successfully!');
+            }
+        });
+        
+        // Restore saved voice preference
+        const savedVoice = localStorage.getItem('selectedVoice');
+        if (savedVoice && this.voices[savedVoice]) {
+            voiceSelect.value = savedVoice;
+            this.selectedVoice = this.voices[savedVoice];
+        }
+        
+        // Set up auto-speak toggle
+        const autoSpeakToggle = document.getElementById('autoSpeak');
+        if (autoSpeakToggle) {
+            autoSpeakToggle.checked = localStorage.getItem('autoSpeak') !== 'false';
+            this.autoSpeak = autoSpeakToggle.checked;
+            
+            autoSpeakToggle.addEventListener('change', (e) => {
+                this.autoSpeak = e.target.checked;
+                localStorage.setItem('autoSpeak', this.autoSpeak);
+            });
+        }
+    }
+
     speakText(text) {
+        if (!this.autoSpeak) return;
+        
         // Cancel any ongoing speech
         this.synthesis.cancel();
         
@@ -233,6 +328,11 @@ class AIChat {
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
         utterance.volume = 0.8;
+        
+        // Use selected voice if available
+        if (this.selectedVoice) {
+            utterance.voice = this.selectedVoice;
+        }
         
         this.synthesis.speak(utterance);
     }
