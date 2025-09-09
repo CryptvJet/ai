@@ -247,13 +247,12 @@
                     localStorage.setItem('admin_expires', result.expires);
                     
                     debugLog('💾 Token saved to localStorage');
-                    debugLog('🔄 Will redirect to admin panel in 10 seconds...');
-                    debugLog('💡 You can check localStorage now!');
+                    debugLog('🔄 Redirecting to admin panel...');
                     
                     // Redirect to admin panel
                     setTimeout(() => {
                         window.location.href = 'index.html';
-                    }, 10000);
+                    }, 1000);
                 } else {
                     debugLog('❌ Server rejected login: ' + result.error);
                     // Show error
@@ -282,13 +281,12 @@
                     localStorage.setItem('admin_expires', expires.toString());
                     
                     debugLog('💾 Offline token saved to localStorage');
-                    debugLog('🔄 Will redirect to admin panel in 10 seconds...');
-                    debugLog('💡 You can check localStorage now!');
+                    debugLog('🔄 Redirecting to admin panel...');
                     
                     // Redirect to admin panel
                     setTimeout(() => {
                         window.location.href = 'index.html';
-                    }, 10000);
+                    }, 1000);
                 } else {
                     debugLog('❌ Invalid offline credentials');
                     errorDiv.textContent = 'Invalid credentials. Please try again.';

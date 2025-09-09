@@ -286,6 +286,31 @@
             window.location.href = 'login.html';
         }
         
+        // Essential navigation functions (needed before admin.js loads)
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionName);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // Highlight active nav button
+            const activeBtn = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+        
         // Check auth on page load
         checkAuth().then(isAuthenticated => {
             if (isAuthenticated) {
