@@ -976,6 +976,49 @@ body {
     80%, 100% { color: #64748b; }
 }
 
+/* Stats toggle */
+.stats-toggle {
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    color: #e2e8f0;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 100%;
+}
+
+.stats-toggle:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.4);
+    color: #06b6d4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
+}
+
+.stats-card.collapsed {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    margin-bottom: 0;
+}
+
+.stats-card:not(.collapsed) {
+    max-height: 500px;
+    opacity: 1;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    margin-bottom: 1rem;
+}
+
 /* Voice controls in right sidebar */
 .right-sidebar .voice-toggle-section {
     margin-top: 1rem;

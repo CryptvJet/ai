@@ -743,6 +743,22 @@ function toggleVoiceControls() {
     }
 }
 
+function toggleStats() {
+    const panel = document.getElementById('statsPanel');
+    const arrow = document.getElementById('statsArrow');
+    const button = document.getElementById('statsToggle');
+    
+    if (panel.classList.contains('collapsed')) {
+        // Show stats
+        panel.classList.remove('collapsed');
+        arrow.textContent = '▼';
+    } else {
+        // Hide stats
+        panel.classList.add('collapsed');
+        arrow.textContent = '▲';
+    }
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.aiChat = new AIChat();

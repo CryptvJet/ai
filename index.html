@@ -66,8 +66,14 @@
 
         <!-- Right Stats Sidebar (1/6 width) -->
         <div class="right-sidebar">
-            <div class="stats-card">
-                <h3 class="stats-title">📊 PulseCore Stats</h3>
+            <div class="stats-toggle-section">
+                <button id="statsToggle" class="stats-toggle" onclick="toggleStats()">
+                    📊 PulseCore Stats
+                    <span class="toggle-arrow" id="statsArrow">▼</span>
+                </button>
+            </div>
+
+            <div class="stats-card collapsed" id="statsPanel">
                 <div class="stat-item">
                     <span class="stat-label">Total Climaxes:</span>
                     <span class="stat-value" id="totalClimaxes">-</span>
