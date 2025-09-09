@@ -393,8 +393,8 @@
                     
                     // Initialize admin class and make it globally available
                     try {
-                        window.aiAdmin = new AdminPanel();
-                        console.log('AdminPanel class instantiated and available globally');
+                        window.aiAdmin = new AIAdmin();
+                        console.log('AIAdmin class instantiated and available globally');
                         
                         // Test the showSection function
                         if (typeof showSection === 'function') {
@@ -404,12 +404,12 @@
                         }
                         
                         if (window.aiAdmin && typeof window.aiAdmin.showSection === 'function') {
-                            console.log('AdminPanel showSection method is available');
+                            console.log('AIAdmin showSection method is available');
                         } else {
-                            console.error('AdminPanel showSection method not found');
+                            console.error('AIAdmin showSection method not found');
                         }
                     } catch (error) {
-                        console.error('Failed to instantiate AdminPanel:', error);
+                        console.error('Failed to instantiate AIAdmin:', error);
                     }
                 };
                 script.onerror = function() {

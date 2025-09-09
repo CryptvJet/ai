@@ -1007,11 +1007,15 @@ window.reinforcePattern = function(patternId) {
             // Reload the display
             loadLearningPatterns();
             
-            showNotification('Pattern reinforced! Confidence increased.', 'success');
+            if (window.aiAdmin && window.aiAdmin.showNotification) {
+                window.aiAdmin.showNotification('Pattern reinforced! Confidence increased.', 'success');
+            }
         }
     } catch (error) {
         console.error('Error reinforcing pattern:', error);
-        showNotification('Failed to reinforce pattern', 'error');
+        if (window.aiAdmin && window.aiAdmin.showNotification) {
+            window.aiAdmin.showNotification('Failed to reinforce pattern', 'error');
+        }
     }
 };
 
@@ -1027,9 +1031,13 @@ window.dismissPattern = function(patternId) {
         // Reload the display
         loadLearningPatterns();
         
-        showNotification('Pattern dismissed and removed.', 'success');
+        if (window.aiAdmin && window.aiAdmin.showNotification) {
+            window.aiAdmin.showNotification('Pattern dismissed and removed.', 'success');
+        }
     } catch (error) {
         console.error('Error dismissing pattern:', error);
-        showNotification('Failed to dismiss pattern', 'error');
+        if (window.aiAdmin && window.aiAdmin.showNotification) {
+            window.aiAdmin.showNotification('Failed to dismiss pattern', 'error');
+        }
     }
 };
