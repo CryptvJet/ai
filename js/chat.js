@@ -382,10 +382,6 @@ class AIChat {
             if (status.success && status.data.is_online) {
                 this.updateConnectionStatus('pcStatus', true);
                 console.log('✅ PC Bridge is online');
-                // Optionally switch to full-power mode when PC is connected
-                // this.currentMode = 'full-power';
-                // document.getElementById('aiMode').textContent = 'Full Power';
-                // document.getElementById('aiMode').className = 'mode-indicator full-power';
             } else {
                 throw new Error('PC Bridge not responding');
             }
@@ -393,6 +389,47 @@ class AIChat {
             // PC Bridge not running - this is normal for web-only usage
             console.log('PC Bridge not available (this is normal for web-only usage):', error.message);
             this.updateConnectionStatus('pcStatus', false);
+        }
+
+        // Check Local Llama AI connection
+        await this.checkLocalLlamaStatus();
+    }
+
+    async checkLocalLlamaStatus() {
+        try {
+            const response = await fetch('api/llama-local.php?action=status');
+            const status = await response.json();
+            console.log('Local Llama status:', status);
+            
+            if (status.status === 'online' && status.selected_model) {
+                console.log('🧠 Local Llama AI is online with model:', status.selected_model);
+                this.currentMode = 'full-power';
+                this.updateAIMode(true, status.selected_model);
+                return true;
+            } else {
+                throw new Error('Local Llama not available');
+            }
+        } catch (error) {
+            console.log('Local Llama not available:', error.message);
+            this.currentMode = 'chill';
+            this.updateAIMode(false);
+            return false;
+        }
+    }
+
+    updateAIMode(hasLocalAI, modelName = null) {
+        const aiModeElement = document.getElementById('aiMode');
+        
+        if (hasLocalAI) {
+            aiModeElement.textContent = 'Full Power Mode 🧠';
+            aiModeElement.className = 'mode-indicator full-power';
+            aiModeElement.title = `Local AI Active (${modelName || 'Unknown Model'})`;
+            console.log('🚀 Switched to Full Power Mode with local Llama');
+        } else {
+            aiModeElement.textContent = 'Chill Mode';
+            aiModeElement.className = 'mode-indicator chill';
+            aiModeElement.title = 'Using basic AI responses';
+            console.log('📝 Using Chill Mode (basic responses)');
         }
     }
 
@@ -2968,6 +3005,22 @@ function sendFloatingMessage() {
 function toggleFloatingVoice() {
     // Implement floating voice functionality if needed
     console.log('Floating voice feature - to be implemented');
+}
+
+function toggleAbout() {
+    const aboutBox = document.getElementById('aboutBox');
+    const aboutToggle = document.getElementById('aboutToggle');
+    const aboutArrow = document.getElementById('aboutArrow');
+    
+    if (aboutBox && aboutToggle) {
+        aboutBox.classList.toggle('hidden');
+        aboutToggle.classList.toggle('expanded');
+        
+        // Update arrow direction
+        if (aboutArrow) {
+            aboutArrow.textContent = aboutBox.classList.contains('hidden') ? '▼' : '▲';
+        }
+    }
 }
 
 // Initialize when page loads

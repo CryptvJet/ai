@@ -423,12 +423,183 @@ class AIChat {
     }
     
     private function tryPCAIResponse($message, $conversation_id) {
-        // Check if message is asking about PC status
+        // First try local Llama AI
+        $llama_response = $this->tryLocalLlamaResponse($message, $conversation_id);
+        if ($llama_response) {
+            return $llama_response;
+        }
+        
+        // Fallback to PC status analysis if no Llama available
         if ($this->isPCStatusQuery($message)) {
             return $this->getPCAnalysis($message);
         }
         
         return null;
+    }
+    
+    private function tryLocalLlamaResponse($message, $conversation_id) {
+        try {
+            // Check if local Llama is available
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'http://localhost:11434/api/tags',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 3,
+                CURLOPT_CONNECTTIMEOUT => 2
+            ]);
+            
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            // If Ollama is not available, return null for fallback
+            if ($http_code !== 200 || !$response) {
+                return null;
+            }
+            
+            // Prepare context for Llama
+            $context = $this->buildLlamaContext($message, $conversation_id);
+            
+            // Call local Llama API
+            $llama_ch = curl_init();
+            curl_setopt_array($llama_ch, [
+                CURLOPT_URL => 'http://localhost/ai/api/llama-local.php',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode([
+                    'message' => $message,
+                    'context' => $context
+                ]),
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT => 45 // Longer timeout for AI generation
+            ]);
+            
+            $llama_response = curl_exec($llama_ch);
+            $llama_http_code = curl_getinfo($llama_ch, CURLINFO_HTTP_CODE);
+            curl_close($llama_ch);
+            
+            if ($llama_http_code === 200 && $llama_response) {
+                $data = json_decode($llama_response, true);
+                if ($data && isset($data['success']) && $data['success']) {
+                    // Add indicator that this is from local AI
+                    return "🧠 **[Local AI]** " . $data['response'];
+                }
+            }
+            
+            return null;
+            
+        } catch (Exception $e) {
+            // Silent fallback on any error
+            return null;
+        }
+    }
+    
+    private function buildLlamaContext($message, $conversation_id) {
+        $context = [
+            'mode' => 'chat',
+            'user_name' => $this->getUserName($conversation_id),
+            'conversation_history' => []
+        ];
+        
+        try {
+            // Get recent conversation history (last 10 messages)
+            $stmt = $this->ai_pdo->prepare("
+                SELECT message_type, content 
+                FROM ai_messages 
+                WHERE conversation_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT 10
+            ");
+            $stmt->execute([$conversation_id]);
+            $messages = $stmt->fetchAll();
+            
+            // Reverse to get chronological order
+            $messages = array_reverse($messages);
+            
+            foreach ($messages as $msg) {
+                $context['conversation_history'][] = [
+                    'role' => $msg['message_type'] === 'user' ? 'user' : 'assistant',
+                    'content' => $msg['content']
+                ];
+            }
+            
+            // Add PC status if message relates to PC
+            if ($this->isPCStatusQuery($message)) {
+                $context['mode'] = 'pc_analysis';
+                $context['pc_status'] = $this->getLatestPCStatus();
+            }
+            
+            // Add PulseCore context for data-related queries
+            if ($this->isPulseCoreQuery($message)) {
+                $context['mode'] = 'pulsecore';
+                $context['pulsecore_stats'] = $this->getRecentPulseCoreStats();
+            }
+            
+        } catch (Exception $e) {
+            // Continue with basic context if database queries fail
+        }
+        
+        return $context;
+    }
+    
+    private function getLatestPCStatus() {
+        try {
+            $stmt = $this->pulse_pdo->prepare("
+                SELECT system_info, last_ping, 
+                       TIMESTAMPDIFF(SECOND, last_ping, NOW()) as seconds_ago
+                FROM pc_status 
+                ORDER BY last_ping DESC 
+                LIMIT 1
+            ");
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            if ($result) {
+                return [
+                    'system_info' => json_decode($result['system_info'], true),
+                    'last_seen' => $result['seconds_ago'],
+                    'status' => $result['seconds_ago'] < 60 ? 'online' : 'offline'
+                ];
+            }
+        } catch (Exception $e) {
+            // Return null if PC status unavailable
+        }
+        
+        return null;
+    }
+    
+    private function getRecentPulseCoreStats() {
+        try {
+            $stmt = $this->pulse_pdo->query("
+                SELECT COUNT(*) as total_novas,
+                       AVG(complexity) as avg_complexity,
+                       AVG(pulse_energy) as avg_energy
+                FROM nova_events 
+                WHERE timestamp > DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ");
+            $stats = $stmt->fetch();
+            
+            return $stats ?: null;
+            
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+    
+    private function isPulseCoreQuery($message) {
+        $patterns = [
+            'nova', 'complexity', 'energy', 'pulse', 'pattern', 'analysis',
+            'data', 'stats', 'pulsecore', 'simulation'
+        ];
+        
+        $message_lower = strtolower($message);
+        foreach ($patterns as $pattern) {
+            if (strpos($message_lower, $pattern) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private function isPCStatusQuery($message) {
