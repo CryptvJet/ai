@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Methods: GET, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -27,7 +27,34 @@ try {
         exit;
     }
     
-    // Get conversation details
+    if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        // Delete conversation and all its messages
+        $ai_pdo->beginTransaction();
+        
+        try {
+            // First, delete all messages for this conversation
+            $stmt = $ai_pdo->prepare("DELETE FROM ai_messages WHERE conversation_id = ?");
+            $stmt->execute([$conversationId]);
+            
+            // Then delete the conversation itself
+            $stmt = $ai_pdo->prepare("DELETE FROM ai_conversations WHERE id = ?");
+            $stmt->execute([$conversationId]);
+            
+            $ai_pdo->commit();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Conversation deleted successfully'
+            ]);
+            exit;
+            
+        } catch (Exception $e) {
+            $ai_pdo->rollBack();
+            throw $e;
+        }
+    }
+    
+    // GET method: Get conversation details
     $stmt = $ai_pdo->prepare("
         SELECT 
             id,

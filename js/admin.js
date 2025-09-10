@@ -475,16 +475,132 @@ function saveAllSettings() {
     }
 }
 
-function addNewTemplate() {
-    // Simple implementation - could be enhanced with modal
+async function addNewTemplate() {
+    // Enhanced implementation with proper API integration
     const trigger = prompt('Enter trigger pattern (regex):');
-    const response = prompt('Enter response text:');
-    const category = prompt('Enter category (optional):', 'general');
+    if (!trigger) return;
     
-    if (trigger && response) {
-        // TODO: Implement template creation API
-        console.log('Would create template:', { trigger, response, category });
-        window.aiAdmin.showNotification('Template creation not yet implemented', 'info');
+    const response = prompt('Enter response text:');
+    if (!response) return;
+    
+    const category = prompt('Enter category (optional):', 'general');
+    const priority = parseInt(prompt('Enter priority (1-100, default 50):', '50')) || 50;
+    
+    const templateData = {
+        trigger_pattern: trigger,
+        response_text: response,
+        category: category || 'general',
+        priority: priority,
+        active: true
+    };
+    
+    try {
+        const apiResponse = await fetch('../api/templates.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(templateData)
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Template created successfully!', 'success');
+            // Reload templates to show the new one
+            window.aiAdmin.loadTemplates();
+        } else {
+            window.aiAdmin.showNotification('Error creating template: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error creating template:', error);
+        window.aiAdmin.showNotification('Network error creating template', 'error');
+    }
+}
+
+async function editTemplate(templateId) {
+    try {
+        // First, get the current template data by finding it in the loaded templates
+        const templatesContainer = document.getElementById('templatesContainer');
+        const templateElement = templatesContainer.querySelector(`[data-id="${templateId}"]`);
+        
+        if (!templateElement) {
+            window.aiAdmin.showNotification('Template not found', 'error');
+            return;
+        }
+        
+        // Extract current values from the displayed template
+        const triggerText = templateElement.querySelector('code').textContent;
+        const responseText = templateElement.querySelector('p:nth-child(2)').textContent.replace('Response: ', '');
+        const headerText = templateElement.querySelector('h4').textContent;
+        const currentCategory = headerText.split(' - ')[0];
+        const currentPriority = headerText.split('Priority ')[1];
+        
+        // Prompt for new values with current values as defaults
+        const newTrigger = prompt('Enter trigger pattern (regex):', triggerText);
+        if (newTrigger === null) return; // User cancelled
+        
+        const newResponse = prompt('Enter response text:', responseText);
+        if (newResponse === null) return; // User cancelled
+        
+        const newCategory = prompt('Enter category:', currentCategory);
+        if (newCategory === null) return; // User cancelled
+        
+        const newPriority = parseInt(prompt('Enter priority (1-100):', currentPriority)) || parseInt(currentPriority);
+        
+        const updatedData = {
+            id: templateId,
+            trigger_pattern: newTrigger,
+            response_text: newResponse,
+            category: newCategory,
+            priority: newPriority
+        };
+        
+        const apiResponse = await fetch('../api/templates.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedData)
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Template updated successfully!', 'success');
+            // Reload templates to show the updated one
+            window.aiAdmin.loadTemplates();
+        } else {
+            window.aiAdmin.showNotification('Error updating template: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error updating template:', error);
+        window.aiAdmin.showNotification('Network error updating template', 'error');
+    }
+}
+
+async function deleteTemplate(templateId) {
+    if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const apiResponse = await fetch(`../api/templates.php?id=${templateId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Template deleted successfully!', 'success');
+            // Reload templates to remove the deleted one
+            window.aiAdmin.loadTemplates();
+        } else {
+            window.aiAdmin.showNotification('Error deleting template: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting template:', error);
+        window.aiAdmin.showNotification('Network error deleting template', 'error');
     }
 }
 
@@ -689,9 +805,28 @@ function closeAnalysisModal() {
     }
 }
 
-function clearLearningData() {
-    if (confirm('Are you sure you want to clear all learning data?')) {
-        window.aiAdmin.showNotification('Learning data cleared', 'success');
+async function clearLearningData() {
+    if (!confirm('Are you sure you want to clear all learning data? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const apiResponse = await fetch('../api/learning-patterns.php', {
+            method: 'DELETE'
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Learning data cleared successfully!', 'success');
+            // Reload learning patterns to show empty state
+            window.aiAdmin.loadLearningPatterns();
+        } else {
+            window.aiAdmin.showNotification('Error clearing learning data: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error clearing learning data:', error);
+        window.aiAdmin.showNotification('Network error clearing learning data', 'error');
     }
 }
 
@@ -699,16 +834,153 @@ function exportLearningData() {
     window.aiAdmin.showNotification('Learning data export not yet implemented', 'info');
 }
 
+async function exportTemplates() {
+    try {
+        const response = await fetch('../api/templates.php');
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to load templates');
+        }
+        
+        const templates = result.data;
+        const exportData = {
+            version: '1.0',
+            exported_at: new Date().toISOString(),
+            templates: templates
+        };
+        
+        // Create download link
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ai_templates_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        window.aiAdmin.showNotification(`Exported ${templates.length} templates successfully!`, 'success');
+    } catch (error) {
+        console.error('Error exporting templates:', error);
+        window.aiAdmin.showNotification('Error exporting templates: ' + error.message, 'error');
+    }
+}
+
+async function importTemplates() {
+    // Create file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const importData = JSON.parse(text);
+            
+            // Validate import data structure
+            if (!importData.templates || !Array.isArray(importData.templates)) {
+                throw new Error('Invalid file format: missing templates array');
+            }
+            
+            const templates = importData.templates;
+            let imported = 0;
+            let errors = 0;
+            
+            for (const template of templates) {
+                try {
+                    const templateData = {
+                        trigger_pattern: template.trigger_pattern,
+                        response_text: template.response_text,
+                        category: template.category || 'imported',
+                        priority: template.priority || 50,
+                        active: template.active !== false // Default to true if not specified
+                    };
+                    
+                    const apiResponse = await fetch('../api/templates.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(templateData)
+                    });
+                    
+                    const result = await apiResponse.json();
+                    
+                    if (result.success) {
+                        imported++;
+                    } else {
+                        errors++;
+                        console.error('Failed to import template:', template, result.error);
+                    }
+                } catch (error) {
+                    errors++;
+                    console.error('Error importing template:', template, error);
+                }
+            }
+            
+            // Show results
+            if (imported > 0) {
+                window.aiAdmin.showNotification(
+                    `Imported ${imported} templates successfully! ${errors > 0 ? `(${errors} failed)` : ''}`, 
+                    errors > 0 ? 'info' : 'success'
+                );
+                // Reload templates to show imported ones
+                window.aiAdmin.loadTemplates();
+            } else {
+                window.aiAdmin.showNotification('No templates were imported', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error reading import file:', error);
+            window.aiAdmin.showNotification('Error reading import file: ' + error.message, 'error');
+        }
+    };
+    
+    // Trigger file selection
+    input.click();
+}
+
 function viewConversation(conversationId) {
     window.aiAdmin.showNotification(`Viewing conversation ${conversationId} - Feature coming soon!`, 'info');
 }
 
-function deleteConversation(conversationId) {
-    if (confirm(`Are you sure you want to delete conversation ${conversationId}?`)) {
-        window.aiAdmin.showNotification(`Conversation ${conversationId} deleted successfully!`, 'success');
-        // TODO: Implement actual deletion
-        // For now, just remove from display
-        const row = document.querySelector(`tr:has(td:first-child:contains('${conversationId}'))`);
+async function deleteConversation(conversationId) {
+    if (!confirm(`Are you sure you want to delete conversation ${conversationId}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // Check if we have a conversation API endpoint
+        const apiResponse = await fetch(`../api/get-conversation.php?id=${conversationId}&action=delete`, {
+            method: 'DELETE'
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification(`Conversation ${conversationId} deleted successfully!`, 'success');
+            // Remove from display
+            const row = document.querySelector(`button[onclick="deleteConversation(${conversationId})"]`)?.closest('tr');
+            if (row) {
+                row.remove();
+            }
+            // Reload conversation stats
+            window.aiAdmin.loadConversationStats();
+        } else {
+            window.aiAdmin.showNotification('Error deleting conversation: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting conversation:', error);
+        // For now, just remove from display if API is not available
+        window.aiAdmin.showNotification(`Conversation ${conversationId} removed from display (API not available)`, 'info');
+        const row = document.querySelector(`button[onclick="deleteConversation(${conversationId})"]`)?.closest('tr');
         if (row) {
             row.remove();
         }

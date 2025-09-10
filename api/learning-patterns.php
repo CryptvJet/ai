@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -133,6 +133,23 @@ try {
             }
         } else {
             echo json_encode(['success' => false, 'error' => 'No action specified']);
+        }
+        
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        // Clear all learning data
+        $stmt = $ai_pdo->prepare("DELETE FROM ai_learning");
+        $result = $stmt->execute();
+        
+        if ($result) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'All learning data cleared successfully'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'error' => 'Failed to clear learning data'
+            ]);
         }
     }
     
