@@ -218,7 +218,7 @@
                             <div style="color: #00ff88; font-size: 11px; opacity: 0.7;">[Info] Console ready for debugging and API testing</div>
                         </div>
                         <div class="console-input-row">
-                            <input type="text" id="debugCommand" placeholder="Enter command (help for list)" class="green-console-input" onkeypress="if(event.key==='Enter' && this.value.trim()) { processDebugCommand(this.value.trim()); this.value = ''; }">
+                            <input type="text" id="debugCommand" placeholder="Enter command (help for list)" class="green-console-input">
                             <button onclick="executeDebugCommand()" class="console-btn run-btn">Run</button>
                             <div class="console-mode-indicator">
                                 <span id="modeIndicator">Debug Mode</span>

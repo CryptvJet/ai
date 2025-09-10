@@ -1719,15 +1719,18 @@ async function testSpecificEndpoint(endpoint) {
 
 // Add debug command input handler
 document.addEventListener('DOMContentLoaded', function() {
-    const debugCommand = document.getElementById('debugCommand');
-    if (debugCommand) {
-        debugCommand.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && this.value.trim()) {
-                processDebugCommand(this.value.trim());
-                this.value = '';
-            }
-        });
-    }
+    setTimeout(() => {
+        const debugCommand = document.getElementById('debugCommand');
+        if (debugCommand) {
+            debugCommand.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && this.value.trim()) {
+                    const command = this.value.trim();
+                    this.value = '';
+                    processDebugCommand(command);
+                }
+            });
+        }
+    }, 100); // Small delay to ensure element exists
 });
 
 // Console mode management
@@ -1905,7 +1908,14 @@ function executeBrowserCommand(jsCode) {
     
     try {
         // Execute the JavaScript code
-        const result = eval(jsCode);
+        let result;
+        
+        // Special handling for common debug commands that might be typed by mistake
+        if (jsCode === 'help' || jsCode === 'status' || jsCode === 'pulse' || jsCode === 'vars') {
+            result = `Command "${jsCode}" is for Debug mode. Switch to Debug mode or try JavaScript like: console.log("${jsCode}")`;
+        } else {
+            result = eval(jsCode);
+        }
         
         // Display the result
         const resultLine = document.createElement('div');
@@ -1915,8 +1925,12 @@ function executeBrowserCommand(jsCode) {
         resultLine.style.padding = '1px 0';
         
         if (result !== undefined) {
-            if (typeof result === 'object') {
-                resultLine.textContent = JSON.stringify(result, null, 2);
+            if (typeof result === 'object' && result !== null) {
+                try {
+                    resultLine.textContent = JSON.stringify(result, null, 2);
+                } catch (e) {
+                    resultLine.textContent = `← [Object: ${result.constructor?.name || 'Unknown'}]`;
+                }
             } else {
                 resultLine.textContent = `← ${result}`;
             }
@@ -1962,16 +1976,12 @@ window.clearDebugOutput = function() {
 };
 
 window.executeDebugCommand = function() {
-    if (consoleMode === 'debug') {
-        // Get command from input and execute
-        const input = document.getElementById('debugCommand');
-        if (input && input.value.trim()) {
-            const command = input.value.trim();
-            input.value = ''; // Clear input
-            processDebugCommand(command);
-        }
+    const input = document.getElementById('debugCommand');
+    if (input && input.value.trim()) {
+        const command = input.value.trim();
+        input.value = ''; // Clear input
+        processDebugCommand(command);
     }
-    // In browser mode, command input is disabled
 };
 
 window.switchConsoleMode = switchConsoleMode;
