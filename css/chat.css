@@ -16,18 +16,7 @@ body.journal-mode .app-layout {
     position: relative;
 }
 
-body.journal-mode .app-layout {
-    display: block;
-}
-
-body.journal-mode .left-sidebar,
-body.journal-mode .right-sidebar {
-    display: none;
-}
-
 body.journal-mode .chat-main {
-    width: 100%;
-    max-width: none;
     background: rgba(15, 23, 42, 0.95);
     border: 1px solid rgba(148, 163, 184, 0.15);
     border-radius: 1.5rem;
