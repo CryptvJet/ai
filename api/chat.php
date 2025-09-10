@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'db_config.php';
+require_once 'smart_router.php';
 
 class AIChat {
     private $ai_pdo;
@@ -24,6 +25,7 @@ class AIChat {
         $this->ai_pdo = $ai_pdo;
         $this->pulse_pdo = $pulse_pdo;
         $this->vars_pdo = $vars_pdo;
+        $this->router = new SmartAIRouter();
     }
     
     public function processMessage($message, $session_id, $mode = 'chill', $journal_context = null) {
@@ -102,28 +104,56 @@ class AIChat {
     }
     
     private function generateResponse($message, $conversation_id, $mode, $journal_context = null) {
-        // Special handling for Journal mode
+        // Special handling for Journal mode - keep existing logic
         if ($mode === 'journal') {
             return $this->generateJournalResponse($message, $conversation_id, $journal_context);
         }
         
-        // Check for template responses first
-        $template_response = $this->checkTemplateResponses($message, $conversation_id);
-        if ($template_response) {
-            return $template_response;
+        // Build context for Smart Router
+        $context = [
+            'conversation_id' => $conversation_id,
+            'journal_context' => $journal_context
+        ];
+        
+        // Add PulseCore data context if relevant
+        if ($this->isPulseCoreQuery($message)) {
+            $context['pulsecore_data'] = $this->getPulseCoreContext();
         }
         
-        // Check for PulseCore data requests
-        $pulsecore_response = $this->checkPulseCoreQueries($message);
-        if ($pulsecore_response) {
-            return $pulsecore_response;
+        // Route through Smart AI Router
+        $session_id = "conv_" . $conversation_id;
+        $router_response = $this->router->routeRequest($message, $session_id, $mode, $context);
+        
+        if ($router_response && $router_response['success']) {
+            return $router_response['response'];
         }
         
-        // Check for Variables data requests
-        $variables_response = $this->checkVariablesQueries($message);
-        if ($variables_response) {
-            return $variables_response;
+        // Fallback to original logic if router fails
+        error_log("Smart Router failed, using fallback logic");
+        return $this->generateFallbackResponse($message, $conversation_id, $mode, $journal_context);
+    }
+    
+    private function isPulseCoreQuery($message) {
+        return preg_match('/\b(nova|climax|pulse|energy|complexity|session|variables)\b/i', $message);
+    }
+    
+    private function getPulseCoreContext() {
+        // Get basic PulseCore stats for context
+        try {
+            // This would query your existing PulseCore database
+            return [
+                'total_novas' => 0,
+                'total_climaxes' => 0,
+                'avg_complexity' => 0
+            ];
+        } catch (Exception $e) {
+            return null;
         }
+    }
+    
+    private function generateFallbackResponse($message, $conversation_id, $mode, $journal_context = null) {
+        // Original fallback logic
+        return "I'm experiencing some technical difficulties with the AI routing system. Please try again in a moment.";
         
         // If in full-power mode, try to call PC AI
         if ($mode === 'full-power') {

@@ -1,53 +1,22 @@
 {
-  "name": "zin-ai-bridge",
+  "name": "ollama-bridge",
   "version": "1.0.0",
-  "description": "Zin AI Bridge - PC to Web Connection",
-  "main": "main.js",
+  "description": "Bridge service connecting pulsecore.one web AI to local Ollama",
+  "main": "ollama_bridge.js",
   "scripts": {
-    "start": "electron main.js",
-    "dev": "electron main.js --dev",
-    "build": "electron-builder",
-    "build-win": "electron-builder --win --x64",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --publish=never",
-    "build-simple": "electron-packager . ZinAIBridge --platform=win32 --arch=x64 --out=dist --overwrite --asar=false"
+    "start": "node ollama_bridge.js",
+    "dev": "nodemon ollama_bridge.js"
   },
-  "build": {
-    "appId": "com.zinai.bridge",
-    "productName": "Zin AI Bridge",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "renderer/**/*",
-      "assets/**/*",
-      "node_modules/**/*"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "portable": {
-      "artifactName": "ZinAIBridge.exe"
-    },
-    "compression": "store"
-  },
-  "author": "Zin AI",
   "dependencies": {
-    "mysql2": "^3.6.0",
-    "node-cron": "^3.0.2",
-    "systeminformation": "^5.27.8"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.2",
+    "mysql2": "^3.6.5"
   },
   "devDependencies": {
-    "electron": "^27.0.0",
-    "electron-builder": "^24.6.4",
-    "electron-packager": "^17.1.2"
-  }
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["ai", "ollama", "bridge", "pulsecore"],
+  "author": "PulseCore AI System",
+  "license": "MIT"
 }
