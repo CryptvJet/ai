@@ -301,76 +301,360 @@
                     <!-- Browser Commands Reference -->
                     <div id="browserCommandsRef" class="commands-list">
                         <div class="command-category">
-                            <h4>🌐 DOM & Window</h4>
+                            <h4>🌐 DOM Manipulation & Selection</h4>
                             <div class="command-grid">
                                 <div class="command-item">
-                                    <code>document.title</code>
-                                    <span>Get/set page title</span>
-                                </div>
-                                <div class="command-item">
-                                    <code>window.location.href</code>
-                                    <span>Get current URL</span>
-                                </div>
-                                <div class="command-item">
                                     <code>document.querySelector('.class')</code>
-                                    <span>Select DOM element</span>
+                                    <span>Select first matching element</span>
                                 </div>
                                 <div class="command-item">
                                     <code>document.querySelectorAll('.class')</code>
-                                    <span>Select multiple DOM elements</span>
+                                    <span>Select all matching elements</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>window.innerWidth</code>
-                                    <span>Get window width</span>
+                                    <code>document.getElementById('id')</code>
+                                    <span>Select element by ID</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>document.body.style.background</code>
-                                    <span>Change page styling</span>
+                                    <code>document.getElementsByTagName('div')</code>
+                                    <span>Select elements by tag</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.createElement('div')</code>
+                                    <span>Create new DOM element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.appendChild(newElement)</code>
+                                    <span>Add child element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.remove()</code>
+                                    <span>Remove element from DOM</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.innerHTML = 'content'</code>
+                                    <span>Set element's HTML content</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.textContent = 'text'</code>
+                                    <span>Set element's text content</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.setAttribute('name', 'value')</code>
+                                    <span>Set element attribute</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.classList.add('class')</code>
+                                    <span>Add CSS class to element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.classList.remove('class')</code>
+                                    <span>Remove CSS class from element</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="command-category">
-                            <h4>🔧 Console & Debug</h4>
+                            <h4>🎨 CSS & Styling</h4>
                             <div class="command-grid">
                                 <div class="command-item">
-                                    <code>console.log("message")</code>
+                                    <code>element.style.backgroundColor = 'red'</code>
+                                    <span>Set element background color</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.style.display = 'none'</code>
+                                    <span>Hide element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>getComputedStyle(element)</code>
+                                    <span>Get computed CSS styles</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.body.style.filter = 'invert(1)'</code>
+                                    <span>Invert page colors</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.getBoundingClientRect()</code>
+                                    <span>Get element position/size</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.offsetWidth</code>
+                                    <span>Get element width</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🌍 Window & Location</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>window.location.href</code>
+                                    <span>Get/set current URL</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.location.reload()</code>
+                                    <span>Reload the page</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.open('url', '_blank')</code>
+                                    <span>Open new window/tab</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.innerWidth</code>
+                                    <span>Get viewport width</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.innerHeight</code>
+                                    <span>Get viewport height</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.scrollTo(0, 0)</code>
+                                    <span>Scroll to position</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.history.back()</code>
+                                    <span>Go back in history</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.title</code>
+                                    <span>Get/set page title</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🔧 Console & Debugging</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>console.log('message')</code>
                                     <span>Log message to console</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>console.table(object)</code>
-                                    <span>Display object as table</span>
+                                    <code>console.table(array)</code>
+                                    <span>Display array/object as table</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>Object.keys(window)</code>
-                                    <span>List window properties</span>
+                                    <code>console.error('error')</code>
+                                    <span>Log error message</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>localStorage</code>
-                                    <span>Access browser storage</span>
+                                    <code>console.warn('warning')</code>
+                                    <span>Log warning message</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>console.time('timer')</code>
+                                    <span>Start performance timer</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>console.timeEnd('timer')</code>
+                                    <span>End performance timer</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>console.group('group name')</code>
+                                    <span>Start console group</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>console.clear()</code>
+                                    <span>Clear console</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>debugger</code>
+                                    <span>Set breakpoint in code</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🏪 Storage & Data</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>localStorage.setItem('key', 'value')</code>
+                                    <span>Store data locally</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>localStorage.getItem('key')</code>
+                                    <span>Get stored data</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>localStorage.clear()</code>
+                                    <span>Clear all local storage</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>sessionStorage.setItem('key', 'value')</code>
+                                    <span>Store session data</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.cookie</code>
+                                    <span>Get/set cookies</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>indexedDB.open('dbname')</code>
+                                    <span>Open IndexedDB database</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🌐 Network & API</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>fetch('/api/endpoint')</code>
+                                    <span>Make HTTP request</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>fetch('/api', {method: 'POST', body: data})</code>
+                                    <span>POST request with data</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new XMLHttpRequest()</code>
+                                    <span>Create XHR request</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>navigator.onLine</code>
+                                    <span>Check if online</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new WebSocket('ws://url')</code>
+                                    <span>Create WebSocket connection</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new EventSource('/stream')</code>
+                                    <span>Server-sent events</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🎯 Events & Interaction</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>element.addEventListener('click', fn)</code>
+                                    <span>Add event listener</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.removeEventListener('click', fn)</code>
+                                    <span>Remove event listener</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.click()</code>
+                                    <span>Trigger click event</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Event('customEvent')</code>
+                                    <span>Create custom event</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.dispatchEvent(event)</code>
+                                    <span>Trigger custom event</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.activeElement</code>
+                                    <span>Get currently focused element</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>📊 Performance & Monitoring</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>performance.now()</code>
+                                    <span>High precision timestamp</span>
                                 </div>
                                 <div class="command-item">
                                     <code>performance.memory</code>
-                                    <span>Check memory usage</span>
+                                    <span>Memory usage info</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>performance.getEntries()</code>
+                                    <span>Performance entries</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>performance.mark('marker')</code>
+                                    <span>Create performance mark</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>performance.measure('name', 'start', 'end')</code>
+                                    <span>Measure performance</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new PerformanceObserver(callback)</code>
+                                    <span>Observe performance metrics</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>📱 Browser APIs</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>navigator.geolocation.getCurrentPosition()</code>
+                                    <span>Get user location</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>navigator.clipboard.writeText('text')</code>
+                                    <span>Copy text to clipboard</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Notification.requestPermission()</code>
+                                    <span>Request notification permission</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Notification('title', {body: 'text'})</code>
+                                    <span>Show notification</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>navigator.vibrate(200)</code>
+                                    <span>Vibrate device</span>
                                 </div>
                                 <div class="command-item">
                                     <code>navigator.userAgent</code>
                                     <span>Get browser info</span>
                                 </div>
+                                <div class="command-item">
+                                    <code>navigator.getBattery()</code>
+                                    <span>Get battery status</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>screen.orientation.lock('portrait')</code>
+                                    <span>Lock screen orientation</span>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="command-category">
-                            <h4>🧮 JavaScript Utils</h4>
+                            <h4>📁 Files & Media</h4>
                             <div class="command-grid">
                                 <div class="command-item">
-                                    <code>Math.random()</code>
-                                    <span>Generate random number</span>
+                                    <code>new FileReader()</code>
+                                    <span>Read file contents</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>new Date()</code>
-                                    <span>Get current date/time</span>
+                                    <code>new Blob(['content'], {type: 'text/plain'})</code>
+                                    <span>Create blob object</span>
                                 </div>
+                                <div class="command-item">
+                                    <code>URL.createObjectURL(blob)</code>
+                                    <span>Create object URL</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>navigator.mediaDevices.getUserMedia()</code>
+                                    <span>Access camera/microphone</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Audio('sound.mp3')</code>
+                                    <span>Create audio element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.createElement('video')</code>
+                                    <span>Create video element</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🧮 Data & Utilities</h4>
+                            <div class="command-grid">
                                 <div class="command-item">
                                     <code>JSON.stringify(object)</code>
                                     <span>Convert object to JSON</span>
@@ -380,12 +664,148 @@
                                     <span>Parse JSON string</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>Array.from({length: 5}, (_, i) => i)</code>
-                                    <span>Create arrays with data</span>
+                                    <code>Object.keys(object)</code>
+                                    <span>Get object keys</span>
                                 </div>
                                 <div class="command-item">
-                                    <code>fetch('/api/endpoint')</code>
-                                    <span>Make HTTP requests</span>
+                                    <code>Object.values(object)</code>
+                                    <span>Get object values</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Array.from(iterable)</code>
+                                    <span>Create array from iterable</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>[...array].sort()</code>
+                                    <span>Sort array (spread syntax)</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Set([1,2,2,3])</code>
+                                    <span>Create set (unique values)</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Map([['key', 'value']])</code>
+                                    <span>Create key-value map</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>⏰ Time & Animation</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>setTimeout(() => {}, 1000)</code>
+                                    <span>Execute after delay</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>setInterval(() => {}, 1000)</code>
+                                    <span>Execute repeatedly</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>requestAnimationFrame(callback)</code>
+                                    <span>Smooth animation frame</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Date()</code>
+                                    <span>Current date/time</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Date.now()</code>
+                                    <span>Current timestamp</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>element.animate(keyframes, options)</code>
+                                    <span>Web Animations API</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🔢 Math & Random</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>Math.random()</code>
+                                    <span>Random number 0-1</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Math.floor(Math.random() * 10)</code>
+                                    <span>Random integer 0-9</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Math.round(4.7)</code>
+                                    <span>Round to nearest integer</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Math.max(...array)</code>
+                                    <span>Find maximum value</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Math.min(...array)</code>
+                                    <span>Find minimum value</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>crypto.getRandomValues(new Uint8Array(10))</code>
+                                    <span>Cryptographically secure random</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🔤 String & RegEx</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>string.split(',')</code>
+                                    <span>Split string into array</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>string.replace(/old/g, 'new')</code>
+                                    <span>Replace with regex</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>string.match(/pattern/g)</code>
+                                    <span>Find regex matches</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>string.toLowerCase()</code>
+                                    <span>Convert to lowercase</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>string.trim()</code>
+                                    <span>Remove whitespace</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new RegExp('pattern', 'flags')</code>
+                                    <span>Create regex pattern</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🔄 Async & Promises</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>await fetch('/api')</code>
+                                    <span>Async/await API call</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Promise.resolve(value)</code>
+                                    <span>Create resolved promise</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Promise.all([p1, p2, p3])</code>
+                                    <span>Wait for all promises</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Promise.race([p1, p2])</code>
+                                    <span>First promise to resolve</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Promise((resolve, reject) => {})</code>
+                                    <span>Create new promise</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>promise.then(result => {})</code>
+                                    <span>Handle promise result</span>
                                 </div>
                             </div>
                         </div>
