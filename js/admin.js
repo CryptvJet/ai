@@ -1810,7 +1810,13 @@ window.clearDebugOutput = function() {
 
 window.executeDebugCommand = function() {
     if (consoleMode === 'debug') {
-        executeDebugCommand(); // Call without parameters to get command from input
+        // Get command from input and execute
+        const input = document.getElementById('debugCommand');
+        if (input && input.value.trim()) {
+            const command = input.value.trim();
+            input.value = ''; // Clear input
+            processDebugCommand(command);
+        }
     }
     // In browser mode, command input is disabled
 };
