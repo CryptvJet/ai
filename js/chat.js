@@ -807,8 +807,542 @@ I'd love to get to know you better - what's your name?`;
     }
     
     showAdvancedVoiceSettings() {
-        // Future enhancement: show modal with more voice options
-        alert('Advanced voice settings coming soon! For now, use the controls above to customize your voice experience.');
+        const modal = document.getElementById('advancedVoiceModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            this.initializeAdvancedSettings();
+            this.runDiagnostics();
+        }
+    }
+    
+    initializeAdvancedSettings() {
+        // Initialize all advanced settings
+        this.setupAdvancedTabs();
+        this.setupAdvancedControls();
+        this.loadAdvancedSettings();
+        this.setupAdvancedVoiceDropdown();
+    }
+    
+    setupAdvancedTabs() {
+        const tabs = document.querySelectorAll('.tab-button');
+        const contents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+                
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(`tab-${target}`).classList.add('active');
+            });
+        });
+    }
+    
+    setupAdvancedControls() {
+        // Recognition Language
+        const recognitionLang = document.getElementById('recognitionLang');
+        if (recognitionLang) {
+            recognitionLang.addEventListener('change', (e) => {
+                if (this.recognition) {
+                    this.recognition.lang = e.target.value;
+                    localStorage.setItem('recognitionLang', e.target.value);
+                    this.debugLog(`Language changed to: ${e.target.value}`);
+                }
+            });
+        }
+        
+        // Recognition Sensitivity
+        const sensitivity = document.getElementById('recognitionSensitivity');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        if (sensitivity && sensitivityValue) {
+            sensitivity.addEventListener('input', (e) => {
+                sensitivityValue.textContent = e.target.value;
+                localStorage.setItem('recognitionSensitivity', e.target.value);
+            });
+        }
+        
+        // Max Alternatives
+        const maxAlternatives = document.getElementById('maxAlternatives');
+        if (maxAlternatives) {
+            maxAlternatives.addEventListener('change', (e) => {
+                if (this.recognition) {
+                    this.recognition.maxAlternatives = parseInt(e.target.value);
+                    localStorage.setItem('maxAlternatives', e.target.value);
+                }
+            });
+        }
+        
+        // Advanced Speech Controls
+        this.setupAdvancedSpeechControls();
+        
+        // Behavior Settings
+        this.setupBehaviorSettings();
+        
+        // Diagnostics
+        this.setupDiagnosticButtons();
+        
+        // Modal Actions
+        this.setupModalActions();
+        
+        // Preset Buttons
+        this.setupPresetButtons();
+    }
+    
+    setupAdvancedSpeechControls() {
+        // Advanced speech rate
+        const advancedRate = document.getElementById('advancedSpeechRate');
+        const advancedSpeedValue = document.getElementById('advancedSpeedValue');
+        if (advancedRate && advancedSpeedValue) {
+            advancedRate.addEventListener('input', (e) => {
+                advancedSpeedValue.textContent = e.target.value + 'x';
+                localStorage.setItem('speechRate', e.target.value);
+                // Also update the simple control
+                const simpleRate = document.getElementById('speechRate');
+                if (simpleRate) simpleRate.value = e.target.value;
+                const simpleSpeedValue = document.getElementById('speedValue');
+                if (simpleSpeedValue) simpleSpeedValue.textContent = e.target.value + 'x';
+            });
+        }
+        
+        // Advanced pitch
+        const advancedPitch = document.getElementById('advancedSpeechPitch');
+        const advancedPitchValue = document.getElementById('advancedPitchValue');
+        if (advancedPitch && advancedPitchValue) {
+            advancedPitch.addEventListener('input', (e) => {
+                advancedPitchValue.textContent = e.target.value;
+                localStorage.setItem('speechPitch', e.target.value);
+                // Also update the simple control
+                const simplePitch = document.getElementById('speechPitch');
+                if (simplePitch) simplePitch.value = e.target.value;
+                const simplePitchValue = document.getElementById('pitchValue');
+                if (simplePitchValue) simplePitchValue.textContent = e.target.value;
+            });
+        }
+        
+        // Advanced volume
+        const advancedVolume = document.getElementById('advancedSpeechVolume');
+        const advancedVolumeValue = document.getElementById('advancedVolumeValue');
+        if (advancedVolume && advancedVolumeValue) {
+            advancedVolume.addEventListener('input', (e) => {
+                advancedVolumeValue.textContent = e.target.value;
+                localStorage.setItem('speechVolume', e.target.value);
+                // Also update the simple control
+                const simpleVolume = document.getElementById('speechVolume');
+                if (simpleVolume) simpleVolume.value = e.target.value;
+                const simpleVolumeValue = document.getElementById('volumeValue');
+                if (simpleVolumeValue) simpleVolumeValue.textContent = e.target.value;
+            });
+        }
+        
+        // Sentence pause
+        const sentencePause = document.getElementById('sentencePause');
+        const pauseValue = document.getElementById('pauseValue');
+        if (sentencePause && pauseValue) {
+            sentencePause.addEventListener('input', (e) => {
+                pauseValue.textContent = e.target.value + 'ms';
+                localStorage.setItem('sentencePause', e.target.value);
+            });
+        }
+        
+        // Advanced auto-speak
+        const advancedAutoSpeak = document.getElementById('advancedAutoSpeak');
+        if (advancedAutoSpeak) {
+            advancedAutoSpeak.addEventListener('change', (e) => {
+                this.autoSpeak = e.target.checked;
+                localStorage.setItem('autoSpeak', e.target.checked.toString());
+                // Also update the simple control
+                const simpleAutoSpeak = document.getElementById('autoSpeak');
+                if (simpleAutoSpeak) simpleAutoSpeak.checked = e.target.checked;
+            });
+        }
+    }
+    
+    setupPresetButtons() {
+        // Rate presets
+        document.querySelectorAll('.preset-btn[data-rate]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rate = btn.dataset.rate;
+                const advancedRate = document.getElementById('advancedSpeechRate');
+                const advancedSpeedValue = document.getElementById('advancedSpeedValue');
+                if (advancedRate && advancedSpeedValue) {
+                    advancedRate.value = rate;
+                    advancedSpeedValue.textContent = rate + 'x';
+                    localStorage.setItem('speechRate', rate);
+                }
+            });
+        });
+        
+        // Pitch presets
+        document.querySelectorAll('.preset-btn[data-pitch]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pitch = btn.dataset.pitch;
+                const advancedPitch = document.getElementById('advancedSpeechPitch');
+                const advancedPitchValue = document.getElementById('advancedPitchValue');
+                if (advancedPitch && advancedPitchValue) {
+                    advancedPitch.value = pitch;
+                    advancedPitchValue.textContent = pitch;
+                    localStorage.setItem('speechPitch', pitch);
+                }
+            });
+        });
+    }
+    
+    setupBehaviorSettings() {
+        const defaultTimeout = document.getElementById('defaultVoiceTimeout');
+        if (defaultTimeout) {
+            defaultTimeout.addEventListener('change', (e) => {
+                this.voiceTimeout = e.target.value;
+                localStorage.setItem('voiceTimeout', e.target.value);
+                // Update simple control too
+                const simpleTimeout = document.getElementById('voiceTimeout');
+                if (simpleTimeout) simpleTimeout.value = e.target.value;
+            });
+        }
+    }
+    
+    setupAdvancedVoiceDropdown() {
+        const advancedSelect = document.getElementById('advancedVoiceSelect');
+        const simpleSelect = document.getElementById('voiceSelect');
+        
+        if (advancedSelect && simpleSelect) {
+            // Copy options from simple dropdown
+            advancedSelect.innerHTML = simpleSelect.innerHTML;
+            advancedSelect.value = simpleSelect.value;
+            
+            // Sync changes
+            advancedSelect.addEventListener('change', (e) => {
+                simpleSelect.value = e.target.value;
+                const voiceIndex = e.target.value;
+                this.selectedVoice = voiceIndex ? this.voices[voiceIndex] : null;
+                localStorage.setItem('selectedVoice', voiceIndex);
+            });
+        }
+    }
+    
+    setupDiagnosticButtons() {
+        const testMicBtn = document.getElementById('testMicrophoneBtn');
+        if (testMicBtn) {
+            testMicBtn.addEventListener('click', () => {
+                this.testMicrophone();
+            });
+        }
+        
+        const testSpeechBtn = document.getElementById('testSpeechBtn');
+        if (testSpeechBtn) {
+            testSpeechBtn.addEventListener('click', () => {
+                this.testCurrentVoiceSettings();
+            });
+        }
+        
+        const testFullCycleBtn = document.getElementById('testFullCycleBtn');
+        if (testFullCycleBtn) {
+            testFullCycleBtn.addEventListener('click', () => {
+                this.testFullCycle();
+            });
+        }
+        
+        const calibrationBtn = document.getElementById('voiceCalibrationBtn');
+        if (calibrationBtn) {
+            calibrationBtn.addEventListener('click', () => {
+                this.runVoiceCalibration();
+            });
+        }
+        
+        const clearDebugBtn = document.getElementById('clearDebugBtn');
+        if (clearDebugBtn) {
+            clearDebugBtn.addEventListener('click', () => {
+                const debugConsole = document.getElementById('debugConsole');
+                if (debugConsole) debugConsole.textContent = '';
+            });
+        }
+        
+        const exportDebugBtn = document.getElementById('exportDebugBtn');
+        if (exportDebugBtn) {
+            exportDebugBtn.addEventListener('click', () => {
+                this.exportDebugLog();
+            });
+        }
+    }
+    
+    setupModalActions() {
+        const resetBtn = document.getElementById('resetVoiceSettings');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                this.resetVoiceSettings();
+            });
+        }
+        
+        const saveBtn = document.getElementById('saveVoiceSettings');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveVoiceSettings();
+            });
+        }
+        
+        const exportBtn = document.getElementById('exportVoiceSettings');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportVoiceSettings();
+            });
+        }
+        
+        const importBtn = document.getElementById('importVoiceSettings');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                this.importVoiceSettings();
+            });
+        }
+    }
+    
+    loadAdvancedSettings() {
+        // Load all saved settings into the advanced modal
+        const settings = {
+            recognitionLang: localStorage.getItem('recognitionLang') || 'en-US',
+            recognitionSensitivity: localStorage.getItem('recognitionSensitivity') || '0.7',
+            maxAlternatives: localStorage.getItem('maxAlternatives') || '3',
+            speechRate: localStorage.getItem('speechRate') || '1.2',
+            speechPitch: localStorage.getItem('speechPitch') || '1.0',
+            speechVolume: localStorage.getItem('speechVolume') || '0.8',
+            sentencePause: localStorage.getItem('sentencePause') || '500',
+            voiceTimeout: localStorage.getItem('voiceTimeout') || 'normal',
+            autoSpeak: localStorage.getItem('autoSpeak') !== 'false'
+        };
+        
+        Object.entries(settings).forEach(([key, value]) => {
+            const element = document.getElementById(key) || document.getElementById(`advanced${key.charAt(0).toUpperCase() + key.slice(1)}`);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = value === true || value === 'true';
+                } else {
+                    element.value = value;
+                }
+                
+                // Update corresponding value displays
+                const valueDisplay = document.getElementById(key.replace(/([A-Z])/g, '$1').toLowerCase() + 'Value') ||
+                                   document.getElementById('advanced' + key.charAt(0).toUpperCase() + key.slice(1) + 'Value');
+                if (valueDisplay) {
+                    if (key.includes('Rate')) valueDisplay.textContent = value + 'x';
+                    else if (key.includes('Pause')) valueDisplay.textContent = value + 'ms';
+                    else valueDisplay.textContent = value;
+                }
+            }
+        });
+    }
+    
+    async runDiagnostics() {
+        const statusElements = {
+            browserSupportStatus: document.getElementById('browserSupportStatus'),
+            micAccessStatus: document.getElementById('micAccessStatus'),
+            speechSynthStatus: document.getElementById('speechSynthStatus'),
+            networkStatus: document.getElementById('networkStatus')
+        };
+        
+        // Browser Support Check
+        if (statusElements.browserSupportStatus) {
+            const hasRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+            const hasSynthesis = 'speechSynthesis' in window;
+            const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+            
+            if (hasRecognition && hasSynthesis && isSecure) {
+                statusElements.browserSupportStatus.textContent = '✅ Full Support';
+                statusElements.browserSupportStatus.style.color = '#22c55e';
+            } else {
+                statusElements.browserSupportStatus.textContent = '❌ Limited Support';
+                statusElements.browserSupportStatus.style.color = '#ef4444';
+            }
+        }
+        
+        // Microphone Access Check
+        if (statusElements.micAccessStatus) {
+            try {
+                if (navigator.permissions) {
+                    const result = await navigator.permissions.query({ name: 'microphone' });
+                    if (result.state === 'granted') {
+                        statusElements.micAccessStatus.textContent = '✅ Granted';
+                        statusElements.micAccessStatus.style.color = '#22c55e';
+                    } else {
+                        statusElements.micAccessStatus.textContent = '❌ ' + result.state;
+                        statusElements.micAccessStatus.style.color = '#ef4444';
+                    }
+                } else {
+                    statusElements.micAccessStatus.textContent = '? Unknown';
+                    statusElements.micAccessStatus.style.color = '#eab308';
+                }
+            } catch (error) {
+                statusElements.micAccessStatus.textContent = '❌ Error';
+                statusElements.micAccessStatus.style.color = '#ef4444';
+            }
+        }
+        
+        // Speech Synthesis Check
+        if (statusElements.speechSynthStatus) {
+            if (this.synthesis) {
+                const voiceCount = this.voices.length;
+                statusElements.speechSynthStatus.textContent = `✅ ${voiceCount} voices`;
+                statusElements.speechSynthStatus.style.color = '#22c55e';
+            } else {
+                statusElements.speechSynthStatus.textContent = '❌ Not Available';
+                statusElements.speechSynthStatus.style.color = '#ef4444';
+            }
+        }
+        
+        // Network Status Check
+        if (statusElements.networkStatus) {
+            if (navigator.onLine) {
+                statusElements.networkStatus.textContent = '✅ Online';
+                statusElements.networkStatus.style.color = '#22c55e';
+            } else {
+                statusElements.networkStatus.textContent = '❌ Offline';
+                statusElements.networkStatus.style.color = '#ef4444';
+            }
+        }
+        
+        // Update metrics
+        this.updateMetrics();
+    }
+    
+    updateMetrics() {
+        const sessionCount = localStorage.getItem('voiceSessionCount') || '0';
+        document.getElementById('voiceSessionCount').textContent = sessionCount;
+        
+        const avgTime = localStorage.getItem('avgResponseTime') || '-';
+        document.getElementById('avgResponseTime').textContent = avgTime;
+        
+        const accuracy = localStorage.getItem('recognitionAccuracy') || '-';
+        document.getElementById('recognitionAccuracy').textContent = accuracy;
+    }
+    
+    testFullCycle() {
+        this.debugLog('Starting full voice cycle test...');
+        
+        // Test speech first
+        this.speakText('Starting full voice test. Please say "test successful" when I finish speaking.');
+        
+        // Then start listening after a delay
+        setTimeout(() => {
+            if (this.recognition) {
+                this.debugLog('Starting voice recognition for test...');
+                this.startListening();
+            }
+        }, 3000);
+    }
+    
+    runVoiceCalibration() {
+        this.debugLog('Starting voice calibration...');
+        alert('Voice calibration will guide you through optimizing your microphone settings. This feature is coming soon!');
+    }
+    
+    debugLog(message) {
+        const debugConsole = document.getElementById('debugConsole');
+        if (debugConsole) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugConsole.textContent += `[${timestamp}] ${message}\n`;
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+        }
+        console.log(`[Voice Debug] ${message}`);
+    }
+    
+    exportDebugLog() {
+        const debugConsole = document.getElementById('debugConsole');
+        if (debugConsole) {
+            const content = debugConsole.textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `voice-debug-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+    
+    resetVoiceSettings() {
+        if (confirm('Reset all voice settings to defaults? This will clear all your customizations.')) {
+            // Clear localStorage
+            const voiceKeys = [
+                'recognitionLang', 'recognitionSensitivity', 'maxAlternatives',
+                'speechRate', 'speechPitch', 'speechVolume', 'sentencePause',
+                'voiceTimeout', 'autoSpeak', 'selectedVoice'
+            ];
+            voiceKeys.forEach(key => localStorage.removeItem(key));
+            
+            // Reload settings
+            this.loadAdvancedSettings();
+            this.setupAdvancedVoiceControls();
+            
+            this.debugLog('Voice settings reset to defaults');
+            alert('Voice settings have been reset to defaults.');
+        }
+    }
+    
+    saveVoiceSettings() {
+        this.debugLog('Voice settings saved to browser storage');
+        alert('Voice settings have been saved!');
+    }
+    
+    exportVoiceSettings() {
+        const settings = {
+            recognitionLang: localStorage.getItem('recognitionLang'),
+            recognitionSensitivity: localStorage.getItem('recognitionSensitivity'),
+            maxAlternatives: localStorage.getItem('maxAlternatives'),
+            speechRate: localStorage.getItem('speechRate'),
+            speechPitch: localStorage.getItem('speechPitch'),
+            speechVolume: localStorage.getItem('speechVolume'),
+            sentencePause: localStorage.getItem('sentencePause'),
+            voiceTimeout: localStorage.getItem('voiceTimeout'),
+            autoSpeak: localStorage.getItem('autoSpeak'),
+            selectedVoice: localStorage.getItem('selectedVoice')
+        };
+        
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `voice-settings-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.debugLog('Voice settings exported to file');
+    }
+    
+    importVoiceSettings() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const settings = JSON.parse(e.target.result);
+                        
+                        // Apply imported settings
+                        Object.entries(settings).forEach(([key, value]) => {
+                            if (value !== null) {
+                                localStorage.setItem(key, value);
+                            }
+                        });
+                        
+                        // Reload settings
+                        this.loadAdvancedSettings();
+                        this.setupAdvancedVoiceControls();
+                        
+                        this.debugLog('Voice settings imported from file');
+                        alert('Voice settings have been imported successfully!');
+                    } catch (error) {
+                        alert('Error importing settings: Invalid file format');
+                        this.debugLog('Error importing settings: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
     }
 
     async speakText(text) {
@@ -1003,6 +1537,13 @@ function toggleStats() {
         // Hide stats - when collapsed, arrow points down (can expand)
         panel.classList.add('collapsed');
         arrow.textContent = '▼';
+    }
+}
+
+function closeAdvancedVoiceSettings() {
+    const modal = document.getElementById('advancedVoiceModal');
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
 
