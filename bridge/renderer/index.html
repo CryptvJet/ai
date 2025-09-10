@@ -8,143 +8,297 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Header -->
         <header class="app-header">
-            <div class="logo-section">
-                <div class="logo">🤖</div>
-                <h1>Zin AI Bridge</h1>
-                <div class="version">v1.0.0</div>
-            </div>
-            <div class="status-indicator" id="connectionStatus">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Connecting...</span>
+            <div class="header-content">
+                <div class="app-title">
+                    <h1>🤖 Zin AI Bridge</h1>
+                    <div class="connection-indicator">
+                        <span id="statusDot" class="status-dot connecting"></span>
+                        <span id="statusText" class="status-text">Connecting...</span>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Database:</span>
+                        <span id="dbStatus" class="stat-value">🔴 Disconnected</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Web Server:</span>
+                        <span id="webStatus" class="stat-value">🔴 Unavailable</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Last Heartbeat:</span>
+                        <span id="lastHeartbeat" class="stat-value">-</span>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <main class="app-content">
-            <div class="dashboard-grid">
-                <!-- Connection Status Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔗 Connection Status</h3>
-                        <button id="testConnectionBtn" class="btn-small">Test Connection</button>
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="dashboard">
+                <span class="tab-icon">📊</span>
+                <span class="tab-text">Dashboard</span>
+            </button>
+            <button class="tab-btn" data-tab="conversations">
+                <span class="tab-icon">💬</span>
+                <span class="tab-text">Live Chat</span>
+            </button>
+            <button class="tab-btn" data-tab="system">
+                <span class="tab-icon">🖥️</span>
+                <span class="tab-text">System Info</span>
+            </button>
+            <button class="tab-btn" data-tab="activity">
+                <span class="tab-icon">📋</span>
+                <span class="tab-text">Activity</span>
+            </button>
+            <button class="tab-btn" data-tab="settings">
+                <span class="tab-icon">⚙️</span>
+                <span class="tab-text">Settings</span>
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content-container">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- Connection Status Card -->
+                    <div class="card status-card">
+                        <div class="card-header">
+                            <h3>🔗 Connection Status</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="status-grid">
+                                <div class="status-item">
+                                    <span class="label">Database:</span>
+                                    <span id="dbStatusDetail" class="value status-badge">🔴 Disconnected</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="label">Web Server:</span>
+                                    <span id="webStatusDetail" class="value status-badge">🔴 Unavailable</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="label">Last Heartbeat:</span>
+                                    <span id="lastHeartbeatDetail" class="value">-</span>
+                                </div>
+                            </div>
+                            <div class="quick-actions">
+                                <button id="testConnectionBtn" class="action-btn primary">
+                                    💓 Test Connection
+                                </button>
+                                <button id="refreshSystemBtn" class="action-btn">
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-content">
-                        <div class="status-grid">
-                            <div class="status-item">
-                                <span class="label">Database:</span>
-                                <span class="value" id="dbStatus">Checking...</span>
+
+                    <!-- System Overview Card -->
+                    <div class="card system-overview-card">
+                        <div class="card-header">
+                            <h3>🖥️ System Overview</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="system-overview">
+                                <div class="overview-item">
+                                    <div class="overview-icon">🏠</div>
+                                    <div class="overview-info">
+                                        <span class="overview-label">Hostname</span>
+                                        <span id="hostnameOverview" class="overview-value">-</span>
+                                    </div>
+                                </div>
+                                <div class="overview-item">
+                                    <div class="overview-icon">⏱️</div>
+                                    <div class="overview-info">
+                                        <span class="overview-label">Uptime</span>
+                                        <span id="uptimeOverview" class="overview-value">-</span>
+                                    </div>
+                                </div>
+                                <div class="overview-item">
+                                    <div class="overview-icon">🧠</div>
+                                    <div class="overview-info">
+                                        <span class="overview-label">Memory</span>
+                                        <span id="memoryOverview" class="overview-value">-</span>
+                                    </div>
+                                </div>
+                                <div class="overview-item">
+                                    <div class="overview-icon">💻</div>
+                                    <div class="overview-info">
+                                        <span class="overview-label">CPU Cores</span>
+                                        <span id="cpusOverview" class="overview-value">-</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="status-item">
-                                <span class="label">Web Server:</span>
-                                <span class="value" id="webStatus">Checking...</span>
-                            </div>
-                            <div class="status-item">
-                                <span class="label">Last Heartbeat:</span>
-                                <span class="value" id="lastHeartbeat">Never</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div class="card actions-card">
+                        <div class="card-header">
+                            <h3>⚡ Quick Actions</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="actions-grid">
+                                <button id="openWebAdminBtn" class="action-btn">
+                                    🌐 Open Web Admin
+                                </button>
+                                <button id="sendTestHeartbeatBtn" class="action-btn">
+                                    💓 Send Test Heartbeat
+                                </button>
+                                <button id="minimizeToTrayBtn" class="action-btn">
+                                    📌 Minimize to Tray
+                                </button>
+                                <button id="viewLogsBtn" class="action-btn">
+                                    📊 View System Logs
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- System Information Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>💻 System Information</h3>
-                        <button id="refreshSystemBtn" class="btn-small">Refresh</button>
-                    </div>
-                    <div class="card-content">
-                        <div class="system-grid">
-                            <div class="system-item">
-                                <span class="label">Hostname:</span>
-                                <span class="value" id="hostname">-</span>
-                            </div>
-                            <div class="system-item">
-                                <span class="label">Platform:</span>
-                                <span class="value" id="platform">-</span>
-                            </div>
-                            <div class="system-item">
-                                <span class="label">Architecture:</span>
-                                <span class="value" id="arch">-</span>
-                            </div>
-                            <div class="system-item">
-                                <span class="label">CPU Cores:</span>
-                                <span class="value" id="cpus">-</span>
-                            </div>
-                            <div class="system-item">
-                                <span class="label">Uptime:</span>
-                                <span class="value" id="uptime">-</span>
-                            </div>
-                            <div class="system-item">
-                                <span class="label">Memory:</span>
-                                <span class="value" id="memory">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Activity Log Card -->
-                <div class="card full-width">
-                    <div class="card-header">
-                        <h3>📋 Activity Log</h3>
-                        <div class="log-controls">
-                            <button id="clearLogBtn" class="btn-small">Clear</button>
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="autoScrollLog" checked>
-                                <span class="checkmark"></span>
-                                Auto-scroll
-                            </label>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div id="activityLog" class="activity-log"></div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚡ Quick Actions</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="actions-grid">
-                            <button id="openWebAdminBtn" class="action-btn">
-                                🌐 Open Web Admin
-                            </button>
-                            <button id="sendTestHeartbeatBtn" class="action-btn">
-                                💓 Send Test Heartbeat
-                            </button>
-                            <button id="minimizeToTrayBtn" class="action-btn">
-                                📌 Minimize to Tray
-                            </button>
-                            <button id="viewLogsBtn" class="action-btn">
-                                📊 View System Logs
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settings Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚙️ Settings</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="settings-grid">
-                            <div class="setting-item">
-                                <label for="heartbeatInterval">Heartbeat Interval (seconds):</label>
-                                <input type="number" id="heartbeatInterval" value="30" min="10" max="300">
-                            </div>
-                            <div class="setting-item">
-                                <label>
-                                    <input type="checkbox" id="startWithWindows" checked>
-                                    Start with Windows
+            <!-- Conversations Tab -->
+            <div id="conversations" class="tab-content">
+                <div class="conversations-layout">
+                    <div class="card conversation-card">
+                        <div class="card-header">
+                            <h3>💬 Live Conversations</h3>
+                            <div class="conversation-controls">
+                                <label class="switch">
+                                    <input type="checkbox" id="chatMonitoring" checked>
+                                    <span class="slider"></span>
                                 </label>
+                                <span class="switch-label">Monitor Chat</span>
+                                <div class="conversation-stats">
+                                    <span id="conversationCount" class="stat">0 messages</span>
+                                </div>
                             </div>
-                            <div class="setting-item">
-                                <label>
-                                    <input type="checkbox" id="minimizeOnStartup">
-                                    Start minimized
+                        </div>
+                        <div class="card-content">
+                            <div id="liveConversations" class="conversation-log"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Info Tab -->
+            <div id="system" class="tab-content">
+                <div class="system-layout">
+                    <div class="card system-details-card">
+                        <div class="card-header">
+                            <h3>🖥️ System Information</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="system-grid">
+                                <div class="system-item">
+                                    <span class="label">Hostname:</span>
+                                    <span class="value" id="hostname">-</span>
+                                </div>
+                                <div class="system-item">
+                                    <span class="label">Platform:</span>
+                                    <span class="value" id="platform">-</span>
+                                </div>
+                                <div class="system-item">
+                                    <span class="label">Architecture:</span>
+                                    <span class="value" id="arch">-</span>
+                                </div>
+                                <div class="system-item">
+                                    <span class="label">CPU Cores:</span>
+                                    <span class="value" id="cpus">-</span>
+                                </div>
+                                <div class="system-item">
+                                    <span class="label">Uptime:</span>
+                                    <span class="value" id="uptime">-</span>
+                                </div>
+                                <div class="system-item">
+                                    <span class="label">Memory:</span>
+                                    <span class="value" id="memory">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Tab -->
+            <div id="activity" class="tab-content">
+                <div class="activity-layout">
+                    <div class="card activity-card">
+                        <div class="card-header">
+                            <h3>📋 Activity Log</h3>
+                            <div class="log-controls">
+                                <button id="clearLogBtn" class="action-btn small">
+                                    🗑️ Clear
+                                </button>
+                                <label class="switch small">
+                                    <input type="checkbox" id="autoScrollLog" checked>
+                                    <span class="slider"></span>
                                 </label>
+                                <span class="switch-label">Auto-scroll</span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="activityLog" class="activity-log"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="settings-layout">
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h3>⚙️ Settings</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="settings-grid">
+                                <div class="setting-group">
+                                    <h4>Connection Settings</h4>
+                                    <div class="setting-item">
+                                        <label for="heartbeatInterval">Heartbeat Interval (seconds):</label>
+                                        <input type="number" id="heartbeatInterval" min="10" max="300" value="30">
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="webCheckInterval">Web Check Interval (seconds):</label>
+                                        <input type="number" id="webCheckInterval" min="30" max="600" value="60">
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <h4>UI Settings</h4>
+                                    <div class="setting-item checkbox-item">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="minimizeOnStartup">
+                                            <span class="checkmark"></span>
+                                            Start minimized to tray
+                                        </label>
+                                    </div>
+                                    <div class="setting-item checkbox-item">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="showNotifications" checked>
+                                            <span class="checkmark"></span>
+                                            Show desktop notifications
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="setting-group">
+                                    <h4>Chat Monitoring</h4>
+                                    <div class="setting-item checkbox-item">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="highlightPCQueries" checked>
+                                            <span class="checkmark"></span>
+                                            Highlight PC-related queries
+                                        </label>
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="maxMessages">Max messages to keep:</label>
+                                        <input type="number" id="maxMessages" min="20" max="200" value="50">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -152,15 +306,14 @@
             </div>
         </main>
 
+        <!-- Footer -->
         <footer class="app-footer">
-            <div class="footer-info">
-                <span>Zin AI Bridge - PC to Web Connection</span>
-                <span class="separator">|</span>
-                <span id="appUptime">Uptime: 0s</span>
-            </div>
-            <div class="footer-actions">
-                <button id="aboutBtn" class="btn-link">About</button>
-                <button id="helpBtn" class="btn-link">Help</button>
+            <div class="footer-content">
+                <span id="appUptime" class="uptime">Uptime: 0s</span>
+                <span class="version">Zin AI Bridge v1.0</span>
+                <span class="status-indicator">
+                    <span id="footerStatus" class="footer-status">🔄 Initializing...</span>
+                </span>
             </div>
         </footer>
     </div>

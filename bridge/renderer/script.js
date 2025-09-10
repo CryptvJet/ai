@@ -16,12 +16,20 @@ class ZinAIBridgeUI {
     }
 
     initializeElements() {
+        // Tab system
+        this.initializeTabs();
+        
         // Status elements
         this.statusDot = document.getElementById('statusDot');
         this.statusText = document.getElementById('statusText');
         this.dbStatus = document.getElementById('dbStatus');
         this.webStatus = document.getElementById('webStatus');
         this.lastHeartbeat = document.getElementById('lastHeartbeat');
+        
+        // Status details (for dashboard tab)
+        this.dbStatusDetail = document.getElementById('dbStatusDetail');
+        this.webStatusDetail = document.getElementById('webStatusDetail');
+        this.lastHeartbeatDetail = document.getElementById('lastHeartbeatDetail');
         
         // System info elements
         this.hostname = document.getElementById('hostname');
@@ -31,9 +39,22 @@ class ZinAIBridgeUI {
         this.uptime = document.getElementById('uptime');
         this.memory = document.getElementById('memory');
         
+        // Overview elements (for dashboard)
+        this.hostnameOverview = document.getElementById('hostnameOverview');
+        this.uptimeOverview = document.getElementById('uptimeOverview');
+        this.memoryOverview = document.getElementById('memoryOverview');
+        this.cpusOverview = document.getElementById('cpusOverview');
+        
         // Activity log
         this.activityLog = document.getElementById('activityLog');
         this.autoScrollLog = document.getElementById('autoScrollLog');
+        
+        // Live conversations
+        this.conversationLog = document.getElementById('liveConversations');
+        this.chatMonitoring = document.getElementById('chatMonitoring');
+        
+        this.lastMessageId = 0;
+        this.conversationMonitor = null;
         
         // Footer
         this.appUptime = document.getElementById('appUptime');
@@ -105,6 +126,9 @@ class ZinAIBridgeUI {
         setTimeout(() => {
             this.checkWebServerStatus();
         }, 2000);
+        
+        // Start conversation monitoring
+        this.startConversationMonitoring();
     }
 
     async loadSystemInfo() {
@@ -118,6 +142,9 @@ class ZinAIBridgeUI {
             this.cpus.textContent = systemInfo.cpus || '-';
             this.uptime.textContent = this.formatUptime(systemInfo.uptime || 0);
             this.memory.textContent = this.formatMemory(systemInfo.memory);
+            
+            // Update overview elements
+            this.updateSystemOverview(systemInfo);
             
             // Update connection status
             if (systemInfo.isConnected) {
@@ -163,7 +190,7 @@ class ZinAIBridgeUI {
 
     async checkWebServerStatus() {
         try {
-            const response = await fetch('http://localhost/claude-code/ai/admin/', {
+            const response = await fetch('https://pulsecore.one/ai/api/pc-bridge-status.php', {
                 method: 'HEAD',
                 signal: AbortSignal.timeout(3000)
             });
@@ -290,6 +317,142 @@ class ZinAIBridgeUI {
         const usedPercent = ((usedGB / totalGB) * 100).toFixed(0);
         
         return `${usedGB}GB / ${totalGB}GB (${usedPercent}%)`;
+    }
+
+    startConversationMonitoring() {
+        if (this.chatMonitoring && this.chatMonitoring.checked) {
+            this.conversationMonitor = setInterval(() => {
+                this.checkForNewConversations();
+            }, 3000); // Check every 3 seconds
+            
+            this.log('💬 Started conversation monitoring', 'info');
+        }
+        
+        // Handle toggle
+        if (this.chatMonitoring) {
+            this.chatMonitoring.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.startConversationMonitoring();
+                } else {
+                    this.stopConversationMonitoring();
+                }
+            });
+        }
+    }
+    
+    stopConversationMonitoring() {
+        if (this.conversationMonitor) {
+            clearInterval(this.conversationMonitor);
+            this.conversationMonitor = null;
+            this.log('💬 Stopped conversation monitoring', 'info');
+        }
+    }
+    
+    async checkForNewConversations() {
+        try {
+            const result = await ipcRenderer.invoke('get-recent-conversations', this.lastMessageId);
+            
+            if (result.success && result.messages.length > 0) {
+                result.messages.forEach(message => {
+                    this.displayConversationMessage(message);
+                    if (message.id > this.lastMessageId) {
+                        this.lastMessageId = message.id;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error checking conversations:', error);
+        }
+    }
+    
+    displayConversationMessage(message) {
+        const messageDiv = document.createElement('div');
+        const messageClass = message.isPCQuery ? 'pc-query' : message.sender;
+        messageDiv.className = `chat-message ${messageClass}`;
+        
+        const timestamp = new Date(message.timestamp).toLocaleTimeString();
+        const userInfo = message.user_id ? ` (${message.user_id})` : '';
+        const processingTime = message.processing_time ? ` - ${message.processing_time}ms` : '';
+        
+        messageDiv.innerHTML = `
+            <div class="chat-timestamp">${timestamp} - ${message.sender}${userInfo}${processingTime}</div>
+            <div class="chat-content">${this.escapeHtml(message.text)}</div>
+        `;
+        
+        if (this.conversationLog) {
+            this.conversationLog.appendChild(messageDiv);
+            this.conversationLog.scrollTop = this.conversationLog.scrollHeight;
+            
+            // Keep only last 50 messages
+            const messages = this.conversationLog.querySelectorAll('.chat-message');
+            if (messages.length > 50) {
+                messages[0].remove();
+            }
+        }
+        
+        // Special logging for PC queries
+        if (message.isPCQuery) {
+            this.log(`🎯 PC Query detected: ${message.text.substring(0, 50)}...`, 'success');
+        }
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    initializeTabs() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+                
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding content
+                button.classList.add('active');
+                const targetContent = document.getElementById(targetTab);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+                
+                // Log tab change
+                this.log(`📑 Switched to ${button.querySelector('.tab-text').textContent} tab`, 'info');
+            });
+        });
+    }
+
+    updateAllStatusElements() {
+        // Update both header and dashboard status elements
+        if (this.dbStatus && this.dbStatusDetail) {
+            this.dbStatusDetail.textContent = this.dbStatus.textContent;
+        }
+        if (this.webStatus && this.webStatusDetail) {
+            this.webStatusDetail.textContent = this.webStatus.textContent;
+        }
+        if (this.lastHeartbeat && this.lastHeartbeatDetail) {
+            this.lastHeartbeatDetail.textContent = this.lastHeartbeat.textContent;
+        }
+    }
+
+    updateSystemOverview(systemInfo) {
+        if (this.hostnameOverview && systemInfo.hostname) {
+            this.hostnameOverview.textContent = systemInfo.hostname;
+        }
+        if (this.uptimeOverview && systemInfo.uptime) {
+            this.uptimeOverview.textContent = this.formatUptime(Math.floor(systemInfo.uptime));
+        }
+        if (this.memoryOverview && systemInfo.memory) {
+            this.memoryOverview.textContent = this.formatMemory(systemInfo.memory);
+        }
+        if (this.cpusOverview && systemInfo.cpus) {
+            this.cpusOverview.textContent = `${systemInfo.cpus} cores`;
+        }
     }
 }
 

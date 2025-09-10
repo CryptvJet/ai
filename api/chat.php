@@ -409,9 +409,120 @@ class AIChat {
     }
     
     private function tryPCAIResponse($message, $conversation_id) {
-        // Try to call PC AI server (when implemented)
-        // This would make HTTP request to localhost:8000
+        // Check if message is asking about PC status
+        if ($this->isPCStatusQuery($message)) {
+            return $this->getPCAnalysis($message);
+        }
+        
         return null;
+    }
+    
+    private function isPCStatusQuery($message) {
+        $pc_keywords = [
+            'pc', 'computer', 'system', 'performance', 'memory', 'ram', 'cpu',
+            'how.*my.*pc', 'pc.*doing', 'computer.*status', 'system.*info',
+            'memory.*usage', 'performance.*check', 'heartbeat', 'uptime'
+        ];
+        
+        $message_lower = strtolower($message);
+        foreach ($pc_keywords as $pattern) {
+            if (preg_match("/$pattern/i", $message_lower)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private function getPCAnalysis($message) {
+        try {
+            // Get latest PC status from heartbeat
+            $stmt = $this->pulse_pdo->prepare("
+                SELECT 
+                    system_info,
+                    last_ping,
+                    TIMESTAMPDIFF(SECOND, last_ping, NOW()) as seconds_since_ping,
+                    CASE 
+                        WHEN TIMESTAMPDIFF(SECOND, last_ping, NOW()) < 60 THEN 'online'
+                        ELSE 'offline'
+                    END as status
+                FROM pc_status 
+                ORDER BY last_ping DESC 
+                LIMIT 1
+            ");
+            
+            $stmt->execute();
+            $pc_data = $stmt->fetch();
+            
+            if (!$pc_data) {
+                return "I don't see any PC data yet. Make sure your PC Bridge is running and connected! 🖥️";
+            }
+            
+            $system_info = json_decode($pc_data['system_info'], true);
+            $status = $pc_data['status'];
+            $last_seen = $pc_data['seconds_since_ping'];
+            
+            // Analyze the data and create response
+            return $this->formatPCAnalysis($system_info, $status, $last_seen, $message);
+            
+        } catch (Exception $e) {
+            return "I'm having trouble accessing your PC data right now. The bridge might be disconnected. 🔧";
+        }
+    }
+    
+    private function formatPCAnalysis($system_info, $status, $last_seen, $original_message) {
+        if ($status === 'offline') {
+            return "Your PC appears to be offline. Last seen " . $this->formatTimeAgo($last_seen) . " ago. 💤";
+        }
+        
+        $hostname = $system_info['hostname'] ?? 'Unknown';
+        $uptime_hours = round(($system_info['uptime'] ?? 0) / 3600, 1);
+        $memory_total = $system_info['memory']['total'] ?? 0;
+        $memory_free = $system_info['memory']['free'] ?? 0;
+        $memory_used = $memory_total - $memory_free;
+        $memory_percent = $memory_total > 0 ? round(($memory_used / $memory_total) * 100, 1) : 0;
+        $cpu_count = $system_info['cpus'] ?? 0;
+        
+        $analysis = [];
+        
+        // Status overview
+        $analysis[] = "🟢 **{$hostname}** is online and healthy!";
+        $analysis[] = "⏱️ Uptime: {$uptime_hours} hours";
+        $analysis[] = "🧠 Memory: {$memory_percent}% used (" . $this->formatBytes($memory_used) . " / " . $this->formatBytes($memory_total) . ")";
+        $analysis[] = "💻 CPUs: {$cpu_count} cores";
+        
+        // Performance assessment
+        if ($memory_percent > 90) {
+            $analysis[] = "⚠️ **Memory Warning**: Your system is using {$memory_percent}% of RAM. Consider closing some applications.";
+        } elseif ($memory_percent > 75) {
+            $analysis[] = "📊 Memory usage is moderately high at {$memory_percent}%. Everything looks normal.";
+        } else {
+            $analysis[] = "✅ Memory usage is healthy at {$memory_percent}%.";
+        }
+        
+        // Uptime assessment
+        if ($uptime_hours > 168) { // 1 week
+            $analysis[] = "💡 Your PC has been running for over a week. Consider restarting for optimal performance.";
+        }
+        
+        $analysis[] = "📡 Last heartbeat: " . $this->formatTimeAgo($last_seen) . " ago";
+        
+        return implode("\n", $analysis);
+    }
+    
+    private function formatBytes($bytes) {
+        if ($bytes >= 1073741824) {
+            return round($bytes / 1073741824, 1) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
+        return round($bytes / 1024, 1) . ' KB';
+    }
+    
+    private function formatTimeAgo($seconds) {
+        if ($seconds < 60) return $seconds . ' seconds';
+        if ($seconds < 3600) return round($seconds / 60) . ' minutes';
+        if ($seconds < 86400) return round($seconds / 3600) . ' hours';
+        return round($seconds / 86400) . ' days';
     }
     
     private function generateBasicResponse($message, $conversation_id) {
