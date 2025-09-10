@@ -444,7 +444,7 @@ class AIAdmin {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
             
-            const response = await fetch('http://localhost:8000/health', {
+            const response = await fetch('../api/pc-bridge-status.php', {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
