@@ -2,7 +2,7 @@
 
 /* Console Output Styles */
 .console-line {
-    font-size: 14px;
+    font-size: 14px !important;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     padding: 1px 0;
     line-height: 1.4;
@@ -28,6 +28,7 @@
 
 .console-line.info {
     color: #66aaff;
+    opacity: 0.7;
 }
 
 .console-line.data {
@@ -37,7 +38,7 @@
 
 /* Browser Console Specific Styles */
 .browser-console-line {
-    font-size: 14px;
+    font-size: 14px !important;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     padding: 1px 0;
     line-height: 1.4;
@@ -88,21 +89,21 @@
 /* JavaScript Execution Styles */
 .js-command-line {
     color: #e5e7eb;
-    font-size: 14px;
+    font-size: 14px !important;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     font-weight: bold;
 }
 
 .js-result-line {
     color: #66aaff;
-    font-size: 14px;
+    font-size: 14px !important;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     padding: 1px 0;
 }
 
 .js-error-line {
     color: #ff6666;
-    font-size: 14px;
+    font-size: 14px !important;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     padding: 1px 0;
 }
