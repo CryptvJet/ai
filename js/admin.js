@@ -321,22 +321,29 @@ class AIAdmin {
         }
         
         container.innerHTML = patterns.map(pattern => {
-            const confidenceColor = pattern.confidence >= 0.8 ? '#10b981' : 
-                                   pattern.confidence >= 0.6 ? '#f59e0b' : '#ef4444';
-            const confidencePercent = Math.round(pattern.confidence * 100);
+            const confidenceColor = (pattern.confidence || 0) >= 0.8 ? '#10b981' : 
+                                   (pattern.confidence || 0) >= 0.6 ? '#f59e0b' : '#ef4444';
+            const confidencePercent = Math.round((pattern.confidence || 0) * 100);
+            
+            // Safe property access with fallbacks
+            const patternType = (pattern.pattern_type || pattern.type || 'unknown').replace(/_/g, ' ');
+            const patternDescription = pattern.pattern || pattern.description || pattern.title || 'No description available';
+            const usageCount = pattern.usage_count || 0;
+            const lastSeen = pattern.last_seen || pattern.last_used || pattern.created_at;
+            const lastSeenDate = lastSeen ? new Date(lastSeen).toLocaleDateString() : 'Unknown';
             
             return `
                 <div class="pattern-card">
                     <div class="pattern-header">
-                        <div class="pattern-type">${pattern.pattern_type.replace(/_/g, ' ')}</div>
+                        <div class="pattern-type">${patternType}</div>
                         <div class="confidence-badge" style="background: ${confidenceColor}; color: white;">
                             ${confidencePercent}%
                         </div>
                     </div>
-                    <p class="pattern-description">${pattern.pattern}</p>
+                    <p class="pattern-description">${patternDescription}</p>
                     <div class="pattern-stats">
-                        <span>📊 Used ${pattern.usage_count} times</span>
-                        <span>🕐 Last seen: ${new Date(pattern.last_seen).toLocaleDateString()}</span>
+                        <span>📊 Used ${usageCount} times</span>
+                        <span>🕐 Last seen: ${lastSeenDate}</span>
                     </div>
                     ${pattern.examples ? `
                         <div class="pattern-examples">
@@ -347,8 +354,8 @@ class AIAdmin {
                         </div>
                     ` : ''}
                     <div class="pattern-actions">
-                        <button class="pattern-btn btn-reinforce" onclick="reinforcePattern(${pattern.id})">✅ Reinforce</button>
-                        <button class="pattern-btn btn-dismiss" onclick="dismissPattern(${pattern.id})">❌ Dismiss</button>
+                        <button class="pattern-btn btn-reinforce" onclick="reinforcePattern('${pattern.id || 'unknown'}')">✅ Reinforce</button>
+                        <button class="pattern-btn btn-dismiss" onclick="dismissPattern('${pattern.id || 'unknown'}')">❌ Dismiss</button>
                     </div>
                 </div>
             `;
@@ -358,19 +365,30 @@ class AIAdmin {
     async checkIntegrations() {
         // Check PulseCore connection
         try {
+            console.log('Checking PulseCore integration...');
             const response = await fetch('../api/pulsecore-stats.php');
+            console.log('PulseCore response status:', response.status, response.ok);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
+            console.log('PulseCore result:', result);
             
             if (result.success) {
                 this.updateIntegrationStatus('pulsecoreStatus', true, 'Connected');
+                console.log('PulseCore connection successful');
                 document.getElementById('novaCount').textContent = result.data.total_novas || '0';
                 document.getElementById('climaxCount').textContent = result.data.total_groups || '0';
                 document.getElementById('lastNovaTime').textContent = result.data.last_nova_time ? new Date(result.data.last_nova_time).toLocaleDateString() : '-';
             } else {
-                this.updateIntegrationStatus('pulsecoreStatus', false, 'Error: ' + result.error);
+                console.error('PulseCore API returned error:', result.error);
+                this.updateIntegrationStatus('pulsecoreStatus', false, 'Error: ' + (result.error || 'Unknown error'));
             }
         } catch (error) {
-            this.updateIntegrationStatus('pulsecoreStatus', false, 'Connection failed');
+            console.error('PulseCore connection error:', error);
+            this.updateIntegrationStatus('pulsecoreStatus', false, 'Connection failed: ' + error.message);
         }
 
         // Check Variables connection
