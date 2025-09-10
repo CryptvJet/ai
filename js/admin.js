@@ -2047,9 +2047,111 @@ window.showSection = function(sectionName) {
     }
 };
 
+// Copy command to clipboard
+function copyCommandToClipboard(command) {
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(command).then(() => {
+            showCopyFeedback('Copied to clipboard!');
+        }).catch((error) => {
+            console.error('Clipboard API failed:', error);
+            fallbackCopyToClipboard(command);
+        });
+    } else {
+        fallbackCopyToClipboard(command);
+    }
+}
+
+// Fallback copy method for older browsers
+function fallbackCopyToClipboard(command) {
+    const textArea = document.createElement('textarea');
+    textArea.value = command;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopyFeedback('Copied to clipboard!');
+    } catch (error) {
+        console.error('Fallback copy failed:', error);
+        showCopyFeedback('Copy failed - please select text manually');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Show copy feedback
+function showCopyFeedback(message) {
+    const feedback = document.createElement('div');
+    feedback.textContent = message;
+    feedback.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.8));
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        animation: fadeInOut 2s ease-in-out forwards;
+    `;
+    
+    // Add fadeInOut animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(feedback);
+    
+    setTimeout(() => {
+        if (feedback.parentNode) {
+            feedback.parentNode.removeChild(feedback);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 2000);
+}
+
+// Initialize click-to-copy for command items
+function initializeCommandCopyEvents() {
+    document.addEventListener('click', function(event) {
+        const commandItem = event.target.closest('.command-item');
+        if (commandItem) {
+            const codeElement = commandItem.querySelector('code');
+            if (codeElement) {
+                const command = codeElement.textContent.trim();
+                copyCommandToClipboard(command);
+                
+                // Visual feedback - brief highlight
+                commandItem.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2))';
+                setTimeout(() => {
+                    commandItem.style.background = '';
+                }, 300);
+            }
+        }
+    });
+}
+
 // Initialize browser console capture when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
+    initializeCommandCopyEvents();
     
     // Initialize admin class and make it globally available
     try {
