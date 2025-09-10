@@ -1572,34 +1572,7 @@ function addDebugLine(text, type = 'data') {
     if (!debugOutput) return;
     
     const line = document.createElement('div');
-    line.style.fontSize = '11px';
-    line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-    line.style.padding = '1px 0';
-    
-    // Green console color scheme
-    switch(type) {
-        case 'command':
-            line.style.color = '#00ff88';
-            line.style.fontWeight = 'bold';
-            break;
-        case 'error':
-            line.style.color = '#ff6666';
-            break;
-        case 'warning':
-            line.style.color = '#ffaa00';
-            break;
-        case 'success':
-            line.style.color = '#00ff88';
-            line.style.fontWeight = 'bold';
-            break;
-        case 'info':
-            line.style.color = '#66aaff';
-            break;
-        default:
-            line.style.color = '#00ff88';
-            line.style.opacity = '0.8';
-    }
-    
+    line.className = `console-line ${type}`;
     line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
     debugOutput.appendChild(line);
 }
@@ -1613,15 +1586,12 @@ function clearDebugOutput() {
         } else {
             // In browser mode, show welcome message
             const line1 = document.createElement('div');
-            line1.style.color = '#00ff88';
-            line1.style.fontSize = '11px';
+            line1.className = 'browser-console-line welcome';
             line1.textContent = '[Browser] No browser console output captured yet';
             debugOutput.appendChild(line1);
             
             const line2 = document.createElement('div');
-            line2.style.color = '#00ff88';
-            line2.style.fontSize = '11px';
-            line2.style.opacity = '0.7';
+            line2.className = 'browser-console-line info';
             line2.textContent = '[Info] Browser console logging will appear here in real-time';
             debugOutput.appendChild(line2);
         }
@@ -1860,22 +1830,17 @@ function displayBrowserConsoleOutput() {
     if (browserConsoleBuffer.length === 0) {
         debugOutput.innerHTML = '';
         const line1 = document.createElement('div');
-        line1.style.color = '#00ff88';
-        line1.style.fontSize = '11px';
+        line1.className = 'browser-console-line welcome';
         line1.textContent = '[Browser Console] Interactive JavaScript console';
         debugOutput.appendChild(line1);
         
         const line2 = document.createElement('div');
-        line2.style.color = '#00ff88';
-        line2.style.fontSize = '11px';
-        line2.style.opacity = '0.7';
+        line2.className = 'browser-console-line info';
         line2.textContent = '[Info] Type JavaScript code to execute. Browser console output appears here.';
         debugOutput.appendChild(line2);
         
         const line3 = document.createElement('div');
-        line3.style.color = '#66aaff';
-        line3.style.fontSize = '11px';
-        line3.style.opacity = '0.6';
+        line3.className = 'browser-console-line example';
         line3.textContent = '[Examples] Try: document.title, window.location.href, console.log("Hello")';
         debugOutput.appendChild(line3);
     }
@@ -1891,25 +1856,7 @@ function displayBrowserConsoleOutput() {
         if (!existingEntry) {
             const timestamp = entry.timestamp.toLocaleTimeString();
             const line = document.createElement('div');
-            line.style.fontSize = '11px';
-            line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-            line.style.padding = '1px 0';
-            
-            // Color based on log type
-            switch(entry.type) {
-                case 'error':
-                    line.style.color = '#ff6666';
-                    break;
-                case 'warn':
-                    line.style.color = '#ffaa00';
-                    break;
-                case 'info':
-                    line.style.color = '#66aaff';
-                    break;
-                default:
-                    line.style.color = '#00ff88';
-            }
-            
+            line.className = `browser-console-line ${entry.type === 'log' ? 'log' : entry.type}`;
             line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
             debugOutput.appendChild(line);
         }
@@ -1927,10 +1874,7 @@ function executeBrowserCommand(jsCode) {
     
     // Add the command to display
     const commandLine = document.createElement('div');
-    commandLine.style.color = '#00ff88';
-    commandLine.style.fontSize = '11px';
-    commandLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-    commandLine.style.fontWeight = 'bold';
+    commandLine.className = 'js-command-line';
     commandLine.textContent = `> ${jsCode}`;
     debugOutput.appendChild(commandLine);
     
@@ -1947,10 +1891,7 @@ function executeBrowserCommand(jsCode) {
         
         // Display the result
         const resultLine = document.createElement('div');
-        resultLine.style.color = '#66aaff';
-        resultLine.style.fontSize = '11px';
-        resultLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-        resultLine.style.padding = '1px 0';
+        resultLine.className = 'js-result-line';
         
         if (result !== undefined) {
             if (typeof result === 'object' && result !== null) {
@@ -1979,10 +1920,7 @@ function executeBrowserCommand(jsCode) {
     } catch (error) {
         // Display the error
         const errorLine = document.createElement('div');
-        errorLine.style.color = '#ff6666';
-        errorLine.style.fontSize = '11px';
-        errorLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-        errorLine.style.padding = '1px 0';
+        errorLine.className = 'js-error-line';
         errorLine.textContent = `✗ ${error.message}`;
         debugOutput.appendChild(errorLine);
         
