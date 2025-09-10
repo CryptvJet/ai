@@ -1902,22 +1902,31 @@ function executeBrowserCommand(jsCode) {
         if (result !== undefined) {
             if (typeof result === 'object' && result !== null) {
                 try {
-                    // Handle special objects like MemoryInfo, NodeList, etc.
-                    if (result.constructor && result.constructor.name) {
-                        if (result.constructor.name === 'MemoryInfo') {
-                            resultLine.textContent = `← MemoryInfo { totalJSHeapSize: ${result.totalJSHeapSize}, usedJSHeapSize: ${result.usedJSHeapSize}, jsHeapSizeLimit: ${result.jsHeapSizeLimit} }`;
-                        } else if (result.constructor.name === 'NodeList') {
-                            resultLine.textContent = `← NodeList(${result.length}) [${Array.from(result).map(el => el.tagName || el.nodeName).join(', ')}]`;
-                        } else if (result.length !== undefined) {
-                            // Handle arrays and array-like objects
-                            resultLine.textContent = `← [${Array.from(result).slice(0, 5).join(', ')}${result.length > 5 ? '...' : ''}] (length: ${result.length})`;
+                    // Special handling for performance.memory (MemoryInfo object)
+                    if (result.totalJSHeapSize !== undefined && result.usedJSHeapSize !== undefined && result.jsHeapSizeLimit !== undefined) {
+                        resultLine.textContent = `← MemoryInfo { totalJSHeapSize: ${result.totalJSHeapSize}, usedJSHeapSize: ${result.usedJSHeapSize}, jsHeapSizeLimit: ${result.jsHeapSizeLimit} }`;
+                    }
+                    // Handle NodeList objects
+                    else if (result.constructor && result.constructor.name === 'NodeList') {
+                        resultLine.textContent = `← NodeList(${result.length}) [${Array.from(result).map(el => el.tagName || el.nodeName).join(', ')}]`;
+                    }
+                    // Handle HTMLCollections
+                    else if (result.constructor && result.constructor.name === 'HTMLCollection') {
+                        resultLine.textContent = `← HTMLCollection(${result.length}) [${Array.from(result).map(el => el.tagName).join(', ')}]`;
+                    }
+                    // Handle Arrays and array-like objects
+                    else if (result.length !== undefined && typeof result.length === 'number') {
+                        resultLine.textContent = `← [${Array.from(result).slice(0, 5).join(', ')}${result.length > 5 ? '...' : ''}] (length: ${result.length})`;
+                    }
+                    // Handle regular objects
+                    else {
+                        const keys = Object.keys(result);
+                        if (keys.length > 0) {
+                            const preview = keys.slice(0, 3).map(key => `${key}: ${typeof result[key] === 'string' ? '"' + result[key] + '"' : result[key]}`).join(', ');
+                            resultLine.textContent = `← {${preview}${keys.length > 3 ? '...' : ''}}`;
                         } else {
-                            // Regular object
-                            const preview = Object.keys(result).slice(0, 3).map(key => `${key}: ${typeof result[key] === 'string' ? '"' + result[key] + '"' : result[key]}`).join(', ');
-                            resultLine.textContent = `← {${preview}${Object.keys(result).length > 3 ? '...' : ''}}`;
+                            resultLine.textContent = JSON.stringify(result, null, 2);
                         }
-                    } else {
-                        resultLine.textContent = JSON.stringify(result, null, 2);
                     }
                 } catch (e) {
                     resultLine.textContent = `← [Object: ${result.constructor?.name || 'Unknown'}]`;

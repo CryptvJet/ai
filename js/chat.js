@@ -62,6 +62,12 @@ class AIChat {
                 document.getElementById('aiName').textContent = aiName;
                 document.getElementById('aiNameLabel').textContent = aiName + ':';
                 document.getElementById('welcomeText').textContent = settings.data.welcome_message || 'Hi! I\'m your AI Assistant. I hope you are doing well today! What should I call you?';
+                
+                // Update admin button with AI name
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) {
+                    adminBtn.textContent = `⚙️ ${aiName} Admin`;
+                }
             }
         } catch (error) {
             console.warn('Could not load AI settings:', error);
@@ -69,12 +75,24 @@ class AIChat {
     }
 
     setupVoiceRecognition() {
+        // Check if we're on HTTPS or localhost (required for microphone)
+        const isSecureContext = window.location.protocol === 'https:' || 
+                               window.location.hostname === 'localhost' ||
+                               window.location.hostname === '127.0.0.1';
+        
+        if (!isSecureContext) {
+            console.warn('Voice recognition requires HTTPS or localhost');
+            document.getElementById('voiceBtn').style.display = 'none';
+            return;
+        }
+        
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             try {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 this.recognition = new SpeechRecognition();
                 this.voiceTimeout = 'normal'; // Initialize voice timeout
                 this.recognitionTimer = null;
+                this.isRecognitionActive = false; // Track recognition state
                 
                 this.recognition.continuous = true; // Enable continuous recognition for extended listening
                 this.recognition.interimResults = true; // Show interim results for better UX
@@ -87,18 +105,24 @@ class AIChat {
             }
 
             this.recognition.onstart = () => {
+                console.log('Voice recognition started successfully');
                 this.isListening = true;
-                document.getElementById('voiceBtn').classList.add('listening');
-                document.getElementById('voiceIndicator').classList.remove('hidden');
+                this.isRecognitionActive = true;
+                
+                const voiceBtn = document.getElementById('voiceBtn');
+                const voiceIndicator = document.getElementById('voiceIndicator');
+                const voiceStatus = document.getElementById('voiceStatus');
+                
+                if (voiceBtn) voiceBtn.classList.add('listening');
+                if (voiceIndicator) voiceIndicator.classList.remove('hidden');
                 
                 // Update status
-                const voiceStatus = document.getElementById('voiceStatus');
                 if (voiceStatus) {
                     const timeoutText = this.voiceTimeout === 'continuous' ? 'Continuous listening...' :
                                       this.voiceTimeout === '30' ? '30 second timeout' :
                                       this.voiceTimeout === '60' ? '60 second timeout' :
                                       '5 second timeout';
-                    voiceStatus.textContent = `Listening active - ${timeoutText}`;
+                    voiceStatus.textContent = `🎤 Listening active - ${timeoutText}`;
                 }
                 
                 // Set timeout based on user preference
@@ -106,11 +130,14 @@ class AIChat {
             };
 
             this.recognition.onend = () => {
+                console.log('Voice recognition ended');
                 this.isListening = false;
-                document.getElementById('voiceBtn').classList.remove('listening');
+                this.isRecognitionActive = false;
                 
-                // Don't automatically hide the voice indicator anymore
-                // User must manually close it with the X button
+                const voiceBtn = document.getElementById('voiceBtn');
+                const voiceStatus = document.getElementById('voiceStatus');
+                
+                if (voiceBtn) voiceBtn.classList.remove('listening');
                 
                 // Clear timeout
                 if (this.recognitionTimer) {
@@ -119,9 +146,8 @@ class AIChat {
                 }
                 
                 // Update status
-                const voiceStatus = document.getElementById('voiceStatus');
                 if (voiceStatus) {
-                    voiceStatus.textContent = 'Voice recognition stopped. Click X to close or 🎤 to start again.';
+                    voiceStatus.textContent = '⭕ Voice recognition stopped. Click X to close or 🎤 to start again.';
                 }
             };
 
@@ -176,19 +202,52 @@ class AIChat {
             this.recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 this.isListening = false;
-                document.getElementById('voiceBtn').classList.remove('listening');
-                document.getElementById('voiceIndicator').classList.add('hidden');
+                this.isRecognitionActive = false;
                 
-                // Show user-friendly error message
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access denied. Please allow microphone permissions and try again.');
-                } else if (event.error === 'network') {
-                    console.warn('Speech recognition network error - continuing without voice input');
-                    // Don't show alert, just log the issue
-                } else if (event.error === 'no-speech') {
-                    console.log('No speech detected, timeout reached');
-                } else {
-                    console.warn('Speech recognition error:', event.error);
+                const voiceBtn = document.getElementById('voiceBtn');
+                const voiceIndicator = document.getElementById('voiceIndicator');
+                const voiceStatus = document.getElementById('voiceStatus');
+                
+                if (voiceBtn) voiceBtn.classList.remove('listening');
+                
+                // Clear timeout
+                if (this.recognitionTimer) {
+                    clearTimeout(this.recognitionTimer);
+                    this.recognitionTimer = null;
+                }
+                
+                // Handle different error types
+                let errorMsg = '';
+                switch (event.error) {
+                    case 'not-allowed':
+                        errorMsg = '❌ Microphone access denied. Please allow microphone permissions and try again.';
+                        if (voiceIndicator) voiceIndicator.classList.add('hidden');
+                        alert('Microphone access denied. Please:\n1. Click the microphone icon in your address bar\n2. Select "Allow" for microphone permissions\n3. Try again');
+                        break;
+                    case 'network':
+                        errorMsg = '🌐 Network error. Check your internet connection.';
+                        console.warn('Speech recognition network error - check internet connection');
+                        break;
+                    case 'no-speech':
+                        errorMsg = '🔇 No speech detected. Try speaking louder or closer to the microphone.';
+                        console.log('No speech detected, timeout reached');
+                        break;
+                    case 'audio-capture':
+                        errorMsg = '🎤 Audio capture error. Check your microphone connection.';
+                        break;
+                    case 'service-not-allowed':
+                        errorMsg = '🚫 Speech service not allowed. Make sure you\'re using HTTPS.';
+                        break;
+                    case 'aborted':
+                        errorMsg = '⏹️ Voice recognition was stopped.';
+                        break;
+                    default:
+                        errorMsg = `⚠️ Speech recognition error: ${event.error}`;
+                        console.warn('Unhandled speech recognition error:', event.error);
+                }
+                
+                if (voiceStatus) {
+                    voiceStatus.textContent = errorMsg;
                 }
             };
         } else {
@@ -233,8 +292,34 @@ class AIChat {
     }
     
     stopListening() {
-        if (this.recognition && this.isListening) {
-            this.recognition.stop();
+        console.log('Stop listening requested');
+        
+        if (this.recognitionTimer) {
+            clearTimeout(this.recognitionTimer);
+            this.recognitionTimer = null;
+        }
+        
+        if (this.recognition && (this.isListening || this.isRecognitionActive)) {
+            try {
+                this.recognition.stop();
+                console.log('Recognition stop called');
+            } catch (error) {
+                console.warn('Error stopping recognition:', error);
+                // Force reset state even if stop fails
+                this.isListening = false;
+                this.isRecognitionActive = false;
+                
+                const voiceBtn = document.getElementById('voiceBtn');
+                if (voiceBtn) voiceBtn.classList.remove('listening');
+            }
+        } else {
+            console.log('Recognition not active or not available');
+            // Make sure UI is reset
+            this.isListening = false;
+            this.isRecognitionActive = false;
+            
+            const voiceBtn = document.getElementById('voiceBtn');
+            if (voiceBtn) voiceBtn.classList.remove('listening');
         }
     }
 
@@ -317,36 +402,95 @@ class AIChat {
 
     toggleVoice() {
         if (!this.recognition) {
-            alert('Voice recognition not supported in this browser');
+            const isSecureContext = window.location.protocol === 'https:' || 
+                                   window.location.hostname === 'localhost' ||
+                                   window.location.hostname === '127.0.0.1';
+            
+            if (!isSecureContext) {
+                alert('Voice recognition requires HTTPS or localhost. Please access this page over HTTPS.');
+            } else {
+                alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+            }
             return;
         }
 
-        if (this.isListening) {
+        if (this.isListening || this.isRecognitionActive) {
+            console.log('Stopping voice recognition...');
             this.stopListening();
         } else {
-            // Get current timeout setting before starting
-            const voiceTimeout = document.getElementById('voiceTimeout');
-            if (voiceTimeout) {
-                this.voiceTimeout = voiceTimeout.value;
-            }
-            
-            // Clear input and reset styling before starting
-            const messageInput = document.getElementById('messageInput');
+            console.log('Starting voice recognition...');
+            this.startListening();
+        }
+    }
+    
+    startListening() {
+        if (this.isRecognitionActive) {
+            console.log('Recognition already active, ignoring start request');
+            return;
+        }
+        
+        // Get current timeout setting before starting
+        const voiceTimeout = document.getElementById('voiceTimeout');
+        if (voiceTimeout) {
+            this.voiceTimeout = voiceTimeout.value;
+        }
+        
+        // Clear input and reset styling before starting
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
             messageInput.value = '';
             messageInput.style.fontStyle = 'normal';
             messageInput.style.color = '#e2e8f0';
+        }
+        
+        // Update UI immediately
+        const voiceStatus = document.getElementById('voiceStatus');
+        if (voiceStatus) {
+            voiceStatus.textContent = '🔄 Initializing microphone...';
+        }
+        
+        try {
+            this.recognition.start();
+        } catch (error) {
+            console.error('Failed to start voice recognition:', error);
             
-            try {
-                this.recognition.start();
-            } catch (error) {
-                console.error('Failed to start voice recognition:', error);
-                if (error.name === 'InvalidStateError') {
-                    // Recognition is already running, stop it first
+            if (error.name === 'InvalidStateError') {
+                console.log('Recognition already running, forcing stop and restart...');
+                
+                // Force stop and reset
+                this.isListening = false;
+                this.isRecognitionActive = false;
+                
+                try {
                     this.recognition.stop();
-                    setTimeout(() => {
-                        this.recognition.start();
-                    }, 100);
+                } catch (stopError) {
+                    console.warn('Error stopping recognition:', stopError);
                 }
+                
+                // Wait a bit longer before restarting
+                setTimeout(() => {
+                    if (!this.isRecognitionActive) {
+                        console.log('Attempting to restart after reset...');
+                        try {
+                            this.recognition.start();
+                        } catch (restartError) {
+                            console.error('Failed to restart after reset:', restartError);
+                            if (voiceStatus) {
+                                voiceStatus.textContent = '❌ Could not start microphone. Please try again.';
+                            }
+                        }
+                    }
+                }, 200);
+            } else if (error.name === 'NotAllowedError') {
+                if (voiceStatus) {
+                    voiceStatus.textContent = '❌ Microphone access denied. Please check permissions.';
+                }
+                alert('Microphone access denied. Please:\n1. Click the microphone icon in your address bar\n2. Select "Allow" for microphone permissions\n3. Refresh the page and try again');
+            } else {
+                if (voiceStatus) {
+                    voiceStatus.textContent = `❌ Error starting microphone: ${error.message}`;
+                }
+                console.error('Unhandled recognition start error:', error);
             }
         }
     }
@@ -636,6 +780,14 @@ I'd love to get to know you better - what's your name?`;
                 this.showAdvancedVoiceSettings();
             });
         }
+        
+        // Microphone test button
+        const micTestBtn = document.getElementById('micTestBtn');
+        if (micTestBtn) {
+            micTestBtn.addEventListener('click', () => {
+                this.testMicrophone();
+            });
+        }
     }
     
     testCurrentVoiceSettings() {
@@ -647,6 +799,11 @@ I'd love to get to know you better - what's your name?`;
         
         const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
         this.speakText(randomMessage);
+    }
+    
+    testMicrophone() {
+        // Open the test microphone page in a new tab
+        window.open('test-microphone.html', '_blank', 'width=800,height=600');
     }
     
     showAdvancedVoiceSettings() {
