@@ -337,25 +337,26 @@ class AIChat {
             this.updateConnectionStatus('pulseStatus', false);
         }
 
-        // Check PC AI connection (optional local AI server)
+        // Check PC Bridge connection
         try {
-            const response = await fetch('http://localhost:8000/health', {
-                method: 'GET',
-                timeout: 2000 // 2 second timeout
-            });
-            if (response.ok) {
+            const response = await fetch('api/pc-status.php');
+            const status = await response.json();
+            console.log('PC Bridge status response:', status);
+            
+            if (status.success && status.data.is_online) {
                 this.updateConnectionStatus('pcStatus', true);
-                this.currentMode = 'full-power';
-                document.getElementById('aiMode').textContent = 'Full Power';
-                document.getElementById('aiMode').className = 'mode-indicator full-power';
+                console.log('✅ PC Bridge is online');
+                // Optionally switch to full-power mode when PC is connected
+                // this.currentMode = 'full-power';
+                // document.getElementById('aiMode').textContent = 'Full Power';
+                // document.getElementById('aiMode').className = 'mode-indicator full-power';
             } else {
-                throw new Error('PC AI server not responding');
+                throw new Error('PC Bridge not responding');
             }
         } catch (error) {
-            // PC AI server not running - this is normal, use chill mode
-            console.log('PC AI server not available, using chill mode');
+            // PC Bridge not running - this is normal for web-only usage
+            console.log('PC Bridge not available (this is normal for web-only usage):', error.message);
             this.updateConnectionStatus('pcStatus', false);
-            this.currentMode = 'chill';
         }
     }
 
@@ -1005,6 +1006,10 @@ I'd love to get to know you better - what's your name?`;
     }
     
     setupAdvancedVoiceDropdown() {
+        // Initialize the enhanced voice selector system
+        this.initializeEnhancedVoiceSelector();
+        
+        // Legacy dropdown compatibility
         const advancedSelect = document.getElementById('advancedVoiceSelect');
         const simpleSelect = document.getElementById('voiceSelect');
         
@@ -1021,6 +1026,355 @@ I'd love to get to know you better - what's your name?`;
                 localStorage.setItem('selectedVoice', voiceIndex);
             });
         }
+    }
+    
+    initializeEnhancedVoiceSelector() {
+        // Initialize voice data structures
+        this.filteredVoices = [...this.voices];
+        this.favoriteVoices = new Set(JSON.parse(localStorage.getItem('favoriteVoices') || '[]'));
+        this.voiceRatings = JSON.parse(localStorage.getItem('voiceRatings') || '{}');
+        this.voiceUsageCount = JSON.parse(localStorage.getItem('voiceUsageCount') || '{}');
+        
+        // Populate the enhanced voice grid
+        this.populateVoicesGrid();
+        this.populateLanguageFilter();
+        this.setupVoiceFiltering();
+        this.setupVoiceTestingFeatures();
+        
+        // Update selected voice display
+        this.updateSelectedVoiceDisplay();
+    }
+    
+    populateVoicesGrid() {
+        const grid = document.getElementById('voicesGrid');
+        if (!grid || this.voices.length === 0) {
+            if (grid) grid.innerHTML = '<div class="loading-voices">No voices available</div>';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        
+        if (this.filteredVoices.length === 0) {
+            grid.innerHTML = `
+                <div class="no-voices-found">
+                    <div class="no-voices-found-icon">🎭</div>
+                    <div>No voices match your current filters</div>
+                    <button onclick="window.aiChat.clearAllFilters()" class="btn-small" style="margin-top: 10px;">Clear Filters</button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort voices by priority: favorites first, then by usage, then by quality
+        const sortedVoices = this.filteredVoices.sort((a, b) => {
+            const aFav = this.favoriteVoices.has(a.voiceURI) ? 1000 : 0;
+            const bFav = this.favoriteVoices.has(b.voiceURI) ? 1000 : 0;
+            const aUsage = this.voiceUsageCount[a.voiceURI] || 0;
+            const bUsage = this.voiceUsageCount[b.voiceURI] || 0;
+            const aQuality = this.getVoiceQuality(a);
+            const bQuality = this.getVoiceQuality(b);
+            
+            return (bFav + bUsage + aQuality) - (aFav + aUsage + bQuality);
+        });
+        
+        sortedVoices.forEach((voice, index) => {
+            const voiceCard = this.createVoiceCard(voice, index);
+            grid.appendChild(voiceCard);
+        });
+        
+        // Add stats footer
+        const stats = document.createElement('div');
+        stats.className = 'voice-stats';
+        stats.innerHTML = `
+            <span>Showing ${this.filteredVoices.length} of ${this.voices.length} voices</span>
+            <span>${this.favoriteVoices.size} favorites</span>
+        `;
+        grid.appendChild(stats);
+    }
+    
+    createVoiceCard(voice, index) {
+        const card = document.createElement('div');
+        card.className = 'voice-card';
+        card.dataset.voiceIndex = index;
+        
+        const isSelected = this.selectedVoice && this.selectedVoice.voiceURI === voice.voiceURI;
+        const isFavorited = this.favoriteVoices.has(voice.voiceURI);
+        
+        if (isSelected) card.classList.add('selected');
+        
+        const quality = this.getVoiceQuality(voice);
+        const gender = this.getVoiceGender(voice);
+        const flag = this.getLanguageFlag(voice.lang);
+        
+        card.innerHTML = `
+            <div class="voice-info">
+                <div class="voice-name">${voice.name}</div>
+                <div class="voice-details">
+                    <div class="voice-language">
+                        ${flag} ${voice.lang}
+                    </div>
+                    <div class="voice-gender">
+                        ${this.getGenderIcon(gender)} ${gender}
+                    </div>
+                    <div class="voice-quality">
+                        <span class="quality-badge quality-${quality.toLowerCase()}">${quality}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="voice-actions">
+                <button class="voice-play-btn" title="Preview voice" data-voice-index="${index}">
+                    ▶️
+                </button>
+                <button class="voice-favorite-btn ${isFavorited ? 'favorited' : ''}" title="Toggle favorite" data-voice-index="${index}">
+                    ${isFavorited ? '⭐' : '☆'}
+                </button>
+            </div>
+        `;
+        
+        // Add click handlers
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.voice-actions')) return;
+            this.selectVoice(voice, index);
+        });
+        
+        const playBtn = card.querySelector('.voice-play-btn');
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.previewVoice(voice, playBtn);
+        });
+        
+        const favBtn = card.querySelector('.voice-favorite-btn');
+        favBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleVoiceFavorite(voice, favBtn);
+        });
+        
+        return card;
+    }
+    
+    getVoiceQuality(voice) {
+        // Enhanced quality detection based on voice characteristics
+        const name = voice.name.toLowerCase();
+        
+        // Neural/AI voices (highest quality)
+        if (name.includes('neural') || name.includes('wavenet') || name.includes('studio') || 
+            name.includes('premium') || name.includes('enhanced') || name.includes('hd')) {
+            return 'Neural';
+        }
+        
+        // Premium voices (high quality)
+        if (name.includes('pro') || name.includes('plus') || name.includes('edge') || 
+            name.includes('natural') || name.includes('expressive')) {
+            return 'Premium';
+        }
+        
+        // Standard voices
+        return 'Standard';
+    }
+    
+    getVoiceGender(voice) {
+        const name = voice.name.toLowerCase();
+        
+        // Common female voice indicators
+        if (name.includes('female') || name.includes('woman') || name.includes('ella') || 
+            name.includes('emma') || name.includes('sophia') || name.includes('sarah') ||
+            name.includes('anna') || name.includes('karen') || name.includes('susan') ||
+            name.includes('samantha') || name.includes('victoria') || name.includes('allison') ||
+            name.includes('ava') || name.includes('zoe') || name.includes('aria')) {
+            return 'Female';
+        }
+        
+        // Common male voice indicators
+        if (name.includes('male') || name.includes('man') || name.includes('daniel') ||
+            name.includes('alex') || name.includes('david') || name.includes('thomas') ||
+            name.includes('fred') || name.includes('ryan') || name.includes('diego') ||
+            name.includes('jorge') || name.includes('ricky') || name.includes('aaron')) {
+            return 'Male';
+        }
+        
+        // Neutral/Unknown
+        return 'Neutral';
+    }
+    
+    getGenderIcon(gender) {
+        switch (gender.toLowerCase()) {
+            case 'female': return '♀️';
+            case 'male': return '♂️';
+            default: return '⚧️';
+        }
+    }
+    
+    getLanguageFlag(langCode) {
+        const flags = {
+            'en-US': '🇺🇸', 'en-GB': '🇬🇧', 'en-AU': '🇦🇺', 'en-CA': '🇨🇦',
+            'es-ES': '🇪🇸', 'es-MX': '🇲🇽', 'fr-FR': '🇫🇷', 'de-DE': '🇩🇪',
+            'it-IT': '🇮🇹', 'pt-BR': '🇧🇷', 'ja-JP': '🇯🇵', 'ko-KR': '🇰🇷',
+            'zh-CN': '🇨🇳', 'zh-TW': '🇹🇼', 'ar-SA': '🇸🇦', 'hi-IN': '🇮🇳',
+            'ru-RU': '🇷🇺', 'nl-NL': '🇳🇱', 'sv-SE': '🇸🇪', 'da-DK': '🇩🇰',
+            'no-NO': '🇳🇴', 'fi-FI': '🇫🇮', 'pl-PL': '🇵🇱', 'tr-TR': '🇹🇷'
+        };
+        
+        return flags[langCode] || flags[langCode?.split('-')[0]] || '🌐';
+    }
+    
+    populateLanguageFilter() {
+        const languageFilter = document.getElementById('languageFilter');
+        if (!languageFilter) return;
+        
+        const languages = new Set();
+        this.voices.forEach(voice => {
+            const lang = voice.lang.split('-')[0];
+            languages.add(lang);
+        });
+        
+        languageFilter.innerHTML = '<option value="">All Languages</option>';
+        Array.from(languages).sort().forEach(lang => {
+            const displayName = new Intl.DisplayNames(['en'], {type: 'language'}).of(lang) || lang;
+            const option = document.createElement('option');
+            option.value = lang;
+            option.textContent = displayName;
+            languageFilter.appendChild(option);
+        });
+    }
+    
+    setupVoiceFiltering() {
+        const searchInput = document.getElementById('voiceSearch');
+        const languageFilter = document.getElementById('languageFilter');
+        const genderFilter = document.getElementById('genderFilter');
+        const qualityFilter = document.getElementById('qualityFilter');
+        const clearFilters = document.getElementById('clearFilters');
+        
+        const applyFilters = () => {
+            const searchTerm = searchInput?.value.toLowerCase() || '';
+            const selectedLang = languageFilter?.value || '';
+            const selectedGender = genderFilter?.value || '';
+            const selectedQuality = qualityFilter?.value || '';
+            
+            this.filteredVoices = this.voices.filter(voice => {
+                const matchesSearch = !searchTerm || 
+                    voice.name.toLowerCase().includes(searchTerm) ||
+                    voice.lang.toLowerCase().includes(searchTerm);
+                
+                const matchesLang = !selectedLang || voice.lang.startsWith(selectedLang);
+                const matchesGender = !selectedGender || this.getVoiceGender(voice).toLowerCase() === selectedGender;
+                const matchesQuality = !selectedQuality || this.getVoiceQuality(voice).toLowerCase() === selectedQuality;
+                
+                return matchesSearch && matchesLang && matchesGender && matchesQuality;
+            });
+            
+            this.populateVoicesGrid();
+        };
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+        
+        [languageFilter, genderFilter, qualityFilter].forEach(filter => {
+            if (filter) {
+                filter.addEventListener('change', applyFilters);
+            }
+        });
+        
+        if (clearFilters) {
+            clearFilters.addEventListener('click', () => {
+                this.clearAllFilters();
+            });
+        }
+    }
+    
+    setupVoiceTestingFeatures() {
+        const testSelectedBtn = document.getElementById('testSelectedVoice');
+        const testRandomBtn = document.getElementById('testRandomVoice');
+        const compareBtn = document.getElementById('compareVoices');
+        const recommendBtn = document.getElementById('voiceRecommendations');
+        const closeComparisonBtn = document.getElementById('closeComparison');
+        
+        if (testSelectedBtn) {
+            testSelectedBtn.addEventListener('click', () => {
+                this.testSelectedVoice();
+            });
+        }
+        
+        if (testRandomBtn) {
+            testRandomBtn.addEventListener('click', () => {
+                this.testRandomVoice();
+            });
+        }
+        
+        if (compareBtn) {
+            compareBtn.addEventListener('click', () => {
+                this.showVoiceComparison();
+            });
+        }
+        
+        if (recommendBtn) {
+            recommendBtn.addEventListener('click', () => {
+                this.showVoiceRecommendations();
+            });
+        }
+        
+        if (closeComparisonBtn) {
+            closeComparisonBtn.addEventListener('click', () => {
+                document.getElementById('voiceComparisonPanel').classList.add('hidden');
+            });
+        }
+    }
+    
+    selectVoice(voice, index) {
+        // Update selection
+        this.selectedVoice = voice;
+        localStorage.setItem('selectedVoice', index.toString());
+        
+        // Track usage
+        this.voiceUsageCount[voice.voiceURI] = (this.voiceUsageCount[voice.voiceURI] || 0) + 1;
+        localStorage.setItem('voiceUsageCount', JSON.stringify(this.voiceUsageCount));
+        
+        // Update UI
+        document.querySelectorAll('.voice-card').forEach(card => card.classList.remove('selected'));
+        document.querySelector(`[data-voice-index="${index}"]`)?.classList.add('selected');
+        
+        this.updateSelectedVoiceDisplay();
+        this.debugLog(`Voice selected: ${voice.name} (${voice.lang})`);
+        
+        // Sync with legacy dropdowns
+        const simpleSelect = document.getElementById('voiceSelect');
+        const advancedSelect = document.getElementById('advancedVoiceSelect');
+        if (simpleSelect) simpleSelect.value = index;
+        if (advancedSelect) advancedSelect.value = index;
+    }
+    
+    updateSelectedVoiceDisplay() {
+        const display = document.getElementById('selectedVoiceDisplay');
+        if (!display) return;
+        
+        if (!this.selectedVoice) {
+            display.innerHTML = `
+                <div class="no-voice-selected">
+                    <span>🎭 No voice selected - using browser default</span>
+                </div>
+            `;
+            return;
+        }
+        
+        const quality = this.getVoiceQuality(this.selectedVoice);
+        const gender = this.getVoiceGender(this.selectedVoice);
+        const flag = this.getLanguageFlag(this.selectedVoice.lang);
+        const isFavorited = this.favoriteVoices.has(this.selectedVoice.voiceURI);
+        
+        display.innerHTML = `
+            <div class="selected-voice-info">
+                <div class="selected-voice-details">
+                    <div class="selected-voice-name">${this.selectedVoice.name}</div>
+                    <div class="selected-voice-meta">
+                        <span>${flag} ${this.selectedVoice.lang}</span>
+                        <span>${this.getGenderIcon(gender)} ${gender}</span>
+                        <span class="quality-badge quality-${quality.toLowerCase()}">${quality}</span>
+                        ${isFavorited ? '<span>⭐ Favorite</span>' : ''}
+                    </div>
+                </div>
+                <button onclick="window.aiChat.previewVoice(window.aiChat.selectedVoice)" class="btn-small">🎵 Preview</button>
+            </div>
+        `;
     }
     
     setupDiagnosticButtons() {
@@ -1343,6 +1697,297 @@ I'd love to get to know you better - what's your name?`;
             }
         };
         input.click();
+    }
+    
+    // Enhanced Voice Selector Methods
+    
+    previewVoice(voice, buttonElement) {
+        if (!voice) voice = this.selectedVoice;
+        if (!voice) {
+            alert('No voice selected to preview');
+            return;
+        }
+        
+        const testText = document.getElementById('voiceTestText')?.value || 
+                        'Hello! This is a preview of this voice. How do I sound to you?';
+        
+        // Update button state
+        if (buttonElement) {
+            buttonElement.classList.add('playing');
+            buttonElement.textContent = '⏹️';
+        }
+        
+        // Stop any current speech
+        if (this.synthesis) {
+            this.synthesis.cancel();
+        }
+        
+        // Create utterance with voice
+        const utterance = new SpeechSynthesisUtterance(testText);
+        utterance.voice = voice;
+        
+        // Apply current settings
+        utterance.rate = parseFloat(document.getElementById('advancedSpeechRate')?.value || 1.2);
+        utterance.pitch = parseFloat(document.getElementById('advancedSpeechPitch')?.value || 1.0);
+        utterance.volume = parseFloat(document.getElementById('advancedSpeechVolume')?.value || 0.8);
+        
+        utterance.onend = () => {
+            if (buttonElement) {
+                buttonElement.classList.remove('playing');
+                buttonElement.textContent = '▶️';
+            }
+        };
+        
+        utterance.onerror = (e) => {
+            console.error('Voice preview error:', e);
+            if (buttonElement) {
+                buttonElement.classList.remove('playing');
+                buttonElement.textContent = '▶️';
+            }
+        };
+        
+        if (this.synthesis) {
+            this.synthesis.speak(utterance);
+            this.debugLog(`Previewing voice: ${voice.name}`);
+        }
+    }
+    
+    toggleVoiceFavorite(voice, buttonElement) {
+        const voiceURI = voice.voiceURI;
+        
+        if (this.favoriteVoices.has(voiceURI)) {
+            this.favoriteVoices.delete(voiceURI);
+            buttonElement.classList.remove('favorited');
+            buttonElement.textContent = '☆';
+            this.debugLog(`Removed ${voice.name} from favorites`);
+        } else {
+            this.favoriteVoices.add(voiceURI);
+            buttonElement.classList.add('favorited');
+            buttonElement.textContent = '⭐';
+            this.debugLog(`Added ${voice.name} to favorites`);
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('favoriteVoices', JSON.stringify(Array.from(this.favoriteVoices)));
+        
+        // Update display and re-sort
+        this.updateSelectedVoiceDisplay();
+        this.populateVoicesGrid();
+    }
+    
+    testSelectedVoice() {
+        if (!this.selectedVoice) {
+            alert('Please select a voice first');
+            return;
+        }
+        
+        this.previewVoice(this.selectedVoice);
+    }
+    
+    testRandomVoice() {
+        if (this.filteredVoices.length === 0) {
+            alert('No voices available to test');
+            return;
+        }
+        
+        const randomVoice = this.filteredVoices[Math.floor(Math.random() * this.filteredVoices.length)];
+        this.previewVoice(randomVoice);
+        this.debugLog(`Testing random voice: ${randomVoice.name}`);
+    }
+    
+    showVoiceComparison() {
+        const panel = document.getElementById('voiceComparisonPanel');
+        const container = document.getElementById('comparisonVoices');
+        if (!panel || !container) return;
+        
+        // Get top 3 voices (favorites + most used + highest quality)
+        const topVoices = this.getTopVoices(3);
+        
+        if (topVoices.length === 0) {
+            alert('No voices available for comparison');
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        topVoices.forEach((voice, index) => {
+            const quality = this.getVoiceQuality(voice);
+            const gender = this.getVoiceGender(voice);
+            const flag = this.getLanguageFlag(voice.lang);
+            const isFavorited = this.favoriteVoices.has(voice.voiceURI);
+            
+            const card = document.createElement('div');
+            card.className = 'comparison-voice-card';
+            card.innerHTML = `
+                <div class="comparison-voice-name">${voice.name}</div>
+                <div class="comparison-voice-details">
+                    ${flag} ${voice.lang} • ${this.getGenderIcon(gender)} ${gender}
+                    <br>
+                    <span class="quality-badge quality-${quality.toLowerCase()}">${quality}</span>
+                    ${isFavorited ? ' • ⭐ Favorite' : ''}
+                </div>
+                <button class="comparison-play-btn" onclick="window.aiChat.previewVoice(window.aiChat.voices[${this.voices.indexOf(voice)}], this)">
+                    🎵 Test Voice ${index + 1}
+                </button>
+            `;
+            container.appendChild(card);
+        });
+        
+        panel.classList.remove('hidden');
+        this.debugLog(`Showing comparison of ${topVoices.length} voices`);
+    }
+    
+    showVoiceRecommendations() {
+        // Analyze user preferences and recommend voices
+        const recommendations = this.getVoiceRecommendations();
+        
+        if (recommendations.length === 0) {
+            alert('No specific recommendations available yet. Try using more voices to get personalized suggestions!');
+            return;
+        }
+        
+        let message = '🌟 Recommended voices based on your preferences:\n\n';
+        recommendations.slice(0, 5).forEach((rec, index) => {
+            message += `${index + 1}. ${rec.voice.name} (${rec.voice.lang})\n`;
+            message += `   Reason: ${rec.reason}\n\n`;
+        });
+        
+        alert(message);
+        this.debugLog(`Generated ${recommendations.length} voice recommendations`);
+    }
+    
+    getTopVoices(count = 3) {
+        if (this.voices.length === 0) return [];
+        
+        // Score voices based on multiple factors
+        const scoredVoices = this.voices.map(voice => {
+            let score = 0;
+            
+            // Favorite voices get high score
+            if (this.favoriteVoices.has(voice.voiceURI)) score += 100;
+            
+            // Usage count
+            score += (this.voiceUsageCount[voice.voiceURI] || 0) * 10;
+            
+            // Quality bonus
+            const quality = this.getVoiceQuality(voice);
+            if (quality === 'Neural') score += 30;
+            else if (quality === 'Premium') score += 20;
+            else score += 10;
+            
+            // Language preference (English gets slight bonus)
+            if (voice.lang.startsWith('en')) score += 5;
+            
+            return { voice, score };
+        });
+        
+        // Sort by score and take top voices
+        return scoredVoices
+            .sort((a, b) => b.score - a.score)
+            .slice(0, count)
+            .map(item => item.voice);
+    }
+    
+    getVoiceRecommendations() {
+        const recommendations = [];
+        
+        // Analyze favorites
+        if (this.favoriteVoices.size > 0) {
+            const favoriteLanguages = new Set();
+            const favoriteGenders = new Set();
+            
+            this.voices.forEach(voice => {
+                if (this.favoriteVoices.has(voice.voiceURI)) {
+                    favoriteLanguages.add(voice.lang.split('-')[0]);
+                    favoriteGenders.add(this.getVoiceGender(voice).toLowerCase());
+                }
+            });
+            
+            // Recommend similar voices
+            this.voices.forEach(voice => {
+                if (this.favoriteVoices.has(voice.voiceURI)) return; // Skip already favorited
+                
+                const lang = voice.lang.split('-')[0];
+                const gender = this.getVoiceGender(voice).toLowerCase();
+                
+                if (favoriteLanguages.has(lang) && favoriteGenders.has(gender)) {
+                    recommendations.push({
+                        voice: voice,
+                        reason: `Similar to your favorite ${gender} ${lang.toUpperCase()} voices`,
+                        score: 90
+                    });
+                }
+            });
+        }
+        
+        // Recommend high-quality voices
+        this.voices.forEach(voice => {
+            const quality = this.getVoiceQuality(voice);
+            if (quality === 'Neural' && !this.favoriteVoices.has(voice.voiceURI)) {
+                recommendations.push({
+                    voice: voice,
+                    reason: 'High-quality neural voice with natural speech',
+                    score: 80
+                });
+            }
+        });
+        
+        // Recommend based on usage patterns
+        const mostUsedLang = this.getMostUsedLanguage();
+        if (mostUsedLang) {
+            this.voices.forEach(voice => {
+                if (voice.lang.startsWith(mostUsedLang) && 
+                    !this.favoriteVoices.has(voice.voiceURI) &&
+                    (this.voiceUsageCount[voice.voiceURI] || 0) === 0) {
+                    
+                    recommendations.push({
+                        voice: voice,
+                        reason: `Popular ${mostUsedLang.toUpperCase()} voice you haven't tried`,
+                        score: 70
+                    });
+                }
+            });
+        }
+        
+        // Sort and deduplicate
+        return recommendations
+            .sort((a, b) => b.score - a.score)
+            .filter((rec, index, arr) => 
+                arr.findIndex(r => r.voice.voiceURI === rec.voice.voiceURI) === index
+            );
+    }
+    
+    getMostUsedLanguage() {
+        const langCounts = {};
+        
+        Object.entries(this.voiceUsageCount).forEach(([voiceURI, count]) => {
+            const voice = this.voices.find(v => v.voiceURI === voiceURI);
+            if (voice) {
+                const lang = voice.lang.split('-')[0];
+                langCounts[lang] = (langCounts[lang] || 0) + count;
+            }
+        });
+        
+        return Object.keys(langCounts).reduce((a, b) => 
+            langCounts[a] > langCounts[b] ? a : b, null
+        );
+    }
+    
+    clearAllFilters() {
+        const searchInput = document.getElementById('voiceSearch');
+        const languageFilter = document.getElementById('languageFilter');
+        const genderFilter = document.getElementById('genderFilter');
+        const qualityFilter = document.getElementById('qualityFilter');
+        
+        if (searchInput) searchInput.value = '';
+        if (languageFilter) languageFilter.value = '';
+        if (genderFilter) genderFilter.value = '';
+        if (qualityFilter) qualityFilter.value = '';
+        
+        this.filteredVoices = [...this.voices];
+        this.populateVoicesGrid();
+        
+        this.debugLog('All voice filters cleared');
     }
 
     async speakText(text) {

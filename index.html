@@ -22,7 +22,7 @@
                     <h1 id="aiName">AI Assistant</h1>
                     <span id="aiMode" class="mode-indicator chill">Chill Mode</span>
                     <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
-                    <span id="pcStatus" class="connection-status">PC AI: <span class="status-dot"></span></span>
+                    <span id="pcStatus" class="connection-status">PC Bridge: <span class="status-dot"></span></span>
                 </div>
                 <div class="controls">
                     <button id="adminBtn" class="btn-admin" onclick="openAdmin()">⚙️ My Admin</button>
@@ -249,12 +249,75 @@
                 <div class="tab-content" id="tab-synthesis">
                     <h3>🔊 Text-to-Speech Settings</h3>
                     
-                    <div class="setting-group">
-                        <label>Voice Selection:</label>
-                        <select id="advancedVoiceSelect" class="setting-select">
-                            <option value="">Loading voices...</option>
-                        </select>
-                        <button id="previewVoiceBtn" class="btn-small">▶️ Preview</button>
+                    <div class="setting-group voice-selector-group">
+                        <label>Voice Selection & Preview:</label>
+                        
+                        <!-- Voice Search and Filters -->
+                        <div class="voice-controls">
+                            <input type="text" id="voiceSearch" class="voice-search" placeholder="🔍 Search voices by name, language, or accent...">
+                            <div class="voice-filters">
+                                <select id="languageFilter" class="filter-select">
+                                    <option value="">All Languages</option>
+                                </select>
+                                <select id="genderFilter" class="filter-select">
+                                    <option value="">All Genders</option>
+                                    <option value="female">Female</option>
+                                    <option value="male">Male</option>
+                                    <option value="neutral">Neutral</option>
+                                </select>
+                                <select id="qualityFilter" class="filter-select">
+                                    <option value="">All Quality</option>
+                                    <option value="premium">Premium</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="neural">Neural</option>
+                                </select>
+                                <button id="clearFilters" class="btn-small">🧹 Clear</button>
+                            </div>
+                        </div>
+
+                        <!-- Voice Grid Display -->
+                        <div class="voices-grid" id="voicesGrid">
+                            <div class="loading-voices">Loading available voices...</div>
+                        </div>
+
+                        <!-- Selected Voice Display -->
+                        <div class="selected-voice-display" id="selectedVoiceDisplay">
+                            <div class="no-voice-selected">
+                                <span>🎭 No voice selected - using browser default</span>
+                            </div>
+                        </div>
+
+                        <!-- Voice Testing Panel -->
+                        <div class="voice-testing-panel">
+                            <div class="test-controls">
+                                <textarea id="voiceTestText" class="test-text" placeholder="Enter custom text to test voices..."
+                                >Hello! I'm testing this voice. How do I sound? This is a longer sentence to showcase the voice quality and characteristics.</textarea>
+                                <div class="test-buttons">
+                                    <button id="testSelectedVoice" class="btn-test">🎵 Test Selected Voice</button>
+                                    <button id="testRandomVoice" class="btn-test">🎲 Test Random Voice</button>
+                                    <button id="compareVoices" class="btn-test">⚖️ Compare Top 3</button>
+                                    <button id="voiceRecommendations" class="btn-test">⭐ Get Recommendations</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Voice Comparison Panel (hidden by default) -->
+                        <div class="voice-comparison-panel hidden" id="voiceComparisonPanel">
+                            <h4>🔊 Voice Comparison</h4>
+                            <div class="comparison-voices" id="comparisonVoices">
+                                <!-- Dynamically populated -->
+                            </div>
+                            <button id="closeComparison" class="btn-small">✖ Close Comparison</button>
+                        </div>
+
+                        <!-- Legacy Simple Selector (for compatibility) -->
+                        <details class="legacy-selector">
+                            <summary>📜 Simple Voice Selector (Legacy)</summary>
+                            <select id="advancedVoiceSelect" class="setting-select">
+                                <option value="">Loading voices...</option>
+                            </select>
+                            <button id="previewVoiceBtn" class="btn-small">▶️ Preview</button>
+                        </details>
                     </div>
 
                     <div class="setting-group">

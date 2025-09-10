@@ -1,0 +1,52 @@
+{
+  "name": "zin-ai-bridge",
+  "version": "1.0.0",
+  "description": "Zin AI Bridge - PC to Web Connection",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js",
+    "dev": "electron main.js --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win --x64",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish=never",
+    "build-simple": "electron-packager . ZinAIBridge --platform=win32 --arch=x64 --out=dist --overwrite --asar=false"
+  },
+  "build": {
+    "appId": "com.zinai.bridge",
+    "productName": "Zin AI Bridge",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "ZinAIBridge.exe"
+    },
+    "compression": "store"
+  },
+  "author": "Zin AI",
+  "dependencies": {
+    "mysql2": "^3.6.0",
+    "node-cron": "^3.0.2"
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "electron-packager": "^17.1.2"
+  }
+}
