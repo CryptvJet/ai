@@ -27,8 +27,21 @@
 
         <main class="admin-content">
             <div id="debugInfo" style="background: rgba(0,255,0,0.05); border: 1px solid rgba(0,255,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-family: monospace; font-size: 11px; color: #00ff88; display: none;">
-                <strong>🔍 Debug Info:</strong><br>
-                <div id="debugLog"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>🔍 Debug Console</strong>
+                    <div>
+                        <button onclick="clearDebugLog()" style="background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.4); color: #ff6666; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Clear</button>
+                        <button onclick="toggleDebugAutoScroll()" id="autoScrollBtn" style="background: rgba(0,255,0,0.2); border: 1px solid rgba(0,255,0,0.4); color: #00ff88; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Auto-scroll: ON</button>
+                    </div>
+                </div>
+                <div id="debugLog" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(0,255,0,0.1); padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 8px;"></div>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="debugCommand" placeholder="Enter command (help for list)" 
+                           style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,255,0,0.3); color: #00ff88; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 11px;"
+                           onkeypress="handleDebugCommand(event)">
+                    <button onclick="executeDebugCommand()" 
+                            style="background: rgba(0,255,0,0.2); border: 1px solid rgba(0,255,0,0.4); color: #00ff88; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Run</button>
+                </div>
             </div>
             <!-- Identity Section -->
             <section id="identity" class="admin-section active">
@@ -239,16 +252,173 @@
     </div>
 
     <script>
+        let debugAutoScroll = true;
+        
         function debugLog(message) {
             const debugDiv = document.getElementById('debugLog');
             const debugInfo = document.getElementById('debugInfo');
             if (debugDiv && debugInfo) {
-                debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+                const timestamp = new Date().toLocaleTimeString();
+                debugDiv.innerHTML += `<div style="margin: 2px 0;">${timestamp}: ${message}</div>`;
                 debugInfo.style.display = 'block';
-                // Auto-scroll to bottom
-                debugDiv.scrollTop = debugDiv.scrollHeight;
+                // Auto-scroll to bottom if enabled
+                if (debugAutoScroll) {
+                    debugDiv.scrollTop = debugDiv.scrollHeight;
+                }
             }
             console.log('ADMIN DEBUG:', message);
+        }
+        
+        function clearDebugLog() {
+            const debugDiv = document.getElementById('debugLog');
+            if (debugDiv) {
+                debugDiv.innerHTML = '';
+                debugLog('🧹 Debug log cleared');
+            }
+        }
+        
+        function toggleDebugAutoScroll() {
+            debugAutoScroll = !debugAutoScroll;
+            const btn = document.getElementById('autoScrollBtn');
+            if (btn) {
+                btn.textContent = `Auto-scroll: ${debugAutoScroll ? 'ON' : 'OFF'}`;
+                btn.style.background = debugAutoScroll ? 'rgba(0,255,0,0.2)' : 'rgba(255,255,0,0.2)';
+                btn.style.color = debugAutoScroll ? '#00ff88' : '#ffff00';
+            }
+            debugLog(`📜 Auto-scroll ${debugAutoScroll ? 'enabled' : 'disabled'}`);
+        }
+        
+        function handleDebugCommand(event) {
+            if (event.key === 'Enter') {
+                executeDebugCommand();
+            }
+        }
+        
+        async function executeDebugCommand() {
+            const input = document.getElementById('debugCommand');
+            const command = input.value.trim().toLowerCase();
+            
+            if (!command) return;
+            
+            debugLog(`> ${input.value}`);
+            input.value = '';
+            
+            try {
+                switch (command) {
+                    case 'help':
+                        debugLog('Available commands:');
+                        debugLog('  help - Show this help');
+                        debugLog('  status - Show connection status');
+                        debugLog('  pulse - Test PulseCore connection');
+                        debugLog('  vars - Test Variables connection');
+                        debugLog('  ai - Test PC AI connection');
+                        debugLog('  apis - List all API endpoints');
+                        debugLog('  db - Show database info');
+                        debugLog('  stats - Show current stats');
+                        debugLog('  clear - Clear debug log');
+                        debugLog('  time - Show current time');
+                        debugLog('  refresh - Refresh all integrations');
+                        break;
+                        
+                    case 'status':
+                        debugLog('🔍 Checking all connection statuses...');
+                        if (window.aiAdmin) {
+                            await window.aiAdmin.checkIntegrations();
+                        }
+                        break;
+                        
+                    case 'pulse':
+                        debugLog('🌊 Testing PulseCore connection...');
+                        try {
+                            const response = await fetch('../api/pulsecore-stats.php');
+                            debugLog(`Response: ${response.status} ${response.statusText}`);
+                            const data = await response.json();
+                            debugLog(`Success: ${data.success}`);
+                            debugLog(`Nova Events: ${data.data?.total_novas || 'N/A'}`);
+                            debugLog(`Climaxes: ${data.data?.total_groups || 'N/A'}`);
+                        } catch (error) {
+                            debugLog(`❌ Error: ${error.message}`);
+                        }
+                        break;
+                        
+                    case 'vars':
+                        debugLog('📊 Testing Variables connection...');
+                        try {
+                            const response = await fetch('../api/variables-stats.php');
+                            debugLog(`Response: ${response.status} ${response.statusText}`);
+                            const data = await response.json();
+                            debugLog(`Success: ${data.success}`);
+                            debugLog(`Variables: ${data.data?.variable_count || 'N/A'}`);
+                        } catch (error) {
+                            debugLog(`❌ Error: ${error.message}`);
+                        }
+                        break;
+                        
+                    case 'ai':
+                        debugLog('🖥️ Testing PC AI connection...');
+                        try {
+                            const response = await fetch('http://localhost:8000/health', { 
+                                method: 'GET', 
+                                signal: AbortSignal.timeout(3000) 
+                            });
+                            debugLog(`Response: ${response.status} ${response.statusText}`);
+                        } catch (error) {
+                            debugLog(`❌ PC AI not available: ${error.message}`);
+                        }
+                        break;
+                        
+                    case 'apis':
+                        debugLog('📡 Available API endpoints:');
+                        debugLog('  ../api/pulsecore-stats.php');
+                        debugLog('  ../api/variables-stats.php');
+                        debugLog('  ../api/settings.php');
+                        debugLog('  ../api/templates.php');
+                        debugLog('  ../api/learning-patterns.php');
+                        debugLog('  ../api/stats.php');
+                        debugLog('  ../api/get-conversation.php');
+                        break;
+                        
+                    case 'db':
+                        debugLog('💾 Database info:');
+                        debugLog('  AI Database: ai tables (settings, templates, etc.)');
+                        debugLog('  PulseCore: vemite5_pulse-core database');
+                        debugLog('  Variables: pulse_core_variables table');
+                        break;
+                        
+                    case 'stats':
+                        debugLog('📈 Current displayed stats:');
+                        const novaCount = document.getElementById('novaCount')?.textContent || '-';
+                        const climaxCount = document.getElementById('climaxCount')?.textContent || '-';
+                        const variableCount = document.getElementById('variableCount')?.textContent || '-';
+                        debugLog(`  Nova Events: ${novaCount}`);
+                        debugLog(`  Climax Groups: ${climaxCount}`);
+                        debugLog(`  Variables: ${variableCount}`);
+                        break;
+                        
+                    case 'time':
+                        debugLog(`🕐 Current time: ${new Date().toLocaleString()}`);
+                        break;
+                        
+                    case 'refresh':
+                        debugLog('🔄 Refreshing all integrations...');
+                        if (window.aiAdmin) {
+                            await window.aiAdmin.checkIntegrations();
+                            debugLog('✅ Refresh complete');
+                        }
+                        break;
+                        
+                    case 'clear':
+                        clearDebugLog();
+                        break;
+                        
+                    default:
+                        debugLog(`❓ Unknown command: ${command}`);
+                        debugLog('Type "help" for available commands');
+                        break;
+                }
+            } catch (error) {
+                debugLog(`❌ Command error: ${error.message}`);
+            }
         }
         
         // Check authentication before loading admin

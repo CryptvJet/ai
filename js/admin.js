@@ -363,31 +363,55 @@ class AIAdmin {
     }
 
     async checkIntegrations() {
+        // Enhanced debugging function
+        const debugLog = (message) => {
+            console.log('INTEGRATION DEBUG:', message);
+            if (window.debugLog) {
+                window.debugLog(`🔗 ${message}`);
+            }
+        };
+
         // Check PulseCore connection
         try {
-            console.log('Checking PulseCore integration...');
+            debugLog('Checking PulseCore integration...');
             const response = await fetch('../api/pulsecore-stats.php');
-            console.log('PulseCore response status:', response.status, response.ok);
+            debugLog(`PulseCore response: ${response.status} ${response.statusText}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const result = await response.json();
-            console.log('PulseCore result:', result);
+            debugLog(`PulseCore API success: ${result.success}`);
+            debugLog(`PulseCore data keys: ${Object.keys(result.data || {}).join(', ')}`);
             
             if (result.success) {
                 this.updateIntegrationStatus('pulsecoreStatus', true, 'Connected');
-                console.log('PulseCore connection successful');
-                document.getElementById('novaCount').textContent = result.data.total_novas || '0';
-                document.getElementById('climaxCount').textContent = result.data.total_groups || '0';
-                document.getElementById('lastNovaTime').textContent = result.data.last_nova_time ? new Date(result.data.last_nova_time).toLocaleDateString() : '-';
+                debugLog('✅ PulseCore connection successful');
+                
+                // Check if elements exist before updating
+                const elements = {
+                    'novaCount': result.data.total_novas || '0',
+                    'climaxCount': result.data.total_groups || '0', 
+                    'lastNovaTime': result.data.last_nova_time ? new Date(result.data.last_nova_time).toLocaleDateString() : '-'
+                };
+                
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                        debugLog(`Updated ${id}: ${value}`);
+                    } else {
+                        debugLog(`❌ Element '${id}' not found in DOM`);
+                    }
+                });
+                
             } else {
-                console.error('PulseCore API returned error:', result.error);
+                debugLog(`❌ PulseCore API error: ${result.error}`);
                 this.updateIntegrationStatus('pulsecoreStatus', false, 'Error: ' + (result.error || 'Unknown error'));
             }
         } catch (error) {
-            console.error('PulseCore connection error:', error);
+            debugLog(`❌ PulseCore connection error: ${error.message}`);
             this.updateIntegrationStatus('pulsecoreStatus', false, 'Connection failed: ' + error.message);
         }
 
@@ -1407,5 +1431,243 @@ document.addEventListener('click', function(event) {
     const modal = document.getElementById('conversationModal');
     if (event.target === modal) {
         closeConversationModal();
+    }
+});
+
+// Debug Console Implementation
+window.processDebugCommand = function(command) {
+    const debugOutput = document.getElementById('debugOutput');
+    const autoScroll = document.getElementById('autoScroll').checked;
+    
+    if (!debugOutput) {
+        console.error('Debug output element not found');
+        return;
+    }
+    
+    // Add command to output
+    addDebugLine(`> ${command}`, 'command');
+    
+    // Process command
+    executeDebugCommand(command.toLowerCase().trim());
+    
+    // Auto-scroll if enabled
+    if (autoScroll) {
+        debugOutput.scrollTop = debugOutput.scrollHeight;
+    }
+};
+
+function executeDebugCommand(command) {
+    const [cmd, ...args] = command.split(' ');
+    
+    switch (cmd) {
+        case 'help':
+            addDebugLine('Available commands:', 'info');
+            addDebugLine('  help - Show this help', 'info');
+            addDebugLine('  status - Show system status', 'info');
+            addDebugLine('  pulse - Test PulseCore API', 'info');
+            addDebugLine('  vars - Test Variables API', 'info');
+            addDebugLine('  db - Test database connections', 'info');
+            addDebugLine('  api - List all API endpoints', 'info');
+            addDebugLine('  logs - Show recent error logs', 'info');
+            addDebugLine('  memory - Show memory usage', 'info');
+            addDebugLine('  clear - Clear debug output', 'info');
+            addDebugLine('  time - Show current time', 'info');
+            addDebugLine('  test [endpoint] - Test specific endpoint', 'info');
+            break;
+            
+        case 'status':
+            addDebugLine('System Status Check:', 'info');
+            addDebugLine(`Location: ${window.location.href}`, 'data');
+            addDebugLine(`User Agent: ${navigator.userAgent}`, 'data');
+            addDebugLine(`Local Storage: ${localStorage ? 'Available' : 'Not Available'}`, 'data');
+            addDebugLine(`Session Storage: ${sessionStorage ? 'Available' : 'Not Available'}`, 'data');
+            break;
+            
+        case 'pulse':
+            addDebugLine('Testing PulseCore API...', 'info');
+            testPulseCoreAPI();
+            break;
+            
+        case 'vars':
+            addDebugLine('Testing Variables API...', 'info');
+            testVariablesAPI();
+            break;
+            
+        case 'db':
+            addDebugLine('Testing Database Connections...', 'info');
+            testDatabaseConnections();
+            break;
+            
+        case 'api':
+            addDebugLine('Available API Endpoints:', 'info');
+            addDebugLine('  ../api/pulsecore-stats.php', 'data');
+            addDebugLine('  ../api/variables-stats.php', 'data');
+            addDebugLine('  ../api/templates.php', 'data');
+            addDebugLine('  ../api/learning-patterns.php', 'data');
+            addDebugLine('  ../api/get-conversation.php', 'data');
+            break;
+            
+        case 'logs':
+            addDebugLine('Recent Console Logs:', 'info');
+            // Show recent console entries if available
+            if (window.console && console.memory) {
+                addDebugLine(`Console Memory: ${JSON.stringify(console.memory)}`, 'data');
+            }
+            addDebugLine('Check browser console for detailed logs', 'info');
+            break;
+            
+        case 'memory':
+            addDebugLine('Memory Information:', 'info');
+            if (performance.memory) {
+                addDebugLine(`Used: ${(performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`, 'data');
+                addDebugLine(`Total: ${(performance.memory.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`, 'data');
+                addDebugLine(`Limit: ${(performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`, 'data');
+            } else {
+                addDebugLine('Memory information not available', 'warning');
+            }
+            break;
+            
+        case 'clear':
+            clearDebugOutput();
+            break;
+            
+        case 'time':
+            addDebugLine(`Current Time: ${new Date().toLocaleString()}`, 'data');
+            addDebugLine(`Timestamp: ${Date.now()}`, 'data');
+            break;
+            
+        case 'test':
+            if (args.length > 0) {
+                testSpecificEndpoint(args[0]);
+            } else {
+                addDebugLine('Usage: test [endpoint]', 'warning');
+                addDebugLine('Example: test pulsecore', 'info');
+            }
+            break;
+            
+        default:
+            addDebugLine(`Unknown command: ${cmd}`, 'error');
+            addDebugLine('Type "help" for available commands', 'info');
+    }
+}
+
+function addDebugLine(text, type = 'data') {
+    const debugOutput = document.getElementById('debugOutput');
+    if (!debugOutput) return;
+    
+    const line = document.createElement('div');
+    line.className = `debug-line debug-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+    
+    debugOutput.appendChild(line);
+}
+
+function clearDebugOutput() {
+    const debugOutput = document.getElementById('debugOutput');
+    if (debugOutput) {
+        debugOutput.innerHTML = '';
+        addDebugLine('Debug console cleared', 'info');
+    }
+}
+
+async function testPulseCoreAPI() {
+    try {
+        const response = await fetch('../api/pulsecore-stats.php');
+        addDebugLine(`PulseCore Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+        
+        const result = await response.json();
+        addDebugLine(`PulseCore Data: ${JSON.stringify(result, null, 2)}`, 'data');
+        
+        if (result.success) {
+            addDebugLine('✅ PulseCore API working correctly', 'success');
+        } else {
+            addDebugLine('❌ PulseCore API returned error', 'error');
+        }
+    } catch (error) {
+        addDebugLine(`❌ PulseCore API Error: ${error.message}`, 'error');
+    }
+}
+
+async function testVariablesAPI() {
+    try {
+        const response = await fetch('../api/variables-stats.php');
+        addDebugLine(`Variables Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+        
+        const result = await response.json();
+        addDebugLine(`Variables Data: ${JSON.stringify(result, null, 2)}`, 'data');
+        
+        if (result.success) {
+            addDebugLine('✅ Variables API working correctly', 'success');
+        } else {
+            addDebugLine('❌ Variables API returned error', 'error');
+        }
+    } catch (error) {
+        addDebugLine(`❌ Variables API Error: ${error.message}`, 'error');
+    }
+}
+
+async function testDatabaseConnections() {
+    addDebugLine('Testing PulseCore database...', 'info');
+    await testPulseCoreAPI();
+    
+    addDebugLine('Testing Variables database...', 'info');  
+    await testVariablesAPI();
+    
+    addDebugLine('Testing AI database...', 'info');
+    try {
+        const response = await fetch('../api/templates.php');
+        if (response.ok) {
+            addDebugLine('✅ AI Database connection working', 'success');
+        } else {
+            addDebugLine('❌ AI Database connection failed', 'error');
+        }
+    } catch (error) {
+        addDebugLine(`❌ AI Database Error: ${error.message}`, 'error');
+    }
+}
+
+async function testSpecificEndpoint(endpoint) {
+    const endpoints = {
+        'pulsecore': '../api/pulsecore-stats.php',
+        'variables': '../api/variables-stats.php', 
+        'templates': '../api/templates.php',
+        'learning': '../api/learning-patterns.php',
+        'conversations': '../api/get-conversation.php'
+    };
+    
+    const url = endpoints[endpoint];
+    if (!url) {
+        addDebugLine(`Unknown endpoint: ${endpoint}`, 'error');
+        addDebugLine(`Available: ${Object.keys(endpoints).join(', ')}`, 'info');
+        return;
+    }
+    
+    addDebugLine(`Testing ${endpoint} endpoint...`, 'info');
+    try {
+        const response = await fetch(url);
+        addDebugLine(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+        
+        const text = await response.text();
+        try {
+            const json = JSON.parse(text);
+            addDebugLine(`Response: ${JSON.stringify(json, null, 2)}`, 'data');
+        } catch (e) {
+            addDebugLine(`Response: ${text.substring(0, 500)}...`, 'data');
+        }
+    } catch (error) {
+        addDebugLine(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Add debug command input handler
+document.addEventListener('DOMContentLoaded', function() {
+    const debugCommand = document.getElementById('debugCommand');
+    if (debugCommand) {
+        debugCommand.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                processDebugCommand(this.value.trim());
+                this.value = '';
+            }
+        });
     }
 });

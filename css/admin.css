@@ -976,3 +976,137 @@ input:checked + .toggle-slider:before {
     color: #94a3b8;
     font-style: italic;
 }
+
+/* Debug Console Styles */
+.debug-line {
+    margin: 2px 0;
+    padding: 2px 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+}
+
+.debug-command {
+    background: rgba(124, 58, 237, 0.15);
+    color: #a855f7;
+    font-weight: bold;
+    border-left: 3px solid #7c3aed;
+}
+
+.debug-info {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+    border-left: 3px solid #0891b2;
+}
+
+.debug-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-left: 3px solid #059669;
+}
+
+.debug-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-left: 3px solid #dc2626;
+}
+
+.debug-warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-left: 3px solid #d97706;
+}
+
+.debug-data {
+    background: rgba(148, 163, 184, 0.05);
+    color: #cbd5e1;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 10px;
+}
+
+#debugOutput {
+    font-size: 11px;
+    line-height: 1.2;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+#debugOutput::-webkit-scrollbar {
+    width: 6px;
+}
+
+#debugOutput::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#debugOutput::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.3);
+    border-radius: 3px;
+}
+
+#debugOutput::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.5);
+}
+
+.debug-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+#debugCommand {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: #e2e8f0;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 11px;
+}
+
+#debugCommand::placeholder {
+    color: #64748b;
+}
+
+#debugCommand:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.debug-controls label {
+    font-size: 10px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.debug-controls input[type="checkbox"] {
+    accent-color: #7c3aed;
+}
+
+.debug-controls button {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.debug-controls button:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+}
