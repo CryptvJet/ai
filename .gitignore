@@ -1,5 +1,6 @@
 # Local database configuration; contains real credentials.
 api/db_config.php
+api/pc-bridge-status.php
 
 # Environment variable files for local development.
 .env

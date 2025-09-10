@@ -1,7 +1,7 @@
 <?php
 /**
- * PC Bridge Status API
- * Returns the current status of the PC AI Bridge connection
+ * PC Bridge Status API - Example Template
+ * Copy this to pc-bridge-status.php and update with your credentials
  */
 
 header('Content-Type: application/json');
@@ -9,11 +9,11 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 
 try {
-    // Database connection
-    $host = 'pulsecore.one';
-    $dbname = 'vemite5_pulse-core';
-    $username = 'vemite5_p-core';
-    $password = 'l%tN!^6^u4=2';
+    // Database connection - UPDATE THESE VALUES
+    $host = 'your-host.com';
+    $dbname = 'your_database';
+    $username = 'your_username';
+    $password = 'your_password';
     
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
