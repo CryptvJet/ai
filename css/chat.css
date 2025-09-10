@@ -1304,37 +1304,6 @@ input[type="range"] {
     width: 100%;
 }
 
-.about-toggle {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    color: rgba(226, 232, 240, 0.7);
-    font-size: 0.9rem;
-    backdrop-filter: blur(10px);
-}
-
-.about-toggle:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: rgba(226, 232, 240, 0.9);
-}
-
-.about-arrow {
-    transition: transform 0.3s ease;
-    font-size: 0.8rem;
-    opacity: 0.6;
-}
-
-.about-toggle.expanded .about-arrow {
-    transform: rotate(180deg);
-}
 
 .info-box {
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(168, 85, 247, 0.08));
@@ -1346,17 +1315,6 @@ input[type="range"] {
     margin-top: 12px;
     box-shadow: 0 0 30px rgba(124, 58, 237, 0.15);
     backdrop-filter: blur(15px);
-    transition: all 0.3s ease;
-    overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-10px);
-}
-
-.info-box:not(.hidden) {
-    max-height: 300px;
-    opacity: 1;
-    transform: translateY(0);
 }
 
 .about-link {
@@ -1373,6 +1331,96 @@ input[type="range"] {
     color: #a855f7;
     border-bottom-color: #a855f7;
     transform: translateX(3px);
+}
+
+/* Header Controls Layout */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.voice-controls-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.voice-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: rgba(148, 163, 184, 0.7);
+}
+
+.status-text-header {
+    font-weight: 400;
+}
+
+.journal-timer-header {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: rgba(124, 58, 237, 0.7);
+    font-weight: 600;
+    background: rgba(124, 58, 237, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.voice-buttons-header {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-voice-header {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    backdrop-filter: blur(10px);
+}
+
+.btn-voice-header:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-voice-header.record:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-voice-header.record:not(:disabled) {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.15);
+}
+
+.btn-voice-header.stop {
+    background: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.15);
+}
+
+.btn-voice-header.pause {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.15);
+}
+
+.btn-voice-header:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.05);
 }
 
 .modal-footer {

@@ -107,17 +107,37 @@
                 <!-- Simple Header -->
                 <div class="journal-header-simple">
                     <h2 class="journal-title-simple">✍️ Writing Journal</h2>
-                    <!-- Session Management Buttons -->
-                    <div class="session-actions-top">
-                        <button id="saveJournalBtn" class="btn-session-minimal save" onclick="saveJournalEntry()" title="Save your journal entry">
-                            <span class="btn-icon-minimal">💾</span>
-                        </button>
-                        <button id="exportJournalBtn" class="btn-session-minimal export" onclick="exportJournalEntry()" title="Export as text file">
-                            <span class="btn-icon-minimal">📄</span>
-                        </button>
-                        <button id="clearJournalBtn" class="btn-session-minimal danger" onclick="clearJournalEntry()" title="Clear all content">
-                            <span class="btn-icon-minimal">🗑️</span>
-                        </button>
+                    <div class="header-controls">
+                        <!-- Voice Controls -->
+                        <div class="voice-controls-header">
+                            <div class="voice-status-header">
+                                <span id="journalStatus" class="status-text-header">Ready to begin</span>
+                                <span id="journalTimer" class="journal-timer-header">00:00</span>
+                            </div>
+                            <div class="voice-buttons-header">
+                                <button id="startVoiceBtn" class="btn-voice-header record" onclick="startJournalVoice()" title="Start Voice Recording">
+                                    <span class="btn-icon-minimal">🎤</span>
+                                </button>
+                                <button id="stopVoiceBtn" class="btn-voice-header stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
+                                    <span class="btn-icon-minimal">⏹️</span>
+                                </button>
+                                <button id="pauseVoiceBtn" class="btn-voice-header pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
+                                    <span class="btn-icon-minimal">⏸️</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Session Management Buttons -->
+                        <div class="session-actions-top">
+                            <button id="saveJournalBtn" class="btn-session-minimal save" onclick="saveJournalEntry()" title="Save your journal entry">
+                                <span class="btn-icon-minimal">💾</span>
+                            </button>
+                            <button id="exportJournalBtn" class="btn-session-minimal export" onclick="exportJournalEntry()" title="Export as text file">
+                                <span class="btn-icon-minimal">📄</span>
+                            </button>
+                            <button id="clearJournalBtn" class="btn-session-minimal danger" onclick="clearJournalEntry()" title="Clear all content">
+                                <span class="btn-icon-minimal">🗑️</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -181,38 +201,10 @@ Your voice will flow into text as you speak. Take your time, explore your ideas,
                     </div>
                 </div>
 
-                <!-- Bottom Controls Section -->
-                <div class="journal-bottom-controls">
-                    <!-- Voice Controls -->
-                    <div class="voice-controls-minimal">
-                        <div class="voice-status-minimal">
-                            <span id="journalStatus" class="status-text-minimal">Ready to begin your writing session</span>
-                            <div class="timer-minimal">
-                                <span class="timer-label-minimal">Session:</span>
-                                <span id="journalTimer" class="journal-timer-minimal">00:00</span>
-                            </div>
-                        </div>
-                        <div class="voice-buttons-minimal">
-                            <button id="startVoiceBtn" class="btn-voice-minimal record" onclick="startJournalVoice()" title="Start Voice Recording">
-                                <span class="btn-icon-minimal">🎤</span>
-                            </button>
-                            <button id="stopVoiceBtn" class="btn-voice-minimal stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
-                                <span class="btn-icon-minimal">⏹️</span>
-                            </button>
-                            <button id="pauseVoiceBtn" class="btn-voice-minimal pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
-                                <span class="btn-icon-minimal">⏸️</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Collapsible About Section -->
+                <!-- About Section -->
                 <div class="about-section">
-                    <button class="about-toggle" onclick="toggleAbout()" id="aboutToggle">
-                        <span>About PulseCore</span>
-                        <span class="about-arrow" id="aboutArrow">▼</span>
-                    </button>
-                    <div class="info-box hidden" id="aboutBox">
+                    <div class="info-box">
                         <p><strong>Powered by PulseCore Technology</strong><br>
                         Zin AI operates on the same computational principles described by Binary Pulse Theory, making it not just a source of information about BPT, but a living example of the theory in action.</p>
                         <a href="/ai/about/" target="_blank" class="about-link">Learn More About PulseCore →</a>
