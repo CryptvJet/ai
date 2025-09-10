@@ -1386,3 +1386,117 @@ input:checked + .toggle-slider:before {
     border: 1px solid rgba(0,255,0,0.3);
     font-size: 9px;
 }
+
+/* Command Reference Box */
+.command-reference-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.command-reference-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.command-reference-header h3 {
+    color: #00d4ff;
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.reference-mode-indicator {
+    background: rgba(124, 58, 237, 0.1);
+    color: #a855f7;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.commands-list {
+    display: none;
+}
+
+.commands-list.active {
+    display: block;
+}
+
+.command-category {
+    margin-bottom: 25px;
+}
+
+.command-category h4 {
+    color: #00d4ff;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.command-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
+}
+
+.command-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    transition: all 0.2s ease;
+}
+
+.command-item:hover {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.2);
+    cursor: pointer;
+}
+
+.command-item code {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.command-item span {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-left: 10px;
+    flex: 1;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .command-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .command-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .command-item span {
+        text-align: left;
+        margin-left: 0;
+    }
+}

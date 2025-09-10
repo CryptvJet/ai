@@ -1801,15 +1801,32 @@ function switchConsoleMode(mode) {
     const modeIndicator = document.getElementById('modeIndicator');
     const debugInput = document.getElementById('debugCommand');
     
+    // Update command reference section
+    const referenceMode = document.getElementById('referenceMode');
+    const debugCommandsRef = document.getElementById('debugCommandsRef');
+    const browserCommandsRef = document.getElementById('browserCommandsRef');
+    
     if (mode === 'debug') {
         modeIndicator.textContent = 'Debug Mode';
         debugInput.placeholder = 'Enter command (help for list)';
         debugInput.style.display = 'block';
+        
+        // Update reference section
+        if (referenceMode) referenceMode.textContent = 'Debug Commands';
+        if (debugCommandsRef) debugCommandsRef.classList.add('active');
+        if (browserCommandsRef) browserCommandsRef.classList.remove('active');
+        
         displayDebugOutput();
     } else {
         modeIndicator.textContent = 'Browser Console';
         debugInput.placeholder = 'Enter JavaScript code to execute';
         debugInput.style.display = 'block'; // Show input in browser mode too
+        
+        // Update reference section
+        if (referenceMode) referenceMode.textContent = 'Browser JavaScript';
+        if (debugCommandsRef) debugCommandsRef.classList.remove('active');
+        if (browserCommandsRef) browserCommandsRef.classList.add('active');
+        
         displayBrowserConsoleOutput();
     }
 }

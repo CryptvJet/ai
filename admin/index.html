@@ -229,6 +229,168 @@
                 
                 <h2>Debug Console</h2>
                 <p class="section-description">Interactive debugging console for testing APIs, monitoring connections, and troubleshooting issues in real-time.</p>
+                
+                <!-- Command Reference Info Box -->
+                <div class="command-reference-box">
+                    <div class="command-reference-header">
+                        <h3>📚 Command Reference</h3>
+                        <div class="reference-mode-indicator">
+                            <span id="referenceMode">Debug Commands</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Debug Commands Reference -->
+                    <div id="debugCommandsRef" class="commands-list active">
+                        <div class="command-category">
+                            <h4>🔧 System Commands</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>help</code>
+                                    <span>Show all available commands</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>status</code>
+                                    <span>Check overall system status</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>time</code>
+                                    <span>Display current date and time</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>clear</code>
+                                    <span>Clear console output</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>memory</code>
+                                    <span>Show browser memory usage</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>logs</code>
+                                    <span>Display recent console logs</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🌊 API Testing</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>pulse</code>
+                                    <span>Test PulseCore API connection</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>vars</code>
+                                    <span>Test Variables API connection</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>db</code>
+                                    <span>Test all database connections</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>api</code>
+                                    <span>List all API endpoints</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>test [endpoint]</code>
+                                    <span>Test specific endpoint (pulsecore, vars, etc.)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Browser Commands Reference -->
+                    <div id="browserCommandsRef" class="commands-list">
+                        <div class="command-category">
+                            <h4>🌐 DOM & Window</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>document.title</code>
+                                    <span>Get/set page title</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.location.href</code>
+                                    <span>Get current URL</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.querySelector('.class')</code>
+                                    <span>Select DOM element</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.querySelectorAll('.class')</code>
+                                    <span>Select multiple DOM elements</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>window.innerWidth</code>
+                                    <span>Get window width</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>document.body.style.background</code>
+                                    <span>Change page styling</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🔧 Console & Debug</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>console.log("message")</code>
+                                    <span>Log message to console</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>console.table(object)</code>
+                                    <span>Display object as table</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Object.keys(window)</code>
+                                    <span>List window properties</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>localStorage</code>
+                                    <span>Access browser storage</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>performance.memory</code>
+                                    <span>Check memory usage</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>navigator.userAgent</code>
+                                    <span>Get browser info</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-category">
+                            <h4>🧮 JavaScript Utils</h4>
+                            <div class="command-grid">
+                                <div class="command-item">
+                                    <code>Math.random()</code>
+                                    <span>Generate random number</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>new Date()</code>
+                                    <span>Get current date/time</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>JSON.stringify(object)</code>
+                                    <span>Convert object to JSON</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>JSON.parse(string)</code>
+                                    <span>Parse JSON string</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>Array.from({length: 5}, (_, i) => i)</code>
+                                    <span>Create arrays with data</span>
+                                </div>
+                                <div class="command-item">
+                                    <code>fetch('/api/endpoint')</code>
+                                    <span>Make HTTP requests</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
