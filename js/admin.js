@@ -1864,7 +1864,58 @@ window.executeDebugCommand = function() {
 window.switchConsoleMode = switchConsoleMode;
 window.toggleDebugAutoScroll = toggleDebugAutoScroll;
 
+// Essential navigation function - must be available globally
+window.showSection = function(sectionName) {
+    console.log('Global showSection called with:', sectionName);
+    
+    // If admin class is loaded, use it, otherwise use direct DOM manipulation
+    if (window.aiAdmin && typeof window.aiAdmin.showSection === 'function') {
+        console.log('Using aiAdmin.showSection');
+        window.aiAdmin.showSection(sectionName);
+        return;
+    }
+    
+    console.log('Using direct DOM manipulation for showSection');
+    
+    // Hide all sections
+    document.querySelectorAll('.admin-section').forEach(section => {
+        section.classList.remove('active');
+        console.log('Removing active from:', section.id);
+    });
+    
+    // Remove active class from all nav buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section
+    const targetSection = document.getElementById(sectionName);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        console.log('Adding active to:', targetSection.id);
+    } else {
+        console.error('Target section not found:', sectionName);
+    }
+    
+    // Highlight active nav button
+    const activeBtn = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        console.log('Activated button for:', sectionName);
+    } else {
+        console.error('Active button not found for:', sectionName);
+    }
+};
+
 // Initialize browser console capture when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
+    
+    // Initialize admin class and make it globally available
+    try {
+        window.aiAdmin = new AIAdmin();
+        console.log('AIAdmin class instantiated and available globally');
+    } catch (error) {
+        console.error('Failed to instantiate AIAdmin:', error);
+    }
 });
