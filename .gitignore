@@ -16,3 +16,4 @@ error.log
 *.tmp
 .DS_Store
 Thumbs.db
+launch/
