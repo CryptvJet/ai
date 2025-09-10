@@ -1443,6 +1443,9 @@ window.processDebugCommand = function(command) {
         return;
     }
     
+    // Debug logging
+    console.log(`[CONSOLE MODE] Current mode: ${consoleMode}, Command: ${command}`);
+    
     if (consoleMode === 'debug') {
         // Add command to output
         addDebugLine(`> ${command}`, 'command');
@@ -1871,6 +1874,9 @@ function displayBrowserConsoleOutput() {
 function executeBrowserCommand(jsCode) {
     const debugOutput = document.getElementById('debugOutput');
     if (!debugOutput) return;
+    
+    // Debug logging
+    console.log('[BROWSER MODE] Executing:', jsCode);
     
     // Add the command to display
     const commandLine = document.createElement('div');
