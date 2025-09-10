@@ -1786,7 +1786,10 @@ function addToBrowserConsoleBuffer(type, args) {
     
     // If currently in browser mode, update display
     if (consoleMode === 'browser') {
-        displayBrowserConsoleOutput();
+        // Small delay to ensure proper ordering
+        setTimeout(() => {
+            displayBrowserConsoleOutput();
+        }, 10);
     }
 }
 
@@ -1853,9 +1856,9 @@ function displayBrowserConsoleOutput() {
     const debugOutput = document.getElementById('debugOutput');
     if (!debugOutput) return;
     
-    debugOutput.innerHTML = '';
-    
+    // Don't clear existing content if we already have console entries, just update
     if (browserConsoleBuffer.length === 0) {
+        debugOutput.innerHTML = '';
         const line1 = document.createElement('div');
         line1.style.color = '#00ff88';
         line1.style.fontSize = '11px';
@@ -1875,33 +1878,41 @@ function displayBrowserConsoleOutput() {
         line3.style.opacity = '0.6';
         line3.textContent = '[Examples] Try: document.title, window.location.href, console.log("Hello")';
         debugOutput.appendChild(line3);
-        return;
     }
     
-    browserConsoleBuffer.forEach(entry => {
-        const timestamp = entry.timestamp.toLocaleTimeString();
-        const line = document.createElement('div');
-        line.style.fontSize = '11px';
-        line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
-        line.style.padding = '1px 0';
+    // Show recent browser console entries (last 50 for performance)
+    const recentEntries = browserConsoleBuffer.slice(-50);
+    recentEntries.forEach(entry => {
+        // Check if this entry is already displayed
+        const existingEntry = Array.from(debugOutput.children).find(child => 
+            child.textContent && child.textContent.includes(entry.message.substring(0, 20))
+        );
         
-        // Color based on log type
-        switch(entry.type) {
-            case 'error':
-                line.style.color = '#ff6666';
-                break;
-            case 'warn':
-                line.style.color = '#ffaa00';
-                break;
-            case 'info':
-                line.style.color = '#66aaff';
-                break;
-            default:
-                line.style.color = '#00ff88';
+        if (!existingEntry) {
+            const timestamp = entry.timestamp.toLocaleTimeString();
+            const line = document.createElement('div');
+            line.style.fontSize = '11px';
+            line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+            line.style.padding = '1px 0';
+            
+            // Color based on log type
+            switch(entry.type) {
+                case 'error':
+                    line.style.color = '#ff6666';
+                    break;
+                case 'warn':
+                    line.style.color = '#ffaa00';
+                    break;
+                case 'info':
+                    line.style.color = '#66aaff';
+                    break;
+                default:
+                    line.style.color = '#00ff88';
+            }
+            
+            line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
+            debugOutput.appendChild(line);
         }
-        
-        line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
-        debugOutput.appendChild(line);
     });
     
     // Auto-scroll if enabled
@@ -1961,6 +1972,10 @@ function executeBrowserCommand(jsCode) {
         originalConsole.log(`[Admin Console] ${jsCode}`);
         originalConsole.log(`[Result]`, result);
         
+        // Add to browser console buffer for display
+        addToBrowserConsoleBuffer('log', [`[Admin Console] ${jsCode}`]);
+        addToBrowserConsoleBuffer('log', [`[Result]`, result]);
+        
     } catch (error) {
         // Display the error
         const errorLine = document.createElement('div');
@@ -1973,6 +1988,9 @@ function executeBrowserCommand(jsCode) {
         
         // Also log to the actual browser console
         originalConsole.error(`[Admin Console Error]`, error);
+        
+        // Add to browser console buffer for display
+        addToBrowserConsoleBuffer('error', [`[Admin Console Error]`, error]);
     }
     
     // Auto-scroll if enabled
