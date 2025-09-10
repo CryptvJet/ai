@@ -2270,6 +2270,9 @@ I'd love to get to know you better - what's your name?`;
                 aiMode.className = 'mode-indicator journal';
             }
             
+            // Apply premium background styling
+            document.body.classList.add('journal-mode');
+            
             // Show floating chat indicator
             if (floatingChatIndicator) floatingChatIndicator.classList.remove('hidden');
             
@@ -2299,6 +2302,9 @@ I'd love to get to know you better - what's your name?`;
                 aiMode.textContent = 'Chill Mode';
                 aiMode.className = 'mode-indicator chill';
             }
+            
+            // Remove premium background styling
+            document.body.classList.remove('journal-mode');
             
             // Hide floating chat indicator
             if (floatingChatIndicator) floatingChatIndicator.classList.add('hidden');

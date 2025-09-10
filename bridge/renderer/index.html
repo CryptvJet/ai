@@ -46,6 +46,10 @@
                 <span class="tab-icon">💬</span>
                 <span class="tab-text">Live Chat</span>
             </button>
+            <button class="tab-btn" data-tab="chat">
+                <span class="tab-icon">🤖</span>
+                <span class="tab-text">AI Chat</span>
+            </button>
             <button class="tab-btn" data-tab="system">
                 <span class="tab-icon">🖥️</span>
                 <span class="tab-text">System Info</span>
@@ -53,10 +57,6 @@
             <button class="tab-btn" data-tab="activity">
                 <span class="tab-icon">📋</span>
                 <span class="tab-text">Activity</span>
-            </button>
-            <button class="tab-btn" data-tab="terminal">
-                <span class="tab-icon">💻</span>
-                <span class="tab-text">Terminal</span>
             </button>
             <button class="tab-btn" data-tab="settings">
                 <span class="tab-icon">⚙️</span>
@@ -285,62 +285,6 @@
                 </div>
             </div>
 
-            <!-- Terminal Tab -->
-            <div id="terminal" class="tab-content">
-                <div class="terminal-layout">
-                    <div class="card terminal-card">
-                        <div class="card-header">
-                            <h3>💻 Command Terminal</h3>
-                            <div class="terminal-controls">
-                                <button id="clearTerminalBtn" class="action-btn small">
-                                    🗑️ Clear
-                                </button>
-                                <button id="copyTerminalBtn" class="action-btn small">
-                                    📋 Copy Output
-                                </button>
-                                <button id="searchTerminalBtn" class="action-btn small">
-                                    🔍 Search
-                                </button>
-                                <button id="newTabBtn" class="action-btn small">
-                                    ➕ New Tab
-                                </button>
-                                <div class="terminal-settings">
-                                    <select id="terminalTheme" class="terminal-theme-selector">
-                                        <option value="dark">Dark</option>
-                                        <option value="light">Light</option>
-                                        <option value="matrix">Matrix</option>
-                                    </select>
-                                    <input type="number" id="terminalFontSize" class="terminal-font-size" min="10" max="20" value="14">
-                                    <span class="terminal-status" id="terminalStatus">Ready</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="terminal-container resizable">
-                                <div class="terminal-tabs" id="terminalTabs">
-                                    <div class="terminal-tab active" data-tab="0">
-                                        Terminal 1
-                                        <span class="close-tab" data-tab="0">×</span>
-                                    </div>
-                                </div>
-                                <div id="terminalOutput" class="terminal-output"></div>
-                                <div class="terminal-search" id="terminalSearch">
-                                    <input type="text" placeholder="Search terminal output..." id="searchInput">
-                                    <div class="terminal-search-results" id="searchResults"></div>
-                                </div>
-                                <div class="terminal-input-container">
-                                    <div class="terminal-autocomplete" id="terminalAutocomplete"></div>
-                                    <span class="terminal-prompt" id="terminalPrompt">C:\></span>
-                                    <input type="text" id="terminalInput" class="terminal-input" placeholder="Enter command..." autocomplete="off">
-                                    <span class="terminal-cursor" id="terminalCursor"></span>
-                                    <button id="executeCommandBtn" class="terminal-execute-btn">▶️</button>
-                                </div>
-                                <div class="resize-handle"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Settings Tab -->
             <div id="settings" class="tab-content">

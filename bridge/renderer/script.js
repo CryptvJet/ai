@@ -76,33 +76,6 @@ class ZinAIBridgeUI {
         this.minimizeToTrayBtn = document.getElementById('minimizeToTrayBtn');
         this.viewLogsBtn = document.getElementById('viewLogsBtn');
         
-        // Terminal elements
-        this.terminalOutput = document.getElementById('terminalOutput');
-        this.terminalInput = document.getElementById('terminalInput');
-        this.terminalPrompt = document.getElementById('terminalPrompt');
-        this.terminalStatus = document.getElementById('terminalStatus');
-        this.clearTerminalBtn = document.getElementById('clearTerminalBtn');
-        this.copyTerminalBtn = document.getElementById('copyTerminalBtn');
-        this.executeCommandBtn = document.getElementById('executeCommandBtn');
-        this.searchTerminalBtn = document.getElementById('searchTerminalBtn');
-        this.newTabBtn = document.getElementById('newTabBtn');
-        this.terminalTheme = document.getElementById('terminalTheme');
-        this.terminalFontSize = document.getElementById('terminalFontSize');
-        this.terminalSearch = document.getElementById('terminalSearch');
-        this.searchInput = document.getElementById('searchInput');
-        this.terminalAutocomplete = document.getElementById('terminalAutocomplete');
-        this.terminalTabs = document.getElementById('terminalTabs');
-        
-        // Terminal state
-        this.commandHistory = [];
-        this.historyIndex = -1;
-        this.currentWorkingDirectory = 'C:\\';
-        this.autocompleteVisible = false;
-        this.selectedAutocompleteIndex = -1;
-        this.commonCommands = ['dir', 'cd', 'cls', 'type', 'copy', 'move', 'del', 'mkdir', 'rmdir', 'systeminfo', 'tasklist', 'ipconfig', 'ping', 'netstat', 'whoami'];
-        this.lineNumber = 1;
-        this.terminals = [{ id: 0, name: 'Terminal 1', output: '', workingDir: 'C:\\', history: [] }];
-        this.activeTerminal = 0;
         
         // Log element counts for debugging
         this.log(`🔧 Elements found: hostname=${!!this.hostname}, platform=${!!this.platform}, memory=${!!this.memory}, gpuModel=${!!this.gpuModel}`, 'info');
@@ -671,16 +644,11 @@ class ZinAIBridgeUI {
         const element = document.createElement('div');
         element.className = `terminal-line ${className}`;
         
-        // Add line number
-        const lineNumber = document.createElement('span');
-        lineNumber.className = 'terminal-line-number';
-        lineNumber.textContent = this.lineNumber++;
-        element.appendChild(lineNumber);
+        // Create content with line number and text in one go
+        const lineNumberText = this.lineNumber++;
+        const formattedText = this.applySyntaxHighlighting(text);
         
-        // Add content with syntax highlighting
-        const content = document.createElement('span');
-        content.innerHTML = this.applySyntaxHighlighting(text);
-        element.appendChild(content);
+        element.innerHTML = `<span class="terminal-line-number">${lineNumberText}</span><span>${formattedText}</span>`;
         
         this.terminalOutput.appendChild(element);
         this.smoothScrollToBottom();
