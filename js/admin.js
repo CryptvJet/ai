@@ -1457,7 +1457,19 @@ window.processDebugCommand = function(command) {
 };
 
 function executeDebugCommand(command) {
-    const [cmd, ...args] = command.split(' ');
+    // If no command passed, get it from the input field
+    if (!command) {
+        const input = document.getElementById('debugCommand');
+        command = input ? input.value.trim() : '';
+        if (input) input.value = ''; // Clear input after processing
+    }
+    
+    if (!command) {
+        addDebugLine('No command entered', 'warning');
+        return;
+    }
+    
+    const [cmd, ...args] = command.toLowerCase().split(' ');
     
     switch (cmd) {
         case 'help':
@@ -1670,4 +1682,142 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+
+// Console mode management
+let consoleMode = 'debug'; // 'debug' or 'browser'
+let browserConsoleBuffer = [];
+let originalConsole = {};
+
+// Capture browser console output
+function initializeBrowserConsoleCapture() {
+    // Store original console methods
+    originalConsole.log = console.log;
+    originalConsole.error = console.error;
+    originalConsole.warn = console.warn;
+    originalConsole.info = console.info;
+    
+    // Override console methods to capture output
+    console.log = function(...args) {
+        originalConsole.log.apply(console, args);
+        addToBrowserConsoleBuffer('log', args);
+    };
+    
+    console.error = function(...args) {
+        originalConsole.error.apply(console, args);
+        addToBrowserConsoleBuffer('error', args);
+    };
+    
+    console.warn = function(...args) {
+        originalConsole.warn.apply(console, args);
+        addToBrowserConsoleBuffer('warn', args);
+    };
+    
+    console.info = function(...args) {
+        originalConsole.info.apply(console, args);
+        addToBrowserConsoleBuffer('info', args);
+    };
+}
+
+function addToBrowserConsoleBuffer(type, args) {
+    const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    browserConsoleBuffer.push({
+        type: type,
+        message: message,
+        timestamp: new Date()
+    });
+    
+    // Keep only last 100 entries to prevent memory issues
+    if (browserConsoleBuffer.length > 100) {
+        browserConsoleBuffer.shift();
+    }
+    
+    // If currently in browser mode, update display
+    if (consoleMode === 'browser') {
+        displayBrowserConsoleOutput();
+    }
+}
+
+function switchConsoleMode(mode) {
+    consoleMode = mode;
+    
+    // Update button states
+    document.getElementById('debugModeBtn').classList.toggle('active', mode === 'debug');
+    document.getElementById('browserModeBtn').classList.toggle('active', mode === 'browser');
+    
+    // Update mode indicator
+    const modeIndicator = document.getElementById('modeIndicator');
+    const debugInput = document.getElementById('debugCommand');
+    
+    if (mode === 'debug') {
+        modeIndicator.textContent = 'Debug Mode';
+        debugInput.placeholder = 'Enter command (help for list)';
+        debugInput.style.display = 'block';
+        displayDebugOutput();
+    } else {
+        modeIndicator.textContent = 'Browser Console';
+        debugInput.placeholder = 'Browser console (read-only)';
+        debugInput.style.display = 'none'; // Hide input in browser mode
+        displayBrowserConsoleOutput();
+    }
+}
+
+function displayDebugOutput() {
+    // This function could refresh debug output if needed
+    // For now, just ensure we're showing debug content
+}
+
+function displayBrowserConsoleOutput() {
+    const debugOutput = document.getElementById('debugOutput');
+    if (!debugOutput) return;
+    
+    debugOutput.innerHTML = '';
+    
+    if (browserConsoleBuffer.length === 0) {
+        addDebugLine('No browser console output captured yet', 'info');
+        addDebugLine('Browser console logging will appear here in real-time', 'data');
+        return;
+    }
+    
+    browserConsoleBuffer.forEach(entry => {
+        const timestamp = entry.timestamp.toLocaleTimeString();
+        const line = document.createElement('div');
+        line.className = `debug-line debug-${entry.type === 'error' ? 'error' : entry.type === 'warn' ? 'warning' : 'data'}`;
+        line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
+        debugOutput.appendChild(line);
+    });
+    
+    // Auto-scroll if enabled
+    const autoScroll = document.getElementById('autoScroll').checked;
+    if (autoScroll) {
+        debugOutput.scrollTop = debugOutput.scrollHeight;
+    }
+}
+
+// Global functions for HTML onclick handlers
+window.clearDebugOutput = function() {
+    if (consoleMode === 'debug') {
+        clearDebugOutput();
+    } else {
+        // Clear browser console buffer
+        browserConsoleBuffer = [];
+        displayBrowserConsoleOutput();
+    }
+};
+
+window.executeDebugCommand = function() {
+    if (consoleMode === 'debug') {
+        executeDebugCommand(); // Call without parameters to get command from input
+    }
+    // In browser mode, command input is disabled
+};
+
+window.switchConsoleMode = switchConsoleMode;
+
+// Initialize browser console capture when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeBrowserConsoleCapture();
 });

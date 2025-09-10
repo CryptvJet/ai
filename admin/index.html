@@ -23,6 +23,7 @@
             <button class="nav-btn" onclick="showSection('conversations')">📊 Conversations</button>
             <button class="nav-btn" onclick="showSection('integrations')">🔗 Integrations</button>
             <button class="nav-btn" onclick="showSection('learning')">🧠 Learning</button>
+            <button class="nav-btn" onclick="showSection('console')">🔍 Console</button>
         </nav>
 
         <main class="admin-content">
@@ -210,6 +211,50 @@
                     <button onclick="analyzeConversations()" class="btn-primary">🔍 Analyze Conversations</button>
                     <button onclick="clearLearningData()" class="btn-danger">🗑️ Clear Learning Data</button>
                     <button onclick="exportLearningData()" class="btn-secondary">📤 Export Patterns</button>
+                </div>
+            </section>
+
+            <!-- Console Section -->
+            <section id="console" class="admin-section">
+                <h2>Debug Console</h2>
+                <p class="section-description">Interactive debugging console for testing APIs, monitoring connections, and troubleshooting issues in real-time.</p>
+                
+                <div class="debug-console">
+                    <div class="console-header">
+                        <h3>🔍 Interactive Debug Console</h3>
+                        <div class="console-info">
+                            <span class="console-status">Ready</span>
+                            <span class="console-commands">Type "help" for commands</span>
+                        </div>
+                    </div>
+                    
+                    <div class="console-mode-toggle">
+                        <div class="toggle-group">
+                            <button id="debugModeBtn" class="toggle-btn active" onclick="switchConsoleMode('debug')">
+                                🔧 Debug Commands
+                            </button>
+                            <button id="browserModeBtn" class="toggle-btn" onclick="switchConsoleMode('browser')">
+                                🌐 Browser Console
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-controls">
+                        <input type="text" id="debugCommand" placeholder="Enter command (help for list)">
+                        <label>
+                            <input type="checkbox" id="autoScroll" checked>
+                            Auto-scroll
+                        </label>
+                        <button onclick="clearDebugOutput()">Clear</button>
+                        <div class="console-mode-indicator">
+                            <span id="modeIndicator">Debug Mode</span>
+                        </div>
+                    </div>
+                    
+                    <div id="debugOutput" class="debug-output">
+                        <div class="debug-line debug-info">[System] Debug console initialized. Type "help" to see available commands.</div>
+                        <div class="debug-line debug-data">[Info] Console ready for debugging and API testing</div>
+                    </div>
                 </div>
             </section>
         </main>
