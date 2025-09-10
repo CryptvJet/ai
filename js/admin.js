@@ -451,22 +451,48 @@ class AIAdmin {
             
             if (response.ok) {
                 const result = await response.json();
-                this.updateIntegrationStatus('pcaiStatus', true, 'Connected');
-                if (document.getElementById('currentModel')) {
-                    document.getElementById('currentModel').textContent = result.model || 'Local AI';
-                }
-                if (document.getElementById('gpuMemory')) {
-                    document.getElementById('gpuMemory').textContent = result.gpu_memory || 'N/A';
+                
+                if (result.success && result.status === 'online') {
+                    this.updateIntegrationStatus('pcaiStatus', true, 'PC Bridge Online');
+                    
+                    // Update with real PC system information
+                    if (document.getElementById('currentModel')) {
+                        document.getElementById('currentModel').textContent = `${result.system_info.hostname} (${result.system_info.platform})`;
+                    }
+                    if (document.getElementById('gpuMemory')) {
+                        const memoryUsage = result.system_info.memory.usage_percent;
+                        document.getElementById('gpuMemory').textContent = `${memoryUsage}% RAM Used`;
+                    }
+                    if (document.getElementById('responseTime')) {
+                        document.getElementById('responseTime').textContent = `${result.seconds_since_ping}s ago`;
+                    }
+                    
+                    // Add CPU and system info if elements exist
+                    if (document.getElementById('cpuCores')) {
+                        document.getElementById('cpuCores').textContent = `${result.system_info.cpus} cores`;
+                    }
+                    if (document.getElementById('systemUptime')) {
+                        const uptimeHours = Math.round(result.system_info.uptime / 3600);
+                        document.getElementById('systemUptime').textContent = `${uptimeHours}h uptime`;
+                    }
+                } else {
+                    this.updateIntegrationStatus('pcaiStatus', false, 'PC Bridge Offline');
                 }
             } else {
                 this.updateIntegrationStatus('pcaiStatus', false, 'PC AI offline');
             }
         } catch (error) {
-            // This is expected if PC AI isn't running
-            console.info('PC AI not available (this is normal):', error.message);
-            this.updateIntegrationStatus('pcaiStatus', false, 'PC AI not running');
+            // This is expected if PC Bridge isn't running
+            console.info('PC Bridge not available (this is normal):', error.message);
+            this.updateIntegrationStatus('pcaiStatus', false, 'PC Bridge not running');
             if (document.getElementById('currentModel')) {
-                document.getElementById('currentModel').textContent = 'Not connected';
+                document.getElementById('currentModel').textContent = 'PC Bridge Disconnected';
+            }
+            if (document.getElementById('gpuMemory')) {
+                document.getElementById('gpuMemory').textContent = 'N/A';
+            }
+            if (document.getElementById('responseTime')) {
+                document.getElementById('responseTime').textContent = '-';
             }
         }
     }
