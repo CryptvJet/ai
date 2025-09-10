@@ -243,9 +243,12 @@ class AIChat {
         try {
             const response = await fetch('api/pulsecore-status.php');
             const status = await response.json();
+            console.log('PulseCore status response:', status);
             const isConnected = status.success && status.status === 'connected';
+            console.log('PulseCore connection result:', isConnected);
             this.updateConnectionStatus('pulseStatus', isConnected);
         } catch (error) {
+            console.error('PulseCore status check failed:', error);
             this.updateConnectionStatus('pulseStatus', false);
         }
 
@@ -651,7 +654,7 @@ I'd love to get to know you better - what's your name?`;
         alert('Advanced voice settings coming soon! For now, use the controls above to customize your voice experience.');
     }
 
-    speakText(text) {
+    async speakText(text) {
         console.log('speakText called with:', text);
         console.log('autoSpeak status:', this.autoSpeak);
         
@@ -665,8 +668,26 @@ I'd love to get to know you better - what's your name?`;
             return;
         }
         
-        // Cancel any ongoing speech
+        // Cancel any ongoing speech and wait for it to clear
         this.synthesis.cancel();
+        
+        // Wait for synthesis to fully clear before starting new speech
+        if (this.synthesis.speaking) {
+            console.log('Waiting for speech synthesis to clear...');
+            await new Promise(resolve => {
+                let attempts = 0;
+                const maxAttempts = 20; // 1 second max wait
+                const checkSpeaking = () => {
+                    if (!this.synthesis.speaking || attempts >= maxAttempts) {
+                        resolve();
+                    } else {
+                        attempts++;
+                        setTimeout(checkSpeaking, 50);
+                    }
+                };
+                setTimeout(checkSpeaking, 100);
+            });
+        }
         
         const utterance = new SpeechSynthesisUtterance(text);
         
@@ -708,7 +729,12 @@ I'd love to get to know you better - what's your name?`;
         // Add event listeners for debugging
         utterance.onstart = () => console.log('Speech started');
         utterance.onend = () => console.log('Speech ended');
-        utterance.onerror = (e) => console.error('Speech error:', e);
+        utterance.onerror = (e) => {
+            console.warn('Speech synthesis error:', e.error);
+            if (e.error === 'interrupted') {
+                console.log('Speech was interrupted - this is normal when starting new speech');
+            }
+        };
         
         console.log('Starting speech synthesis...');
         

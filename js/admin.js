@@ -253,10 +253,10 @@ class AIAdmin {
             const response = await fetch('../api/learning-patterns.php');
             const result = await response.json();
             
-            if (result.success) {
-                this.displayLearningPatterns(result.data);
+            if (result.success && result.data && result.data.patterns) {
+                this.displayLearningPatterns(result.data.patterns);
             } else {
-                throw new Error('API failed');
+                throw new Error('API failed or no patterns data');
             }
         } catch (error) {
             console.error('Learning patterns API failed, using sample data:', error);
