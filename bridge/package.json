@@ -42,7 +42,8 @@
   "author": "Zin AI",
   "dependencies": {
     "mysql2": "^3.6.0",
-    "node-cron": "^3.0.2"
+    "node-cron": "^3.0.2",
+    "systeminformation": "^5.27.8"
   },
   "devDependencies": {
     "electron": "^27.0.0",

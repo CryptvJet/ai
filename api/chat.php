@@ -26,18 +26,23 @@ class AIChat {
         $this->vars_pdo = $vars_pdo;
     }
     
-    public function processMessage($message, $session_id, $mode = 'chill') {
+    public function processMessage($message, $session_id, $mode = 'chill', $journal_context = null) {
         $start_time = microtime(true);
         
         try {
             // Get or create conversation
             $conversation_id = $this->getOrCreateConversation($session_id);
             
-            // Store user message
-            $this->storeMessage($conversation_id, 'user', $message, $mode);
+            // Store user message with journal context if provided
+            $metadata = ['timestamp' => time(), 'mode' => $mode];
+            if ($journal_context !== null) {
+                $metadata['journal_context'] = substr($journal_context, -2000); // Store last 2000 chars
+            }
+            
+            $this->storeMessage($conversation_id, 'user', $message, $mode, null, $metadata);
             
             // Generate response
-            $response = $this->generateResponse($message, $conversation_id, $mode);
+            $response = $this->generateResponse($message, $conversation_id, $mode, $journal_context);
             
             // Store AI response
             $processing_time = round((microtime(true) - $start_time) * 1000);
@@ -82,17 +87,26 @@ class AIChat {
         return $this->ai_pdo->lastInsertId();
     }
     
-    private function storeMessage($conversation_id, $type, $content, $mode, $processing_time = null) {
+    private function storeMessage($conversation_id, $type, $content, $mode, $processing_time = null, $metadata = null) {
         $stmt = $this->ai_pdo->prepare("
             INSERT INTO ai_messages (conversation_id, message_type, content, ai_mode, processing_time_ms, metadata) 
             VALUES (?, ?, ?, ?, ?, ?)
         ");
         
-        $metadata = json_encode(['timestamp' => time(), 'mode' => $mode]);
-        $stmt->execute([$conversation_id, $type, $content, $mode, $processing_time, $metadata]);
+        if ($metadata === null) {
+            $metadata = ['timestamp' => time(), 'mode' => $mode];
+        }
+        
+        $metadata_json = json_encode($metadata);
+        $stmt->execute([$conversation_id, $type, $content, $mode, $processing_time, $metadata_json]);
     }
     
-    private function generateResponse($message, $conversation_id, $mode) {
+    private function generateResponse($message, $conversation_id, $mode, $journal_context = null) {
+        // Special handling for Journal mode
+        if ($mode === 'journal') {
+            return $this->generateJournalResponse($message, $conversation_id, $journal_context);
+        }
+        
         // Check for template responses first
         $template_response = $this->checkTemplateResponses($message, $conversation_id);
         if ($template_response) {
@@ -542,6 +556,242 @@ class AIChat {
         
         return $responses[array_rand($responses)];
     }
+
+    private function generateJournalResponse($message, $conversation_id, $journal_context = null) {
+        $user_name = $this->getUserName($conversation_id);
+        $name_part = $user_name ? $user_name : 'there';
+        
+        $message_lower = strtolower($message);
+        
+        // Analyze request type and generate appropriate response
+        if (preg_match('/analyze|what.*think|thoughts|feedback|review/i', $message)) {
+            return $this->analyzeJournalContent($journal_context, $name_part, $message);
+        }
+        
+        if (preg_match('/improve|better|edit|rewrite|suggestion/i', $message)) {
+            return $this->suggestJournalImprovements($journal_context, $name_part, $message);
+        }
+        
+        if (preg_match('/theme|pattern|recurring|meaning|deeper/i', $message)) {
+            return $this->identifyJournalThemes($journal_context, $name_part, $message);
+        }
+        
+        if (preg_match('/continue|next|write.*more|expand/i', $message)) {
+            return $this->suggestJournalContinuation($journal_context, $name_part, $message);
+        }
+        
+        if (preg_match('/structure|organize|format|flow/i', $message)) {
+            return $this->suggestJournalStructure($journal_context, $name_part, $message);
+        }
+        
+        // Default journal companion responses
+        $responses = [
+            "That's a fascinating question, {$name_part}! Looking at your journal, I can see you're exploring some deep thoughts. What specifically would you like me to help you with?",
+            "I love how you're using this journal space to think through ideas, {$name_part}. How can I support your writing process right now?",
+            "Your writing voice is really coming through, {$name_part}. Are you looking for feedback on what you've written so far, or would you like help developing these thoughts further?",
+            "I'm here to help you explore your ideas, {$name_part}. Would you like me to analyze what you've written, suggest improvements, or help you continue developing your thoughts?",
+            "That's an interesting perspective, {$name_part}. I can see from your journal that you're working through some complex ideas. What aspect would you like to dive deeper into?",
+            "Your journal entries show real thoughtfulness, {$name_part}. I can help you analyze patterns, improve your writing, or explore themes - what sounds most helpful right now?"
+        ];
+        
+        return $responses[array_rand($responses)];
+    }
+    
+    private function analyzeJournalContent($journal_context, $name, $original_message) {
+        if (!$journal_context || empty(trim($journal_context))) {
+            return "I'd love to help analyze your writing, {$name}, but I don't see any journal content yet. Once you start writing, I can help you identify themes, patterns, and insights in your thoughts!";
+        }
+        
+        $word_count = str_word_count($journal_context);
+        $sentences = preg_split('/[.!?]+/', $journal_context);
+        $sentence_count = count(array_filter($sentences, 'trim'));
+        
+        // Simple sentiment analysis
+        $positive_words = ['happy', 'joy', 'excited', 'grateful', 'love', 'amazing', 'wonderful', 'great', 'good', 'hope', 'dream', 'success'];
+        $negative_words = ['sad', 'angry', 'frustrated', 'worried', 'fear', 'anxious', 'difficult', 'hard', 'struggle', 'problem', 'issue'];
+        
+        $positive_count = 0;
+        $negative_count = 0;
+        $lower_text = strtolower($journal_context);
+        
+        foreach ($positive_words as $word) {
+            $positive_count += substr_count($lower_text, $word);
+        }
+        foreach ($negative_words as $word) {
+            $negative_count += substr_count($lower_text, $word);
+        }
+        
+        $analysis = [];
+        $analysis[] = "**Content Analysis for {$name}:**";
+        $analysis[] = "📊 **Stats:** {$word_count} words, {$sentence_count} sentences";
+        
+        if ($positive_count > $negative_count) {
+            $analysis[] = "🌟 **Tone:** Your writing has a generally positive and optimistic tone!";
+        } elseif ($negative_count > $positive_count) {
+            $analysis[] = "🤔 **Tone:** I notice some challenging themes - this can be really valuable for processing difficult experiences.";
+        } else {
+            $analysis[] = "⚖️ **Tone:** Your writing shows a balanced emotional perspective.";
+        }
+        
+        // Look for questions
+        $questions = substr_count($journal_context, '?');
+        if ($questions > 0) {
+            $analysis[] = "❓ **Self-Inquiry:** You're asking {$questions} questions - great for self-reflection!";
+        }
+        
+        $analysis[] = "\n💡 **What stands out:** Your writing shows authentic self-expression and genuine reflection. Keep exploring these thoughts!";
+        
+        return implode("\n", $analysis);
+    }
+    
+    private function suggestJournalImprovements($journal_context, $name, $original_message) {
+        if (!$journal_context || empty(trim($journal_context))) {
+            return "I'd be happy to help improve your writing, {$name}! Once you have some content in your journal, I can suggest ways to enhance clarity, flow, and impact.";
+        }
+        
+        $suggestions = [];
+        $suggestions[] = "**Writing Suggestions for {$name}:**";
+        
+        // Check for varied sentence structure
+        $sentences = preg_split('/[.!?]+/', $journal_context);
+        $short_sentences = 0;
+        $long_sentences = 0;
+        
+        foreach ($sentences as $sentence) {
+            $word_count = str_word_count(trim($sentence));
+            if ($word_count > 0 && $word_count < 8) $short_sentences++;
+            if ($word_count > 20) $long_sentences++;
+        }
+        
+        if ($short_sentences > count($sentences) * 0.7) {
+            $suggestions[] = "✏️ Consider combining some short sentences for better flow";
+        }
+        if ($long_sentences > count($sentences) * 0.5) {
+            $suggestions[] = "✂️ Some sentences could be broken down for clarity";
+        }
+        
+        // Check for specific details
+        if (substr_count($journal_context, 'I feel') > 3) {
+            $suggestions[] = "🎨 Try varying how you express emotions beyond 'I feel' - describe sensations, use metaphors";
+        }
+        
+        if (preg_match_all('/\b(very|really|quite|pretty|somewhat)\b/i', $journal_context) > 5) {
+            $suggestions[] = "💪 Consider replacing some adverbs with stronger, more specific words";
+        }
+        
+        $suggestions[] = "\n🌟 **Strengths I notice:** Your authentic voice and willingness to explore your thoughts deeply. Keep that up!";
+        
+        return implode("\n", $suggestions);
+    }
+    
+    private function identifyJournalThemes($journal_context, $name, $original_message) {
+        if (!$journal_context || empty(trim($journal_context))) {
+            return "I'd love to help identify themes in your writing, {$name}! As you write more, I'll be able to spot recurring patterns and deeper meanings in your thoughts.";
+        }
+        
+        $themes = [];
+        $lower_text = strtolower($journal_context);
+        
+        // Common life themes
+        if (preg_match('/work|job|career|professional|office|boss|colleague/i', $journal_context)) {
+            $themes[] = "💼 **Career & Work Life** - Processing professional experiences and goals";
+        }
+        
+        if (preg_match('/relationship|friend|family|love|partner|connection/i', $journal_context)) {
+            $themes[] = "❤️ **Relationships** - Exploring connections with others";
+        }
+        
+        if (preg_match('/dream|goal|future|plan|hope|aspire|want to/i', $journal_context)) {
+            $themes[] = "🎯 **Goals & Aspirations** - Thinking about future possibilities";
+        }
+        
+        if (preg_match('/challenge|difficult|problem|struggle|hard|tough/i', $journal_context)) {
+            $themes[] = "🎭 **Life Challenges** - Working through difficulties";
+        }
+        
+        if (preg_match('/learn|grow|change|develop|improve|better/i', $journal_context)) {
+            $themes[] = "🌱 **Personal Growth** - Focusing on self-development";
+        }
+        
+        if (preg_match('/creative|write|art|music|design|imagine/i', $journal_context)) {
+            $themes[] = "🎨 **Creativity** - Exploring artistic and creative expression";
+        }
+        
+        $response = "**Themes I notice in your writing, {$name}:**\n\n";
+        
+        if (empty($themes)) {
+            $response .= "Your writing is still developing its themes. As you continue journaling, I'll be able to identify deeper patterns and recurring interests that emerge in your thoughts.";
+        } else {
+            $response .= implode("\n\n", $themes);
+            $response .= "\n\n🔍 **Insight:** These themes suggest you're actively engaging with important life areas. Your journal is becoming a valuable space for processing and growth!";
+        }
+        
+        return $response;
+    }
+    
+    private function suggestJournalContinuation($journal_context, $name, $original_message) {
+        if (!$journal_context || empty(trim($journal_context))) {
+            return "Great idea to keep writing, {$name}! Here are some prompts to get started:\n• What's been on your mind lately?\n• Describe a moment from today that stood out\n• What are you grateful for right now?\n• What challenge are you working through?";
+        }
+        
+        $suggestions = [];
+        $suggestions[] = "**Ways to continue your journal, {$name}:**";
+        
+        // Analyze last few sentences for context
+        $sentences = array_filter(array_map('trim', preg_split('/[.!?]+/', $journal_context)));
+        $last_few = array_slice($sentences, -3);
+        $recent_text = implode(' ', $last_few);
+        
+        if (preg_match('/feel|emotion|mood/i', $recent_text)) {
+            $suggestions[] = "💭 Dig deeper: What caused these feelings? How do they connect to your values?";
+        }
+        
+        if (preg_match('/decision|choice|should|maybe/i', $recent_text)) {
+            $suggestions[] = "⚖️ Explore: What are the pros and cons? What would your future self advise?";
+        }
+        
+        if (preg_match('/person|someone|friend|family/i', $recent_text)) {
+            $suggestions[] = "👥 Consider: How do your relationships shape your perspective on this?";
+        }
+        
+        // General continuation prompts
+        $suggestions[] = "🎯 **Try these prompts:**";
+        $suggestions[] = "• If I could give my past self advice about this...";
+        $suggestions[] = "• What I'm learning about myself is...";
+        $suggestions[] = "• The bigger picture here might be...";
+        $suggestions[] = "• What would happen if I...";
+        
+        return implode("\n", $suggestions);
+    }
+    
+    private function suggestJournalStructure($journal_context, $name, $original_message) {
+        if (!$journal_context || empty(trim($journal_context))) {
+            return "I can help you structure your journal writing, {$name}! Some popular formats:\n• **Stream of consciousness** - Just let thoughts flow\n• **Daily reflection** - What happened, how you felt, what you learned\n• **Gratitude + Challenge** - What you're thankful for and what you're working on\n• **Question exploration** - Pick a question and write your way to answers";
+        }
+        
+        $structure_suggestions = [];
+        $structure_suggestions[] = "**Structure suggestions for your journal, {$name}:**";
+        
+        $paragraphs = explode("\n", $journal_context);
+        $paragraph_count = count(array_filter($paragraphs, 'trim'));
+        
+        if ($paragraph_count <= 2) {
+            $structure_suggestions[] = "📝 Consider breaking your thoughts into smaller paragraphs for easier reading";
+        }
+        
+        if (!preg_match('/\?/', $journal_context)) {
+            $structure_suggestions[] = "❓ Try adding some questions to guide your exploration: 'What does this mean?' 'How does this connect?'";
+        }
+        
+        $structure_suggestions[] = "📋 **Effective journal structures:**";
+        $structure_suggestions[] = "• **Beginning:** What's happening in my life/mind right now?";
+        $structure_suggestions[] = "• **Middle:** Why does this matter? How do I feel about it?";
+        $structure_suggestions[] = "• **End:** What am I learning? What do I want to remember?";
+        
+        $structure_suggestions[] = "\n✨ **Your current style:** Your writing has an authentic, flowing quality. Structure can enhance this without limiting your natural expression!";
+        
+        return implode("\n", $structure_suggestions);
+    }
     
     private function interpretComplexity($avg) {
         if ($avg < 10) return "relatively simple patterns with low complexity.";
@@ -587,7 +837,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $chat->processMessage(
         $input['message'], 
         $input['session_id'], 
-        $input['mode'] ?? 'chill'
+        $input['mode'] ?? 'chill',
+        $input['journal_context'] ?? null
     );
     
     echo json_encode($result);

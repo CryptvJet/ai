@@ -460,8 +460,23 @@ class AIAdmin {
                         document.getElementById('currentModel').textContent = `${result.system_info.hostname} (${result.system_info.platform})`;
                     }
                     if (document.getElementById('gpuMemory')) {
-                        const memoryUsage = result.system_info.memory.usage_percent;
-                        document.getElementById('gpuMemory').textContent = `${memoryUsage}% RAM Used`;
+                        if (result.system_info.gpu && result.system_info.gpu.primary) {
+                            const gpu = result.system_info.gpu.primary;
+                            let gpuText = '';
+                            
+                            if (gpu.utilization_gpu !== null) {
+                                gpuText = `${gpu.utilization_gpu}% GPU Usage`;
+                            } else if (gpu.vram) {
+                                gpuText = `${Math.round(gpu.vram / 1024)}GB VRAM`;
+                            } else {
+                                gpuText = `${gpu.vendor} ${gpu.model}`;
+                            }
+                            
+                            document.getElementById('gpuMemory').textContent = gpuText;
+                        } else {
+                            const memoryUsage = result.system_info.memory.usage_percent;
+                            document.getElementById('gpuMemory').textContent = `${memoryUsage}% RAM Used`;
+                        }
                     }
                     if (document.getElementById('responseTime')) {
                         document.getElementById('responseTime').textContent = `${result.seconds_since_ping}s ago`;

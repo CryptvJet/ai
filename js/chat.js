@@ -9,6 +9,12 @@ class AIChat {
         this.selectedVoice = null;
         this.autoSpeak = true;
         this.currentMode = 'chill'; // 'chill' or 'full-power'
+        this.journalMode = false;
+        this.journalRecording = false;
+        this.journalPaused = false;
+        this.journalStartTime = null;
+        this.journalTimer = null;
+        this.journalRecognition = null;
         
         this.initializeChat();
         this.setupVoiceRecognition();
@@ -50,6 +56,25 @@ class AIChat {
         setTimeout(() => {
             this.addWelcomeMessage();
         }, 1000);
+
+        // Initialize Journal mode
+        this.initializeJournalMode();
+    }
+
+    initializeJournalMode() {
+        // Set up journal AI input enter key
+        const journalAiInput = document.getElementById('journalAiInput');
+        if (journalAiInput) {
+            journalAiInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendJournalAiMessage();
+                }
+            });
+        }
+
+        // Set up journal recognition if available
+        this.setupJournalVoiceRecognition();
     }
 
     async loadAISettings() {
@@ -1990,6 +2015,436 @@ I'd love to get to know you better - what's your name?`;
         this.debugLog('All voice filters cleared');
     }
 
+    // Journal Mode Methods
+    setupJournalVoiceRecognition() {
+        const isSecureContext = window.location.protocol === 'https:' || 
+                               window.location.hostname === 'localhost' ||
+                               window.location.hostname === '127.0.0.1';
+        
+        if (!isSecureContext) {
+            console.warn('Journal voice recognition requires HTTPS or localhost');
+            return;
+        }
+        
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.journalRecognition = new SpeechRecognition();
+                
+                this.journalRecognition.continuous = true;
+                this.journalRecognition.interimResults = true;
+                this.journalRecognition.lang = 'en-US';
+                this.journalRecognition.maxAlternatives = 1;
+                
+                this.journalRecognition.onstart = () => {
+                    this.journalRecording = true;
+                    this.updateJournalStatus('🎤 Recording... Speak your thoughts');
+                    this.updateJournalButtons();
+                };
+                
+                this.journalRecognition.onend = () => {
+                    if (this.journalRecording && !this.journalPaused) {
+                        // Auto-restart if we're still supposed to be recording
+                        setTimeout(() => {
+                            if (this.journalRecording && this.journalRecognition) {
+                                try {
+                                    this.journalRecognition.start();
+                                } catch (e) {
+                                    console.warn('Journal recognition restart failed:', e);
+                                }
+                            }
+                        }, 100);
+                    }
+                };
+                
+                this.journalRecognition.onresult = (event) => {
+                    this.handleJournalVoiceResult(event);
+                };
+                
+                this.journalRecognition.onerror = (event) => {
+                    console.error('Journal speech recognition error:', event.error);
+                    this.handleJournalVoiceError(event);
+                };
+                
+            } catch (error) {
+                console.warn('Failed to initialize journal speech recognition:', error);
+                this.journalRecognition = null;
+            }
+        }
+    }
+
+    handleJournalVoiceResult(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+        
+        const journalText = document.getElementById('journalText');
+        if (!journalText) return;
+        
+        if (finalTranscript) {
+            // Add final transcript to journal
+            const currentText = journalText.value;
+            const newText = currentText + finalTranscript;
+            journalText.value = newText;
+            
+            // Auto-scroll to bottom
+            journalText.scrollTop = journalText.scrollHeight;
+            
+            // Save to localStorage for persistence
+            localStorage.setItem('journalText', newText);
+        }
+        
+        if (interimTranscript) {
+            // Show interim results in status
+            this.updateJournalStatus(`🎤 "${interimTranscript}"`);
+        }
+    }
+
+    handleJournalVoiceError(event) {
+        let errorMsg = '❌ Voice error: ';
+        switch (event.error) {
+            case 'not-allowed':
+                errorMsg += 'Microphone access denied';
+                break;
+            case 'network':
+                errorMsg += 'Network connection issue';
+                break;
+            case 'no-speech':
+                errorMsg += 'No speech detected';
+                // Continue recording for no-speech errors
+                return;
+            case 'audio-capture':
+                errorMsg += 'Microphone not available';
+                break;
+            default:
+                errorMsg += event.error;
+        }
+        
+        this.updateJournalStatus(errorMsg);
+        setTimeout(() => {
+            if (this.journalRecording) {
+                this.updateJournalStatus('🎤 Recording... Speak your thoughts');
+            }
+        }, 3000);
+    }
+
+    updateJournalStatus(message) {
+        const status = document.getElementById('journalStatus');
+        if (status) {
+            status.textContent = message;
+        }
+    }
+
+    updateJournalButtons() {
+        const startBtn = document.getElementById('startVoiceBtn');
+        const stopBtn = document.getElementById('stopVoiceBtn');
+        const pauseBtn = document.getElementById('pauseVoiceBtn');
+        
+        if (this.journalRecording) {
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+            if (pauseBtn) pauseBtn.disabled = false;
+        } else {
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (pauseBtn) pauseBtn.disabled = true;
+        }
+    }
+
+    updateJournalTimer() {
+        if (!this.journalStartTime) return;
+        
+        const elapsed = Date.now() - this.journalStartTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        
+        const timer = document.getElementById('journalTimer');
+        if (timer) {
+            timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    async sendJournalAiMessage() {
+        const input = document.getElementById('journalAiInput');
+        const responseDiv = document.getElementById('journalAiResponse');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Clear input
+        input.value = '';
+        
+        // Add user message to response area
+        const userMsg = document.createElement('div');
+        userMsg.className = 'journal-ai-user-message';
+        userMsg.innerHTML = `<strong>You:</strong> ${message}`;
+        responseDiv.appendChild(userMsg);
+        
+        // Scroll to bottom
+        responseDiv.scrollTop = responseDiv.scrollHeight;
+        
+        try {
+            // Get current journal content for context
+            const journalContent = document.getElementById('journalText').value;
+            
+            // Send to AI with journal context
+            const response = await fetch('api/chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: this.sessionId + '_journal',
+                    mode: 'journal',
+                    journal_context: journalContent.substring(-2000) // Last 2000 chars for context
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Add AI response
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'journal-ai-response-message';
+                aiMsg.innerHTML = `<strong>Zin:</strong> ${result.response}`;
+                responseDiv.appendChild(aiMsg);
+                
+                // Scroll to bottom
+                responseDiv.scrollTop = responseDiv.scrollHeight;
+                
+                // Speak response if enabled
+                if (this.autoSpeak && this.synthesis) {
+                    this.speakText(result.response);
+                }
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Journal AI error:', error);
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'journal-ai-error-message';
+            errorMsg.innerHTML = `<strong>Error:</strong> Could not reach Zin. Please try again.`;
+            responseDiv.appendChild(errorMsg);
+        }
+    }
+
+    toggleJournalMode() {
+        this.journalMode = !this.journalMode;
+        
+        const regularSection = document.getElementById('regularInputSection');
+        const journalSection = document.getElementById('journalSection');
+        const journalBtn = document.getElementById('journalModeBtn');
+        const aiMode = document.getElementById('aiMode');
+        
+        if (this.journalMode) {
+            // Switch to journal mode
+            if (regularSection) regularSection.classList.add('hidden');
+            if (journalSection) journalSection.classList.remove('hidden');
+            if (journalBtn) {
+                journalBtn.textContent = '💬 Chat';
+                journalBtn.title = 'Switch back to Chat Mode';
+            }
+            if (aiMode) {
+                aiMode.textContent = 'Journal Mode';
+                aiMode.className = 'mode-indicator journal';
+            }
+            
+            // Load saved journal text
+            const savedText = localStorage.getItem('journalText');
+            if (savedText) {
+                const journalText = document.getElementById('journalText');
+                if (journalText) journalText.value = savedText;
+            }
+            
+            this.updateJournalStatus('📝 Journal mode active - Ready to record');
+        } else {
+            // Switch back to chat mode
+            if (regularSection) regularSection.classList.remove('hidden');
+            if (journalSection) journalSection.classList.add('hidden');
+            if (journalBtn) {
+                journalBtn.textContent = '📝 Journal';
+                journalBtn.title = 'Switch to Journal Mode';
+            }
+            if (aiMode) {
+                aiMode.textContent = 'Chill Mode';
+                aiMode.className = 'mode-indicator chill';
+            }
+            
+            // Stop any recording
+            if (this.journalRecording) {
+                this.stopJournalVoice();
+            }
+        }
+    }
+
+    startJournalVoice() {
+        if (!this.journalRecognition) {
+            alert('Voice recognition not available. Please ensure you\'re using HTTPS and have microphone permissions.');
+            return;
+        }
+        
+        this.journalRecording = true;
+        this.journalPaused = false;
+        this.journalStartTime = Date.now();
+        
+        // Start timer
+        this.journalTimer = setInterval(() => {
+            this.updateJournalTimer();
+        }, 1000);
+        
+        try {
+            this.journalRecognition.start();
+            this.updateJournalButtons();
+            this.updateJournalStatus('🎤 Starting recording...');
+        } catch (error) {
+            console.error('Failed to start journal recording:', error);
+            this.updateJournalStatus('❌ Failed to start recording');
+            this.journalRecording = false;
+            this.updateJournalButtons();
+        }
+    }
+
+    stopJournalVoice() {
+        this.journalRecording = false;
+        this.journalPaused = false;
+        
+        if (this.journalRecognition) {
+            try {
+                this.journalRecognition.stop();
+            } catch (error) {
+                console.warn('Error stopping journal recognition:', error);
+            }
+        }
+        
+        if (this.journalTimer) {
+            clearInterval(this.journalTimer);
+            this.journalTimer = null;
+        }
+        
+        this.updateJournalButtons();
+        this.updateJournalStatus('⏹️ Recording stopped');
+        
+        // Save current text
+        const journalText = document.getElementById('journalText');
+        if (journalText) {
+            localStorage.setItem('journalText', journalText.value);
+        }
+    }
+
+    pauseJournalVoice() {
+        if (this.journalRecording && !this.journalPaused) {
+            // Pause
+            this.journalPaused = true;
+            if (this.journalRecognition) {
+                try {
+                    this.journalRecognition.stop();
+                } catch (error) {
+                    console.warn('Error pausing journal recognition:', error);
+                }
+            }
+            
+            const pauseBtn = document.getElementById('pauseVoiceBtn');
+            if (pauseBtn) {
+                pauseBtn.innerHTML = '▶️ Resume';
+                pauseBtn.title = 'Resume Voice Recording';
+            }
+            
+            this.updateJournalStatus('⏸️ Recording paused');
+        } else if (this.journalPaused) {
+            // Resume
+            this.journalPaused = false;
+            try {
+                this.journalRecognition.start();
+            } catch (error) {
+                console.error('Failed to resume journal recording:', error);
+                this.updateJournalStatus('❌ Failed to resume recording');
+                return;
+            }
+            
+            const pauseBtn = document.getElementById('pauseVoiceBtn');
+            if (pauseBtn) {
+                pauseBtn.innerHTML = '⏸️ Pause';
+                pauseBtn.title = 'Pause Voice Recording';
+            }
+            
+            this.updateJournalStatus('🎤 Recording resumed');
+        }
+    }
+
+    saveJournalEntry() {
+        const journalText = document.getElementById('journalText');
+        if (!journalText || !journalText.value.trim()) {
+            alert('No journal content to save!');
+            return;
+        }
+        
+        const content = journalText.value;
+        const timestamp = new Date().toISOString();
+        const filename = `journal-entry-${Date.now()}.txt`;
+        
+        // Save to localStorage
+        const savedEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+        savedEntries.push({
+            timestamp: timestamp,
+            content: content,
+            id: Date.now()
+        });
+        localStorage.setItem('journalEntries', JSON.stringify(savedEntries));
+        
+        // Also trigger download
+        this.exportJournalEntry();
+        
+        alert('Journal entry saved!');
+    }
+
+    clearJournalEntry() {
+        if (confirm('Clear the current journal entry? This cannot be undone.')) {
+            const journalText = document.getElementById('journalText');
+            if (journalText) {
+                journalText.value = '';
+                localStorage.removeItem('journalText');
+            }
+            
+            // Clear AI responses
+            const responseDiv = document.getElementById('journalAiResponse');
+            if (responseDiv) {
+                responseDiv.innerHTML = '<p class="journal-ai-welcome">Hi! I\'m Zin, your writing companion. I can help analyze your journal entries, suggest improvements, or discuss your thoughts. What would you like to explore?</p>';
+            }
+            
+            this.updateJournalStatus('📝 Journal cleared - Ready to record');
+        }
+    }
+
+    exportJournalEntry() {
+        const journalText = document.getElementById('journalText');
+        if (!journalText || !journalText.value.trim()) {
+            alert('No journal content to export!');
+            return;
+        }
+        
+        const content = journalText.value;
+        const timestamp = new Date().toLocaleString();
+        const exportText = `Journal Entry - ${timestamp}\n${'='.repeat(50)}\n\n${content}\n\n${'='.repeat(50)}\nGenerated by PulseCore AI Journal Mode`;
+        
+        // Create and download file
+        const blob = new Blob([exportText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `journal-${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     async speakText(text) {
         console.log('speakText called with:', text);
         console.log('autoSpeak status:', this.autoSpeak);
@@ -2190,6 +2645,39 @@ function closeAdvancedVoiceSettings() {
     if (modal) {
         modal.classList.add('hidden');
     }
+}
+
+// Journal Mode Global Functions
+function toggleJournalMode() {
+    window.aiChat.toggleJournalMode();
+}
+
+function startJournalVoice() {
+    window.aiChat.startJournalVoice();
+}
+
+function stopJournalVoice() {
+    window.aiChat.stopJournalVoice();
+}
+
+function pauseJournalVoice() {
+    window.aiChat.pauseJournalVoice();
+}
+
+function sendJournalAiMessage() {
+    window.aiChat.sendJournalAiMessage();
+}
+
+function saveJournalEntry() {
+    window.aiChat.saveJournalEntry();
+}
+
+function clearJournalEntry() {
+    window.aiChat.clearJournalEntry();
+}
+
+function exportJournalEntry() {
+    window.aiChat.exportJournalEntry();
 }
 
 // Initialize when page loads

@@ -21,6 +21,7 @@
                     <div class="ai-avatar">🤖</div>
                     <h1 id="aiName">AI Assistant</h1>
                     <span id="aiMode" class="mode-indicator chill">Chill Mode</span>
+                    <button id="journalModeBtn" class="btn-journal-mode" onclick="toggleJournalMode()" title="Switch to Journal Mode">📝 Journal</button>
                     <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
                     <span id="pcStatus" class="connection-status">PC Bridge: <span class="status-dot"></span></span>
                 </div>
@@ -39,7 +40,8 @@
                 </div>
             </div>
 
-            <div class="input-section">
+            <!-- Regular Chat Input Section -->
+            <div class="input-section" id="regularInputSection">
                 <div class="input-container">
                     <input 
                         type="text" 
@@ -61,7 +63,65 @@
                     <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
                     <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
                 </div>
+            </div>
 
+            <!-- Journal Mode Interface -->
+            <div class="journal-section hidden" id="journalSection">
+                <div class="journal-controls">
+                    <div class="journal-status">
+                        <span id="journalStatus" class="journal-status-text">Ready to record</span>
+                        <span id="journalTimer" class="journal-timer">00:00</span>
+                    </div>
+                    <div class="journal-buttons">
+                        <button id="startVoiceBtn" class="btn-journal-voice start" onclick="startJournalVoice()" title="Start Voice Recording">
+                            🔴 Start Voice
+                        </button>
+                        <button id="stopVoiceBtn" class="btn-journal-voice stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
+                            ⏹️ Stop Voice
+                        </button>
+                        <button id="pauseVoiceBtn" class="btn-journal-voice pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
+                            ⏸️ Pause
+                        </button>
+                    </div>
+                </div>
+
+                <div class="journal-editor">
+                    <textarea 
+                        id="journalText" 
+                        class="journal-textarea" 
+                        placeholder="Your journal will appear here as you speak... You can also type directly or edit the text."
+                        rows="12"
+                    ></textarea>
+                </div>
+
+                <div class="journal-ai-panel">
+                    <div class="journal-ai-input">
+                        <input 
+                            type="text" 
+                            id="journalAiInput" 
+                            placeholder="Ask Zin about your writing, get suggestions, or analyze your journal..."
+                            class="journal-ai-message-input"
+                        />
+                        <button id="journalAiSendBtn" class="btn-journal-ai-send" onclick="sendJournalAiMessage()">
+                            🤖 Ask Zin
+                        </button>
+                    </div>
+                    <div class="journal-ai-response" id="journalAiResponse">
+                        <p class="journal-ai-welcome">Hi! I'm Zin, your writing companion. I can help analyze your journal entries, suggest improvements, or discuss your thoughts. What would you like to explore?</p>
+                    </div>
+                </div>
+
+                <div class="journal-actions">
+                    <button id="saveJournalBtn" class="btn-journal-action save" onclick="saveJournalEntry()">
+                        💾 Save Entry
+                    </button>
+                    <button id="clearJournalBtn" class="btn-journal-action clear" onclick="clearJournalEntry()">
+                        🗑️ Clear
+                    </button>
+                    <button id="exportJournalBtn" class="btn-journal-action export" onclick="exportJournalEntry()">
+                        📤 Export
+                    </button>
+                </div>
             </div>
         </div>
 

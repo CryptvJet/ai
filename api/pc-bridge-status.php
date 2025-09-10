@@ -57,6 +57,19 @@ try {
                     'usage_percent' => $system_info['memory']['total'] > 0 ? 
                         round((($system_info['memory']['total'] - $system_info['memory']['free']) / $system_info['memory']['total']) * 100, 1) : 0
                 ],
+                'gpu' => [
+                    'controllers' => $system_info['gpu']['controllers'] ?? [],
+                    'displays' => $system_info['gpu']['displays'] ?? 0,
+                    'primary' => !empty($system_info['gpu']['controllers']) ? [
+                        'model' => $system_info['gpu']['controllers'][0]['model'] ?? 'Unknown',
+                        'vendor' => $system_info['gpu']['controllers'][0]['vendor'] ?? 'Unknown',
+                        'vram' => $system_info['gpu']['controllers'][0]['vram'] ?? null,
+                        'temperature' => $system_info['gpu']['controllers'][0]['temperature'] ?? null,
+                        'utilization_gpu' => $system_info['gpu']['controllers'][0]['utilizationGpu'] ?? null,
+                        'utilization_memory' => $system_info['gpu']['controllers'][0]['utilizationMemory'] ?? null
+                    ] : null
+                ],
+                'cpu_load' => $system_info['cpuLoad'] ?? 0,
                 'timestamp' => $system_info['timestamp'] ?? null
             ]
         ];
