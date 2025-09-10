@@ -2146,6 +2146,17 @@ function showCopyFeedback(message) {
     }, 2000);
 }
 
+// Insert command into console input
+function insertCommandIntoConsole(command) {
+    const consoleInput = document.getElementById('debugCommand');
+    if (consoleInput) {
+        consoleInput.value = command;
+        consoleInput.focus();
+        // Position cursor at the end of the command
+        consoleInput.setSelectionRange(command.length, command.length);
+    }
+}
+
 // Initialize click-to-copy for command items
 function initializeCommandCopyEvents() {
     document.addEventListener('click', function(event) {
@@ -2154,10 +2165,10 @@ function initializeCommandCopyEvents() {
             const codeElement = commandItem.querySelector('code');
             if (codeElement) {
                 const command = codeElement.textContent.trim();
-                copyCommandToClipboard(command);
+                insertCommandIntoConsole(command);
                 
                 // Visual feedback - brief highlight
-                commandItem.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2))';
+                commandItem.style.background = 'linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.2))';
                 setTimeout(() => {
                     commandItem.style.background = '';
                 }, 300);

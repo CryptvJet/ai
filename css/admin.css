@@ -431,7 +431,7 @@ body {
     color: #cbd5e1;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 600;
     transition: all 0.3s ease;
 }
@@ -982,7 +982,7 @@ input:checked + .toggle-slider:before {
     margin: 2px 0;
     padding: 2px 8px;
     font-family: 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     border-radius: 3px;
     white-space: pre-wrap;
 }
@@ -1026,7 +1026,7 @@ input:checked + .toggle-slider:before {
 }
 
 #debugOutput {
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.2;
     max-height: 300px;
     overflow-y: auto;
@@ -1070,7 +1070,7 @@ input:checked + .toggle-slider:before {
     padding: 4px 8px;
     color: #e2e8f0;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
 }
 
 #debugCommand::placeholder {
@@ -1238,7 +1238,7 @@ input:checked + .toggle-slider:before {
     border-radius: 15px;
     padding: 20px;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     color: white;
     backdrop-filter: blur(15px);
     width: 66.67%; /* 2/3 width */
@@ -1414,7 +1414,7 @@ input:checked + .toggle-slider:before {
     border-radius: 8px;
     margin-bottom: 8px;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.2;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1);
@@ -1453,7 +1453,7 @@ input:checked + .toggle-slider:before {
     padding: 6px 10px;
     border-radius: 6px;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     backdrop-filter: blur(5px);
     transition: all 0.3s ease;
     position: relative;
