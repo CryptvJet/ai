@@ -704,7 +704,7 @@ body.journal-mode .input-section {
 
 .journal-textarea {
     width: 100%;
-    min-height: 250px;
+    min-height: 125px;
     max-height: none;
     padding: 32px;
     background: rgba(10, 14, 26, 0.7);
