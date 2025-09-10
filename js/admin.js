@@ -1443,11 +1443,16 @@ window.processDebugCommand = function(command) {
         return;
     }
     
-    // Add command to output
-    addDebugLine(`> ${command}`, 'command');
-    
-    // Process command
-    executeDebugCommand(command.toLowerCase().trim());
+    if (consoleMode === 'debug') {
+        // Add command to output
+        addDebugLine(`> ${command}`, 'command');
+        
+        // Process debug command
+        executeDebugCommand(command.toLowerCase().trim());
+    } else if (consoleMode === 'browser') {
+        // Execute JavaScript in browser console mode
+        executeBrowserCommand(command);
+    }
     
     // Auto-scroll if enabled (use global debugAutoScroll variable)
     if (debugAutoScroll) {
@@ -1800,8 +1805,8 @@ function switchConsoleMode(mode) {
         displayDebugOutput();
     } else {
         modeIndicator.textContent = 'Browser Console';
-        debugInput.placeholder = 'Browser console (read-only)';
-        debugInput.style.display = 'none'; // Hide input in browser mode
+        debugInput.placeholder = 'Enter JavaScript code to execute';
+        debugInput.style.display = 'block'; // Show input in browser mode too
         displayBrowserConsoleOutput();
     }
 }
@@ -1834,15 +1839,22 @@ function displayBrowserConsoleOutput() {
         const line1 = document.createElement('div');
         line1.style.color = '#00ff88';
         line1.style.fontSize = '11px';
-        line1.textContent = '[Browser] No browser console output captured yet';
+        line1.textContent = '[Browser Console] Interactive JavaScript console';
         debugOutput.appendChild(line1);
         
         const line2 = document.createElement('div');
         line2.style.color = '#00ff88';
         line2.style.fontSize = '11px';
         line2.style.opacity = '0.7';
-        line2.textContent = '[Info] Browser console logging will appear here in real-time';
+        line2.textContent = '[Info] Type JavaScript code to execute. Browser console output appears here.';
         debugOutput.appendChild(line2);
+        
+        const line3 = document.createElement('div');
+        line3.style.color = '#66aaff';
+        line3.style.fontSize = '11px';
+        line3.style.opacity = '0.6';
+        line3.textContent = '[Examples] Try: document.title, window.location.href, console.log("Hello")';
+        debugOutput.appendChild(line3);
         return;
     }
     
@@ -1871,6 +1883,66 @@ function displayBrowserConsoleOutput() {
         line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
         debugOutput.appendChild(line);
     });
+    
+    // Auto-scroll if enabled
+    if (debugAutoScroll) {
+        debugOutput.scrollTop = debugOutput.scrollHeight;
+    }
+}
+
+function executeBrowserCommand(jsCode) {
+    const debugOutput = document.getElementById('debugOutput');
+    if (!debugOutput) return;
+    
+    // Add the command to display
+    const commandLine = document.createElement('div');
+    commandLine.style.color = '#00ff88';
+    commandLine.style.fontSize = '11px';
+    commandLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+    commandLine.style.fontWeight = 'bold';
+    commandLine.textContent = `> ${jsCode}`;
+    debugOutput.appendChild(commandLine);
+    
+    try {
+        // Execute the JavaScript code
+        const result = eval(jsCode);
+        
+        // Display the result
+        const resultLine = document.createElement('div');
+        resultLine.style.color = '#66aaff';
+        resultLine.style.fontSize = '11px';
+        resultLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+        resultLine.style.padding = '1px 0';
+        
+        if (result !== undefined) {
+            if (typeof result === 'object') {
+                resultLine.textContent = JSON.stringify(result, null, 2);
+            } else {
+                resultLine.textContent = `← ${result}`;
+            }
+        } else {
+            resultLine.textContent = '← undefined';
+        }
+        
+        debugOutput.appendChild(resultLine);
+        
+        // Also log to the actual browser console
+        originalConsole.log(`[Admin Console] ${jsCode}`);
+        originalConsole.log(`[Result]`, result);
+        
+    } catch (error) {
+        // Display the error
+        const errorLine = document.createElement('div');
+        errorLine.style.color = '#ff6666';
+        errorLine.style.fontSize = '11px';
+        errorLine.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+        errorLine.style.padding = '1px 0';
+        errorLine.textContent = `✗ ${error.message}`;
+        debugOutput.appendChild(errorLine);
+        
+        // Also log to the actual browser console
+        originalConsole.error(`[Admin Console Error]`, error);
+    }
     
     // Auto-scroll if enabled
     if (debugAutoScroll) {

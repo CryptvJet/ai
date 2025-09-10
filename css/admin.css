@@ -1324,7 +1324,7 @@ input:checked + .toggle-slider:before {
 }
 
 .green-console-output {
-    max-height: 200px;
+    height: 240px; /* 12 rows * 20px per row (11px font + 1px padding * 2 + line spacing) */
     overflow-y: auto;
     border: 1px solid rgba(0,255,0,0.1);
     padding: 8px;
