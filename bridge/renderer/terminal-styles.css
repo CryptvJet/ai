@@ -33,11 +33,13 @@
     border: 1px solid rgba(148, 163, 184, 0.2);
     overflow: hidden;
     position: relative;
+    max-height: 600px;
+    min-height: 400px;
 }
 
 .terminal-output {
     flex: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: auto;
     padding: 1rem;
     font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
@@ -47,10 +49,9 @@
     background: rgba(0, 0, 0, 0.8);
     white-space: pre-wrap;
     word-wrap: break-word;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     position: relative;
-    height: 0; /* Important for flex scrolling */
-    min-height: 200px;
+    min-height: 0;
 }
 
 .terminal-output::-webkit-scrollbar {
@@ -77,6 +78,9 @@
     padding: 1rem;
     background: rgba(0, 0, 0, 0.7);
     border-top: 1px solid rgba(148, 163, 184, 0.1);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
 }
 
 .terminal-prompt {
@@ -217,14 +221,15 @@
 
 /* Terminal Line Numbers */
 .terminal-line {
-    display: flex;
-    align-items: flex-start;
+    display: block;
     margin-bottom: 0.25rem;
     min-height: 1.5rem;
     width: 100%;
+    word-wrap: break-word;
 }
 
 .terminal-line-number {
+    display: inline-block;
     width: 2.5rem;
     color: #6b7280;
     font-size: 0.75rem;
@@ -232,7 +237,7 @@
     user-select: none;
     opacity: 0.7;
     margin-right: 0.5rem;
-    flex-shrink: 0;
+    vertical-align: top;
 }
 
 /* Terminal Selection */

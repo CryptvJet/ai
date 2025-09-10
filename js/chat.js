@@ -73,6 +73,17 @@ class AIChat {
             });
         }
 
+        // Set up Zin input enter key
+        const zinInput = document.getElementById('zinQuickInput');
+        if (zinInput) {
+            zinInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendZinMessage();
+                }
+            });
+        }
+
         // Set up journal recognition if available
         this.setupJournalVoiceRecognition();
     }
@@ -2244,6 +2255,7 @@ I'd love to get to know you better - what's your name?`;
         const journalSection = document.getElementById('journalSection');
         const journalBtn = document.getElementById('journalModeBtn');
         const aiMode = document.getElementById('aiMode');
+        const floatingChatIndicator = document.getElementById('floatingChatIndicator');
         
         if (this.journalMode) {
             // Switch to journal mode
@@ -2258,14 +2270,23 @@ I'd love to get to know you better - what's your name?`;
                 aiMode.className = 'mode-indicator journal';
             }
             
+            // Show floating chat indicator
+            if (floatingChatIndicator) floatingChatIndicator.classList.remove('hidden');
+            
             // Load saved journal text
             const savedText = localStorage.getItem('journalText');
             if (savedText) {
                 const journalText = document.getElementById('journalText');
-                if (journalText) journalText.value = savedText;
+                if (journalText) {
+                    journalText.value = savedText;
+                    this.updateWordCount();
+                }
             }
             
-            this.updateJournalStatus('📝 Journal mode active - Ready to record');
+            // Setup word count listener
+            this.setupJournalTextListeners();
+            
+            this.updateJournalStatus('Ready to begin your writing session');
         } else {
             // Switch back to chat mode
             if (regularSection) regularSection.classList.remove('hidden');
@@ -2279,10 +2300,238 @@ I'd love to get to know you better - what's your name?`;
                 aiMode.className = 'mode-indicator chill';
             }
             
+            // Hide floating chat indicator
+            if (floatingChatIndicator) floatingChatIndicator.classList.add('hidden');
+            
+            // Close floating chat if open
+            this.closeFloatingChat();
+            
             // Stop any recording
             if (this.journalRecording) {
                 this.stopJournalVoice();
             }
+        }
+    }
+
+    setupJournalTextListeners() {
+        const journalText = document.getElementById('journalText');
+        if (journalText) {
+            journalText.addEventListener('input', () => {
+                this.updateWordCount();
+                // Auto-save
+                localStorage.setItem('journalText', journalText.value);
+            });
+        }
+    }
+
+    updateWordCount() {
+        const journalText = document.getElementById('journalText');
+        const wordCountEl = document.getElementById('wordCount');
+        const charCountEl = document.getElementById('charCount');
+        
+        if (journalText && wordCountEl && charCountEl) {
+            const text = journalText.value;
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const charCount = text.length;
+            
+            wordCountEl.textContent = `${wordCount} words`;
+            charCountEl.textContent = `${charCount} characters`;
+        }
+    }
+
+    // Floating Chat Methods
+    toggleFloatingChat() {
+        const panel = document.getElementById('floatingChatPanel');
+        const indicator = document.getElementById('floatingChatIndicator');
+        
+        if (panel && panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            // Load AI name into floating chat
+            const floatingAiName = document.getElementById('floatingAiName');
+            const aiName = document.getElementById('aiName');
+            if (floatingAiName && aiName) {
+                floatingAiName.textContent = aiName.textContent;
+            }
+            
+            // Setup floating chat input listener
+            const floatingInput = document.getElementById('floatingMessageInput');
+            if (floatingInput) {
+                floatingInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendFloatingMessage();
+                    }
+                });
+            }
+        } else if (panel) {
+            this.closeFloatingChat();
+        }
+    }
+
+    closeFloatingChat() {
+        const panel = document.getElementById('floatingChatPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+        }
+    }
+
+    async sendFloatingMessage() {
+        const input = document.getElementById('floatingMessageInput');
+        const container = document.getElementById('floatingChatContainer');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Clear input
+        input.value = '';
+        
+        // Add user message
+        this.addFloatingMessage('user', message);
+        
+        try {
+            const response = await fetch('api/chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: this.sessionId + '_floating',
+                    mode: this.currentMode
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.addFloatingMessage('ai', result.response);
+                
+                // Speak response if enabled
+                if (this.autoSpeak && this.synthesis) {
+                    this.speakText(result.response);
+                }
+                
+                // Show notification pulse
+                const pulse = document.getElementById('chatNotificationPulse');
+                if (pulse && document.getElementById('floatingChatPanel').classList.contains('hidden')) {
+                    pulse.classList.remove('hidden');
+                    setTimeout(() => pulse.classList.add('hidden'), 3000);
+                }
+            } else {
+                this.addFloatingMessage('ai', 'Sorry, I encountered an error. Please try again.');
+            }
+        } catch (error) {
+            console.error('Floating chat error:', error);
+            this.addFloatingMessage('ai', 'Connection error. Please try again.');
+        }
+    }
+
+    addFloatingMessage(type, content) {
+        const container = document.getElementById('floatingChatContainer');
+        if (!container) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `floating-message ${type}-message`;
+        
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const aiName = document.getElementById('aiName').textContent;
+        
+        messageDiv.innerHTML = `
+            <div class="floating-message-content">
+                <strong>${type === 'user' ? 'You' : aiName}:</strong> ${content}
+            </div>
+            <div class="floating-message-time">${timestamp}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Enhanced Zin Communication
+    async sendZinMessage() {
+        const input = document.getElementById('zinQuickInput');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        input.value = '';
+        
+        // Add user message to Zin area
+        this.addZinMessage('user', message);
+        
+        try {
+            const journalContent = document.getElementById('journalText').value;
+            
+            const response = await fetch('api/chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: this.sessionId + '_journal',
+                    mode: 'journal',
+                    journal_context: journalContent.substring(-2000)
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.addZinMessage('ai', result.response);
+                
+                if (this.autoSpeak && this.synthesis) {
+                    this.speakText(result.response);
+                }
+            } else {
+                this.addZinMessage('ai', 'I\'m having trouble processing that. Could you try rephrasing?');
+            }
+        } catch (error) {
+            console.error('Zin communication error:', error);
+            this.addZinMessage('ai', 'I\'m having connectivity issues. Please try again in a moment.');
+        }
+    }
+
+    addZinMessage(type, content) {
+        const container = document.getElementById('zinResponses');
+        if (!container) return;
+        
+        // Remove welcome message if it exists
+        const welcome = container.querySelector('.zin-welcome-message');
+        if (welcome) {
+            welcome.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `zin-${type}-message`;
+        messageDiv.innerHTML = `<strong>${type === 'user' ? 'You' : 'Zin'}:</strong> ${content}`;
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Quick Action Methods
+    analyzeJournal() {
+        const input = document.getElementById('zinQuickInput');
+        if (input) {
+            input.value = 'Analyze my writing and give me insights about the content, themes, and tone.';
+            this.sendZinMessage();
+        }
+    }
+
+    improveJournal() {
+        const input = document.getElementById('zinQuickInput');
+        if (input) {
+            input.value = 'How can I improve my writing? Give me specific suggestions for clarity, flow, and impact.';
+            this.sendZinMessage();
+        }
+    }
+
+    continueJournal() {
+        const input = document.getElementById('zinQuickInput');
+        if (input) {
+            input.value = 'What should I write about next? Give me prompts to continue exploring my thoughts.';
+            this.sendZinMessage();
         }
     }
 
@@ -2678,6 +2927,41 @@ function clearJournalEntry() {
 
 function exportJournalEntry() {
     window.aiChat.exportJournalEntry();
+}
+
+// New Journal Interface Functions
+function sendZinMessage() {
+    window.aiChat.sendZinMessage();
+}
+
+function analyzeJournal() {
+    window.aiChat.analyzeJournal();
+}
+
+function improveJournal() {
+    window.aiChat.improveJournal();
+}
+
+function continueJournal() {
+    window.aiChat.continueJournal();
+}
+
+// Floating Chat Functions
+function toggleFloatingChat() {
+    window.aiChat.toggleFloatingChat();
+}
+
+function closeFloatingChat() {
+    window.aiChat.closeFloatingChat();
+}
+
+function sendFloatingMessage() {
+    window.aiChat.sendFloatingMessage();
+}
+
+function toggleFloatingVoice() {
+    // Implement floating voice functionality if needed
+    console.log('Floating voice feature - to be implemented');
 }
 
 // Initialize when page loads

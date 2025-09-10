@@ -605,12 +605,15 @@ class ZinAIBridgeUI {
 
     // Terminal Methods
     async executeCommand() {
-        const command = this.terminalInput.value.trim();
+        let command = this.terminalInput.value.trim();
         if (!command) return;
         
-        // Add to history
+        // Add original command to history
         this.commandHistory.push(command);
         this.historyIndex = -1;
+        
+        // Translate Unix/Linux commands to Windows equivalents
+        command = this.translateCommand(command);
         
         // Clear input
         this.terminalInput.value = '';
@@ -694,11 +697,57 @@ class ZinAIBridgeUI {
             .replace(/(>|<|\|)/g, '<span class="syntax-operator">$1</span>');
     }
     
+    translateCommand(command) {
+        // Command aliases for Unix/Linux commands to Windows equivalents
+        const aliases = {
+            'ls': 'dir',
+            'ls -la': 'dir',
+            'ls -l': 'dir',
+            'ls -a': 'dir /a',
+            'cat': 'type',
+            'clear': 'cls',
+            'pwd': 'cd',
+            'nano': 'notepad',
+            'vim': 'notepad',
+            'vi': 'notepad',
+            'grep': 'findstr',
+            'which': 'where',
+            'man': 'help',
+            'ps': 'tasklist',
+            'kill': 'taskkill',
+            'rm': 'del',
+            'mv': 'move',
+            'cp': 'copy',
+            'mkdir': 'md',
+            'rmdir': 'rd',
+            'touch': 'echo.>'
+        };
+        
+        // Check for exact matches first
+        if (aliases[command]) {
+            return aliases[command];
+        }
+        
+        // Check for command with arguments
+        const parts = command.split(' ');
+        const baseCommand = parts[0];
+        
+        if (aliases[baseCommand]) {
+            // Replace the base command but keep arguments
+            parts[0] = aliases[baseCommand];
+            return parts.join(' ');
+        }
+        
+        return command;
+    }
+    
     smoothScrollToBottom() {
-        // Force immediate scroll to bottom
-        setTimeout(() => {
-            this.terminalOutput.scrollTop = this.terminalOutput.scrollHeight;
-        }, 10);
+        // Force the output container to scroll to bottom
+        if (this.terminalOutput) {
+            requestAnimationFrame(() => {
+                this.terminalOutput.scrollTop = this.terminalOutput.scrollHeight - this.terminalOutput.clientHeight;
+            });
+        }
     }
     
     clearTerminal() {

@@ -11,7 +11,44 @@
     <div class="app-layout">
         <!-- Left Sidebar (1/6 width) -->
         <div class="left-sidebar">
-            <!-- Future left sidebar content -->
+            <!-- Floating Chat Indicator (visible in Journal Mode) -->
+            <div class="floating-chat-indicator hidden" id="floatingChatIndicator">
+                <button class="chat-indicator-btn" onclick="toggleFloatingChat()" title="Open Chat">
+                    <div class="chat-glow-icon">💬</div>
+                    <span class="indicator-text">Chat Available</span>
+                    <div class="notification-pulse" id="chatNotificationPulse"></div>
+                </button>
+                
+                <!-- Floating Chat Panel -->
+                <div class="floating-chat-panel hidden" id="floatingChatPanel">
+                    <div class="floating-chat-header">
+                        <div class="chat-title">
+                            <span id="floatingAiName">AI Assistant</span>
+                            <span class="chat-mode">Chat Mode</span>
+                        </div>
+                        <button class="close-floating-chat" onclick="closeFloatingChat()">✕</button>
+                    </div>
+                    
+                    <div class="floating-chat-container" id="floatingChatContainer">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    
+                    <div class="floating-chat-input">
+                        <input 
+                            type="text" 
+                            id="floatingMessageInput" 
+                            placeholder="Chat with AI while journaling..."
+                            autocomplete="off"
+                        />
+                        <button id="floatingVoiceBtn" class="btn-floating-voice" onclick="toggleFloatingVoice()" title="Voice input">
+                            🎤
+                        </button>
+                        <button id="floatingSendBtn" class="btn-floating-send" onclick="sendFloatingMessage()" title="Send message">
+                            ➤
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Main Chat Area (2/3 width) -->
@@ -67,60 +104,114 @@
 
             <!-- Journal Mode Interface -->
             <div class="journal-section hidden" id="journalSection">
-                <div class="journal-controls">
-                    <div class="journal-status">
-                        <span id="journalStatus" class="journal-status-text">Ready to record</span>
-                        <span id="journalTimer" class="journal-timer">00:00</span>
+                <!-- Journal Header with Premium Controls -->
+                <div class="journal-header">
+                    <div class="journal-title">
+                        <h2>✍️ Writing Journal</h2>
+                        <div class="journal-session-info">
+                            <span id="journalStatus" class="journal-status-text">Ready to begin your writing session</span>
+                            <div class="journal-timer-container">
+                                <span class="timer-label">Session:</span>
+                                <span id="journalTimer" class="journal-timer">00:00</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="journal-buttons">
-                        <button id="startVoiceBtn" class="btn-journal-voice start" onclick="startJournalVoice()" title="Start Voice Recording">
-                            🔴 Start Voice
+                    
+                    <!-- Premium Voice Controls -->
+                    <div class="journal-voice-controls">
+                        <button id="startVoiceBtn" class="btn-voice-control record" onclick="startJournalVoice()" title="Start Voice Recording">
+                            <span class="btn-icon">🎤</span>
+                            <span class="btn-text">Start Recording</span>
                         </button>
-                        <button id="stopVoiceBtn" class="btn-journal-voice stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
-                            ⏹️ Stop Voice
+                        <button id="stopVoiceBtn" class="btn-voice-control stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">Stop</span>
                         </button>
-                        <button id="pauseVoiceBtn" class="btn-journal-voice pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
-                            ⏸️ Pause
+                        <button id="pauseVoiceBtn" class="btn-voice-control pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
+                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-text">Pause</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="journal-editor">
+                <!-- Zin's AI Responses Area (above journal) -->
+                <div class="zin-responses-area" id="zinResponsesArea">
+                    <div class="zin-header">
+                        <div class="zin-avatar">🧠</div>
+                        <span class="zin-name">Zin</span>
+                        <span class="zin-subtitle">Your Writing Companion</span>
+                    </div>
+                    <div class="zin-responses" id="zinResponses">
+                        <div class="zin-welcome-message">
+                            <p>Hello! I'm Zin, your AI writing companion. I'll appear here with insights and suggestions as you write. Start your journal session and ask me anything about your thoughts!</p>
+                        </div>
+                    </div>
+                    <div class="zin-input-area">
+                        <input 
+                            type="text" 
+                            id="zinQuickInput" 
+                            placeholder="Ask Zin anything about your writing..."
+                            class="zin-input"
+                        />
+                        <button id="zinSendBtn" class="btn-zin-send" onclick="sendZinMessage()">
+                            <span>💭</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Journal Editor -->
+                <div class="journal-editor-container">
+                    <div class="editor-header">
+                        <span class="editor-title">Your Journal</span>
+                        <div class="editor-stats">
+                            <span id="wordCount">0 words</span>
+                            <span id="charCount">0 characters</span>
+                        </div>
+                    </div>
                     <textarea 
                         id="journalText" 
                         class="journal-textarea" 
-                        placeholder="Your journal will appear here as you speak... You can also type directly or edit the text."
-                        rows="12"
+                        placeholder="Begin speaking or start typing your thoughts here...
+
+Your voice will flow into text as you speak. Take your time, explore your ideas, and let your thoughts develop naturally. I'm here to listen and help."
+                        rows="20"
                     ></textarea>
                 </div>
 
-                <div class="journal-ai-panel">
-                    <div class="journal-ai-input">
-                        <input 
-                            type="text" 
-                            id="journalAiInput" 
-                            placeholder="Ask Zin about your writing, get suggestions, or analyze your journal..."
-                            class="journal-ai-message-input"
-                        />
-                        <button id="journalAiSendBtn" class="btn-journal-ai-send" onclick="sendJournalAiMessage()">
-                            🤖 Ask Zin
+                <!-- Journal Actions Bar -->
+                <div class="journal-actions-bar">
+                    <div class="action-group primary">
+                        <button id="saveJournalBtn" class="btn-action primary" onclick="saveJournalEntry()" title="Save your journal entry">
+                            <span class="btn-icon">💾</span>
+                            <span class="btn-text">Save Entry</span>
+                        </button>
+                        <button id="exportJournalBtn" class="btn-action secondary" onclick="exportJournalEntry()" title="Export as text file">
+                            <span class="btn-icon">📄</span>
+                            <span class="btn-text">Export</span>
                         </button>
                     </div>
-                    <div class="journal-ai-response" id="journalAiResponse">
-                        <p class="journal-ai-welcome">Hi! I'm Zin, your writing companion. I can help analyze your journal entries, suggest improvements, or discuss your thoughts. What would you like to explore?</p>
+                    
+                    <div class="action-group secondary">
+                        <button id="analyzeJournalBtn" class="btn-action analyze" onclick="analyzeJournal()" title="Ask Zin to analyze your writing">
+                            <span class="btn-icon">🔍</span>
+                            <span class="btn-text">Analyze</span>
+                        </button>
+                        <button id="improveJournalBtn" class="btn-action improve" onclick="improveJournal()" title="Get writing suggestions">
+                            <span class="btn-icon">✨</span>
+                            <span class="btn-text">Improve</span>
+                        </button>
+                        <button id="continueJournalBtn" class="btn-action continue" onclick="continueJournal()" title="Get ideas to continue writing">
+                            <span class="btn-icon">➡️</span>
+                            <span class="btn-text">Continue</span>
+                        </button>
                     </div>
-                </div>
-
-                <div class="journal-actions">
-                    <button id="saveJournalBtn" class="btn-journal-action save" onclick="saveJournalEntry()">
-                        💾 Save Entry
-                    </button>
-                    <button id="clearJournalBtn" class="btn-journal-action clear" onclick="clearJournalEntry()">
-                        🗑️ Clear
-                    </button>
-                    <button id="exportJournalBtn" class="btn-journal-action export" onclick="exportJournalEntry()">
-                        📤 Export
-                    </button>
+                    
+                    <div class="action-group danger">
+                        <button id="clearJournalBtn" class="btn-action danger" onclick="clearJournalEntry()" title="Clear all content">
+                            <span class="btn-icon">🗑️</span>
+                            <span class="btn-text">Clear</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
