@@ -1437,7 +1437,6 @@ document.addEventListener('click', function(event) {
 // Debug Console Implementation
 window.processDebugCommand = function(command) {
     const debugOutput = document.getElementById('debugOutput');
-    const autoScroll = document.getElementById('autoScroll').checked;
     
     if (!debugOutput) {
         console.error('Debug output element not found');
@@ -1450,8 +1449,8 @@ window.processDebugCommand = function(command) {
     // Process command
     executeDebugCommand(command.toLowerCase().trim());
     
-    // Auto-scroll if enabled
-    if (autoScroll) {
+    // Auto-scroll if enabled (use global debugAutoScroll variable)
+    if (debugAutoScroll) {
         debugOutput.scrollTop = debugOutput.scrollHeight;
     }
 };
@@ -1568,9 +1567,35 @@ function addDebugLine(text, type = 'data') {
     if (!debugOutput) return;
     
     const line = document.createElement('div');
-    line.className = `debug-line debug-${type}`;
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+    line.style.fontSize = '11px';
+    line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+    line.style.padding = '1px 0';
     
+    // Green console color scheme
+    switch(type) {
+        case 'command':
+            line.style.color = '#00ff88';
+            line.style.fontWeight = 'bold';
+            break;
+        case 'error':
+            line.style.color = '#ff6666';
+            break;
+        case 'warning':
+            line.style.color = '#ffaa00';
+            break;
+        case 'success':
+            line.style.color = '#00ff88';
+            line.style.fontWeight = 'bold';
+            break;
+        case 'info':
+            line.style.color = '#66aaff';
+            break;
+        default:
+            line.style.color = '#00ff88';
+            line.style.opacity = '0.8';
+    }
+    
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
     debugOutput.appendChild(line);
 }
 
@@ -1578,7 +1603,23 @@ function clearDebugOutput() {
     const debugOutput = document.getElementById('debugOutput');
     if (debugOutput) {
         debugOutput.innerHTML = '';
-        addDebugLine('Debug console cleared', 'info');
+        if (consoleMode === 'debug') {
+            addDebugLine('Debug console cleared', 'info');
+        } else {
+            // In browser mode, show welcome message
+            const line1 = document.createElement('div');
+            line1.style.color = '#00ff88';
+            line1.style.fontSize = '11px';
+            line1.textContent = '[Browser] No browser console output captured yet';
+            debugOutput.appendChild(line1);
+            
+            const line2 = document.createElement('div');
+            line2.style.color = '#00ff88';
+            line2.style.fontSize = '11px';
+            line2.style.opacity = '0.7';
+            line2.textContent = '[Info] Browser console logging will appear here in real-time';
+            debugOutput.appendChild(line2);
+        }
     }
 }
 

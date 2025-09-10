@@ -199,34 +199,36 @@
 
             <!-- Console Section -->
             <section id="console" class="admin-section">
-                <h2>Debug Console</h2>
-                <p class="section-description">Interactive debugging console for testing APIs, monitoring connections, and troubleshooting issues in real-time.</p>
-                
-                <!-- Green Debug Console -->
-                <div id="debugInfo" class="green-console">
-                    <div class="console-header-row">
-                        <strong>🔍 Debug Console</strong>
-                        <div class="console-mode-toggle-mini">
-                            <button id="debugModeBtn" class="toggle-btn-mini active" onclick="switchConsoleMode('debug')">🔧 Debug</button>
-                            <button id="browserModeBtn" class="toggle-btn-mini" onclick="switchConsoleMode('browser')">🌐 Browser</button>
+                <!-- Green Debug Console - Centered and 2/3 width -->
+                <div class="console-container">
+                    <div id="debugInfo" class="green-console">
+                        <div class="console-header-row">
+                            <strong>🔍 Debug Console</strong>
+                            <div class="console-mode-toggle-mini">
+                                <button id="debugModeBtn" class="toggle-btn-mini active" onclick="switchConsoleMode('debug')">🔧 Debug</button>
+                                <button id="browserModeBtn" class="toggle-btn-mini" onclick="switchConsoleMode('browser')">🌐 Browser</button>
+                            </div>
+                            <div class="console-controls">
+                                <button onclick="clearDebugOutput()" class="console-btn clear-btn">Clear</button>
+                                <button onclick="toggleDebugAutoScroll()" id="autoScrollBtn" class="console-btn auto-scroll-btn">Auto-scroll: ON</button>
+                            </div>
                         </div>
-                        <div class="console-controls">
-                            <button onclick="clearDebugOutput()" class="console-btn clear-btn">Clear</button>
-                            <button onclick="toggleDebugAutoScroll()" id="autoScrollBtn" class="console-btn auto-scroll-btn">Auto-scroll: ON</button>
+                        <div id="debugOutput" class="green-console-output">
+                            <div style="color: #00ff88; font-size: 11px;">[System] Debug console initialized. Type "help" to see available commands.</div>
+                            <div style="color: #00ff88; font-size: 11px; opacity: 0.7;">[Info] Console ready for debugging and API testing</div>
                         </div>
-                    </div>
-                    <div id="debugOutput" class="green-console-output">
-                        <div style="color: #00ff88; font-size: 11px;">[System] Debug console initialized. Type "help" to see available commands.</div>
-                        <div style="color: #00ff88; font-size: 11px; opacity: 0.7;">[Info] Console ready for debugging and API testing</div>
-                    </div>
-                    <div class="console-input-row">
-                        <input type="text" id="debugCommand" placeholder="Enter command (help for list)" class="green-console-input" onkeypress="if(event.key==='Enter' && this.value.trim()) { processDebugCommand(this.value.trim()); this.value = ''; }">
-                        <button onclick="executeDebugCommand()" class="console-btn run-btn">Run</button>
-                        <div class="console-mode-indicator">
-                            <span id="modeIndicator">Debug Mode</span>
+                        <div class="console-input-row">
+                            <input type="text" id="debugCommand" placeholder="Enter command (help for list)" class="green-console-input" onkeypress="if(event.key==='Enter' && this.value.trim()) { processDebugCommand(this.value.trim()); this.value = ''; }">
+                            <button onclick="executeDebugCommand()" class="console-btn run-btn">Run</button>
+                            <div class="console-mode-indicator">
+                                <span id="modeIndicator">Debug Mode</span>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <h2>Debug Console</h2>
+                <p class="section-description">Interactive debugging console for testing APIs, monitoring connections, and troubleshooting issues in real-time.</p>
             </section>
         </main>
     </div>

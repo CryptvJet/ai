@@ -1222,17 +1222,26 @@ input:checked + .toggle-slider:before {
     border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
-/* Green Console Styling - Always on top */
+/* Console Container - Centered and 2/3 width */
+.console-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    width: 100%;
+}
+
+/* Green Console Styling */
 .green-console {
     background: rgba(0,255,0,0.05);
     border: 1px solid rgba(0,255,0,0.2);
     border-radius: 8px;
     padding: 10px;
-    margin-bottom: 15px;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
     font-size: 11px;
     color: #00ff88;
     backdrop-filter: blur(10px);
+    width: 66.67%; /* 2/3 width */
+    max-width: 1000px; /* Maximum width to prevent it from getting too wide on large screens */
 }
 
 .console-header-row {
