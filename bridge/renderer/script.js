@@ -76,6 +76,24 @@ class ZinAIBridgeUI {
         this.minimizeToTrayBtn = document.getElementById('minimizeToTrayBtn');
         this.viewLogsBtn = document.getElementById('viewLogsBtn');
         
+        // Chat elements
+        this.chatInput = document.getElementById('chatInput');
+        this.sendChatBtn = document.getElementById('sendChatBtn');
+        this.chatMessages = document.getElementById('chatMessages');
+        this.clearChatBtn = document.getElementById('clearChatBtn');
+        this.saveChatBtn = document.getElementById('saveChatBtn');
+        this.chatStatus = document.getElementById('chatStatus');
+        this.charCount = document.getElementById('charCount');
+        this.welcomeTime = document.getElementById('welcomeTime');
+        
+        // Chat state
+        this.currentConversationId = null;
+        this.chatHistory = [];
+        
+        // Set welcome message time
+        if (this.welcomeTime) {
+            this.welcomeTime.textContent = new Date().toLocaleTimeString();
+        }
         
         // Log element counts for debugging
         this.log(`🔧 Elements found: hostname=${!!this.hostname}, platform=${!!this.platform}, memory=${!!this.memory}, gpuModel=${!!this.gpuModel}`, 'info');
@@ -91,12 +109,23 @@ class ZinAIBridgeUI {
         this.minimizeToTrayBtn.addEventListener('click', () => this.minimizeToTray());
         this.viewLogsBtn.addEventListener('click', () => this.viewLogs());
         
-        // Terminal events
-        this.executeCommandBtn.addEventListener('click', () => this.executeCommand());
-        this.clearTerminalBtn.addEventListener('click', () => this.clearTerminal());
-        this.copyTerminalBtn.addEventListener('click', () => this.copyTerminalOutput());
-        this.searchTerminalBtn.addEventListener('click', () => this.toggleSearch());
-        this.newTabBtn.addEventListener('click', () => this.createNewTerminal());
+        // Chat events
+        this.sendChatBtn.addEventListener('click', () => this.sendMessage());
+        this.clearChatBtn.addEventListener('click', () => this.clearChat());
+        this.saveChatBtn.addEventListener('click', () => this.saveChat());
+        
+        // Chat input events
+        this.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        this.chatInput.addEventListener('input', () => {
+            this.updateCharCounter();
+            this.autoResizeTextarea();
+        });
         
         // Terminal customization
         this.terminalTheme.addEventListener('change', (e) => this.changeTheme(e.target.value));
@@ -576,7 +605,224 @@ class ZinAIBridgeUI {
         }
     }
 
-    // Terminal Methods
+    // Chat Methods
+    async sendMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message) return;
+
+        // Disable send button and update status
+        this.sendChatBtn.disabled = true;
+        this.chatStatus.textContent = 'Sending...';
+        this.chatStatus.style.color = '#f59e0b';
+
+        // Clear input
+        this.chatInput.value = '';
+        this.updateCharCounter();
+        this.autoResizeTextarea();
+
+        // Add user message to chat
+        this.addMessage(message, 'user');
+
+        try {
+            // Show typing indicator
+            this.showTypingIndicator();
+
+            // Send message to AI (this will be implemented with database integration)
+            const response = await this.sendMessageToAI(message);
+
+            // Hide typing indicator and add AI response
+            this.hideTypingIndicator();
+            this.addMessage(response, 'ai');
+
+            this.chatStatus.textContent = 'Ready';
+            this.chatStatus.style.color = '#10b981';
+
+        } catch (error) {
+            this.hideTypingIndicator();
+            this.addMessage('Sorry, I encountered an error. Please try again.', 'ai');
+            this.log(`❌ Chat error: ${error.message}`, 'error');
+            
+            this.chatStatus.textContent = 'Error';
+            this.chatStatus.style.color = '#ef4444';
+            
+            setTimeout(() => {
+                this.chatStatus.textContent = 'Ready';
+                this.chatStatus.style.color = '#10b981';
+            }, 3000);
+        } finally {
+            this.sendChatBtn.disabled = false;
+            this.chatInput.focus();
+        }
+    }
+
+    addMessage(text, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}-message`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+
+        const messageText = document.createElement('div');
+        messageText.className = 'message-text';
+        messageText.textContent = text;
+
+        const messageTime = document.createElement('div');
+        messageTime.className = 'message-time';
+        messageTime.textContent = new Date().toLocaleTimeString();
+
+        content.appendChild(messageText);
+        content.appendChild(messageTime);
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(content);
+
+        // Add to chat history
+        this.chatHistory.push({
+            text: text,
+            sender: sender,
+            timestamp: new Date().toISOString()
+        });
+
+        // Append to chat and scroll to bottom
+        this.chatMessages.appendChild(messageElement);
+        this.scrollToBottom();
+    }
+
+    showTypingIndicator() {
+        // Remove existing typing indicator
+        this.hideTypingIndicator();
+
+        const typingElement = document.createElement('div');
+        typingElement.className = 'message ai-message typing-indicator';
+        typingElement.id = 'typingIndicator';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = '🤖';
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+
+        const typingText = document.createElement('div');
+        typingText.className = 'message-text';
+        typingText.innerHTML = `
+            <span>Thinking</span>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+
+        content.appendChild(typingText);
+        typingElement.appendChild(avatar);
+        typingElement.appendChild(content);
+
+        this.chatMessages.appendChild(typingElement);
+        this.scrollToBottom();
+    }
+
+    hideTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    async sendMessageToAI(message) {
+        // For now, this is a simple mock response
+        // Later we'll integrate with the database and AI API
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate AI thinking time
+        
+        // Simple response logic for testing
+        const responses = [
+            "I understand you said: " + message,
+            "That's an interesting question. Let me help you with that.",
+            "I can see you're asking about: " + message.substring(0, 50) + (message.length > 50 ? "..." : ""),
+            "Thanks for your message! I'm processing that information.",
+            "I'm here to help. Can you tell me more about what you need?"
+        ];
+        
+        return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    scrollToBottom() {
+        requestAnimationFrame(() => {
+            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        });
+    }
+
+    updateCharCounter() {
+        const count = this.chatInput.value.length;
+        this.charCount.textContent = count;
+        
+        // Update character counter color based on usage
+        if (count > 1800) {
+            this.charCount.parentElement.className = 'char-counter error';
+        } else if (count > 1600) {
+            this.charCount.parentElement.className = 'char-counter warning';
+        } else {
+            this.charCount.parentElement.className = 'char-counter';
+        }
+        
+        // Disable send button if over limit
+        this.sendChatBtn.disabled = count > 2000 || count === 0;
+    }
+
+    autoResizeTextarea() {
+        const textarea = this.chatInput;
+        textarea.style.height = 'auto';
+        const newHeight = Math.min(textarea.scrollHeight, 120);
+        textarea.style.height = newHeight + 'px';
+    }
+
+    clearChat() {
+        // Keep only the welcome message
+        const welcomeMessage = this.chatMessages.querySelector('.welcome-message');
+        this.chatMessages.innerHTML = '';
+        if (welcomeMessage) {
+            this.chatMessages.appendChild(welcomeMessage);
+        }
+        
+        this.chatHistory = [];
+        this.currentConversationId = null;
+        this.log('💬 Chat cleared', 'info');
+    }
+
+    async saveChat() {
+        if (this.chatHistory.length === 0) {
+            this.log('💬 No messages to save', 'info');
+            return;
+        }
+
+        try {
+            const chatData = {
+                messages: this.chatHistory,
+                timestamp: new Date().toISOString(),
+                totalMessages: this.chatHistory.length
+            };
+
+            // Create downloadable file
+            const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bridge-chat-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.log(`💾 Chat saved with ${this.chatHistory.length} messages`, 'success');
+        } catch (error) {
+            this.log(`❌ Failed to save chat: ${error.message}`, 'error');
+        }
+    }
+
+    // Terminal Methods (to be removed)
     async executeCommand() {
         let command = this.terminalInput.value.trim();
         if (!command) return;

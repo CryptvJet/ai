@@ -104,32 +104,16 @@
 
             <!-- Journal Mode Interface -->
             <div class="journal-section hidden" id="journalSection">
-                <!-- Top Actions Bar -->
-                <div class="journal-top-actions">
-                    <div class="top-action-left">
-                        <h2 class="journal-main-title">✍️ Writing Journal</h2>
-                    </div>
-                    <div class="top-action-right">
-                        <button id="saveJournalBtn" class="btn-top-action save" onclick="saveJournalEntry()" title="Save your journal entry">
-                            <span class="btn-icon">💾</span>
-                            <span class="btn-text">Save Entry</span>
-                        </button>
-                        <button id="exportJournalBtn" class="btn-top-action export" onclick="exportJournalEntry()" title="Export as text file">
-                            <span class="btn-icon">📄</span>
-                            <span class="btn-text">Export</span>
-                        </button>
-                        <button id="clearJournalBtn" class="btn-top-action danger" onclick="clearJournalEntry()" title="Clear all content">
-                            <span class="btn-icon">🗑️</span>
-                            <span class="btn-text">Clear</span>
-                        </button>
-                    </div>
+                <!-- Simple Header -->
+                <div class="journal-header-simple">
+                    <h2 class="journal-title-simple">✍️ Writing Journal</h2>
                 </div>
 
                 <!-- Main Journal Editor -->
                 <div class="journal-editor-container">
-                    <div class="editor-header">
-                        <span class="editor-title">Your Journal</span>
-                        <div class="editor-stats">
+                    <div class="editor-header-compact">
+                        <span class="editor-title-small">Your Journal</span>
+                        <div class="editor-stats-small">
                             <span id="wordCount">0 words</span>
                             <span id="charCount">0 characters</span>
                         </div>
@@ -144,70 +128,87 @@ Your voice will flow into text as you speak. Take your time, explore your ideas,
                     ></textarea>
                 </div>
 
-                <!-- Voice Controls Section -->
-                <div class="journal-voice-section">
-                    <div class="voice-section-header">
-                        <div class="voice-status-info">
-                            <span id="journalStatus" class="journal-status-text">Ready to begin your writing session</span>
-                            <div class="journal-timer-container">
-                                <span class="timer-label">Session:</span>
-                                <span id="journalTimer" class="journal-timer">00:00</span>
-                            </div>
-                        </div>
-                        <div class="journal-voice-controls">
-                            <button id="startVoiceBtn" class="btn-voice-control record" onclick="startJournalVoice()" title="Start Voice Recording">
-                                <span class="btn-icon">🎤</span>
-                                <span class="btn-text">Start Recording</span>
-                            </button>
-                            <button id="stopVoiceBtn" class="btn-voice-control stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
-                                <span class="btn-icon">⏹️</span>
-                                <span class="btn-text">Stop</span>
-                            </button>
-                            <button id="pauseVoiceBtn" class="btn-voice-control pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
-                                <span class="btn-icon">⏸️</span>
-                                <span class="btn-text">Pause</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Zin's Writing Companion Section (Bottom) -->
+                <!-- Zin's Writing Companion Section -->
                 <div class="zin-responses-area" id="zinResponsesArea">
-                    <div class="zin-header">
-                        <div class="zin-avatar">🧠</div>
-                        <span class="zin-name">Zin</span>
-                        <span class="zin-subtitle">Your Writing Companion</span>
+                    <div class="zin-header-compact">
+                        <div class="zin-avatar-small">🧠</div>
+                        <span class="zin-name-small">Zin</span>
+                        <span class="zin-subtitle-small">Writing Companion</span>
                     </div>
                     <div class="zin-responses" id="zinResponses">
                         <div class="zin-welcome-message">
                             <p>Hello! I'm Zin, your AI writing companion. I'll appear here with insights and suggestions as you write. Start your journal session and ask me anything about your thoughts!</p>
                         </div>
                     </div>
-                    <div class="zin-actions-row">
-                        <div class="zin-quick-actions">
-                            <button id="analyzeJournalBtn" class="btn-zin-quick analyze" onclick="analyzeJournal()" title="Ask Zin to analyze your writing">
-                                <span class="btn-icon">🔍</span>
-                                <span class="btn-text">Analyze</span>
+                    <div class="zin-actions-row-compact">
+                        <div class="zin-quick-actions-small">
+                            <button id="analyzeJournalBtn" class="btn-zin-small analyze" onclick="analyzeJournal()" title="Ask Zin to analyze your writing">
+                                <span class="btn-icon-small">🔍</span>
+                                <span class="btn-text-small">Analyze</span>
                             </button>
-                            <button id="improveJournalBtn" class="btn-zin-quick improve" onclick="improveJournal()" title="Get writing suggestions">
-                                <span class="btn-icon">✨</span>
-                                <span class="btn-text">Improve</span>
+                            <button id="improveJournalBtn" class="btn-zin-small improve" onclick="improveJournal()" title="Get writing suggestions">
+                                <span class="btn-icon-small">✨</span>
+                                <span class="btn-text-small">Improve</span>
                             </button>
-                            <button id="continueJournalBtn" class="btn-zin-quick continue" onclick="continueJournal()" title="Get ideas to continue writing">
-                                <span class="btn-icon">➡️</span>
-                                <span class="btn-text">Continue</span>
+                            <button id="continueJournalBtn" class="btn-zin-small continue" onclick="continueJournal()" title="Get ideas to continue writing">
+                                <span class="btn-icon-small">➡️</span>
+                                <span class="btn-text-small">Continue</span>
                             </button>
                         </div>
                     </div>
-                    <div class="zin-input-area">
+                    <div class="zin-input-area-small">
                         <input 
                             type="text" 
                             id="zinQuickInput" 
                             placeholder="Ask Zin anything about your writing..."
-                            class="zin-input"
+                            class="zin-input-small"
                         />
-                        <button id="zinSendBtn" class="btn-zin-send" onclick="sendZinMessage()">
+                        <button id="zinSendBtn" class="btn-zin-send-small" onclick="sendZinMessage()">
                             <span>💭</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls Section -->
+                <div class="journal-bottom-controls">
+                    <!-- Voice Controls -->
+                    <div class="voice-controls-compact">
+                        <div class="voice-status-compact">
+                            <span id="journalStatus" class="status-text-small">Ready to begin your writing session</span>
+                            <div class="timer-compact">
+                                <span class="timer-label-small">Session:</span>
+                                <span id="journalTimer" class="journal-timer-small">00:00</span>
+                            </div>
+                        </div>
+                        <div class="voice-buttons-small">
+                            <button id="startVoiceBtn" class="btn-voice-small record" onclick="startJournalVoice()" title="Start Voice Recording">
+                                <span class="btn-icon-small">🎤</span>
+                                <span class="btn-text-small">Start</span>
+                            </button>
+                            <button id="stopVoiceBtn" class="btn-voice-small stop" onclick="stopJournalVoice()" disabled title="Stop Voice Recording">
+                                <span class="btn-icon-small">⏹️</span>
+                                <span class="btn-text-small">Stop</span>
+                            </button>
+                            <button id="pauseVoiceBtn" class="btn-voice-small pause" onclick="pauseJournalVoice()" disabled title="Pause Voice Recording">
+                                <span class="btn-icon-small">⏸️</span>
+                                <span class="btn-text-small">Pause</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Save Actions -->
+                    <div class="save-actions-compact">
+                        <button id="saveJournalBtn" class="btn-action-small save" onclick="saveJournalEntry()" title="Save your journal entry">
+                            <span class="btn-icon-small">💾</span>
+                            <span class="btn-text-small">Save</span>
+                        </button>
+                        <button id="exportJournalBtn" class="btn-action-small export" onclick="exportJournalEntry()" title="Export as text file">
+                            <span class="btn-icon-small">📄</span>
+                            <span class="btn-text-small">Export</span>
+                        </button>
+                        <button id="clearJournalBtn" class="btn-action-small danger" onclick="clearJournalEntry()" title="Clear all content">
+                            <span class="btn-icon-small">🗑️</span>
+                            <span class="btn-text-small">Clear</span>
                         </button>
                     </div>
                 </div>
