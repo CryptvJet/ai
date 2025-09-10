@@ -1902,7 +1902,23 @@ function executeBrowserCommand(jsCode) {
         if (result !== undefined) {
             if (typeof result === 'object' && result !== null) {
                 try {
-                    resultLine.textContent = JSON.stringify(result, null, 2);
+                    // Handle special objects like MemoryInfo, NodeList, etc.
+                    if (result.constructor && result.constructor.name) {
+                        if (result.constructor.name === 'MemoryInfo') {
+                            resultLine.textContent = `← MemoryInfo { totalJSHeapSize: ${result.totalJSHeapSize}, usedJSHeapSize: ${result.usedJSHeapSize}, jsHeapSizeLimit: ${result.jsHeapSizeLimit} }`;
+                        } else if (result.constructor.name === 'NodeList') {
+                            resultLine.textContent = `← NodeList(${result.length}) [${Array.from(result).map(el => el.tagName || el.nodeName).join(', ')}]`;
+                        } else if (result.length !== undefined) {
+                            // Handle arrays and array-like objects
+                            resultLine.textContent = `← [${Array.from(result).slice(0, 5).join(', ')}${result.length > 5 ? '...' : ''}] (length: ${result.length})`;
+                        } else {
+                            // Regular object
+                            const preview = Object.keys(result).slice(0, 3).map(key => `${key}: ${typeof result[key] === 'string' ? '"' + result[key] + '"' : result[key]}`).join(', ');
+                            resultLine.textContent = `← {${preview}${Object.keys(result).length > 3 ? '...' : ''}}`;
+                        }
+                    } else {
+                        resultLine.textContent = JSON.stringify(result, null, 2);
+                    }
                 } catch (e) {
                     resultLine.textContent = `← [Object: ${result.constructor?.name || 'Unknown'}]`;
                 }
