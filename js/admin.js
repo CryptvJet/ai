@@ -1765,6 +1765,19 @@ function switchConsoleMode(mode) {
     }
 }
 
+// Auto-scroll toggle functionality
+let debugAutoScroll = true;
+
+function toggleDebugAutoScroll() {
+    debugAutoScroll = !debugAutoScroll;
+    const btn = document.getElementById('autoScrollBtn');
+    if (btn) {
+        btn.textContent = `Auto-scroll: ${debugAutoScroll ? 'ON' : 'OFF'}`;
+        btn.style.background = debugAutoScroll ? 'rgba(0,255,0,0.2)' : 'rgba(100,100,100,0.2)';
+        btn.style.color = debugAutoScroll ? '#00ff88' : '#888';
+    }
+}
+
 function displayDebugOutput() {
     // This function could refresh debug output if needed
     // For now, just ensure we're showing debug content
@@ -1777,22 +1790,49 @@ function displayBrowserConsoleOutput() {
     debugOutput.innerHTML = '';
     
     if (browserConsoleBuffer.length === 0) {
-        addDebugLine('No browser console output captured yet', 'info');
-        addDebugLine('Browser console logging will appear here in real-time', 'data');
+        const line1 = document.createElement('div');
+        line1.style.color = '#00ff88';
+        line1.style.fontSize = '11px';
+        line1.textContent = '[Browser] No browser console output captured yet';
+        debugOutput.appendChild(line1);
+        
+        const line2 = document.createElement('div');
+        line2.style.color = '#00ff88';
+        line2.style.fontSize = '11px';
+        line2.style.opacity = '0.7';
+        line2.textContent = '[Info] Browser console logging will appear here in real-time';
+        debugOutput.appendChild(line2);
         return;
     }
     
     browserConsoleBuffer.forEach(entry => {
         const timestamp = entry.timestamp.toLocaleTimeString();
         const line = document.createElement('div');
-        line.className = `debug-line debug-${entry.type === 'error' ? 'error' : entry.type === 'warn' ? 'warning' : 'data'}`;
+        line.style.fontSize = '11px';
+        line.style.fontFamily = '"Monaco", "Menlo", "Courier New", monospace';
+        line.style.padding = '1px 0';
+        
+        // Color based on log type
+        switch(entry.type) {
+            case 'error':
+                line.style.color = '#ff6666';
+                break;
+            case 'warn':
+                line.style.color = '#ffaa00';
+                break;
+            case 'info':
+                line.style.color = '#66aaff';
+                break;
+            default:
+                line.style.color = '#00ff88';
+        }
+        
         line.textContent = `[${timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`;
         debugOutput.appendChild(line);
     });
     
     // Auto-scroll if enabled
-    const autoScroll = document.getElementById('autoScroll').checked;
-    if (autoScroll) {
+    if (debugAutoScroll) {
         debugOutput.scrollTop = debugOutput.scrollHeight;
     }
 }
@@ -1822,6 +1862,7 @@ window.executeDebugCommand = function() {
 };
 
 window.switchConsoleMode = switchConsoleMode;
+window.toggleDebugAutoScroll = toggleDebugAutoScroll;
 
 // Initialize browser console capture when page loads
 document.addEventListener('DOMContentLoaded', function() {

@@ -1221,3 +1221,159 @@ input:checked + .toggle-slider:before {
     border-radius: 4px;
     border: 1px solid rgba(124, 58, 237, 0.2);
 }
+
+/* Green Console Styling - Always on top */
+.green-console {
+    background: rgba(0,255,0,0.05);
+    border: 1px solid rgba(0,255,0,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 11px;
+    color: #00ff88;
+    backdrop-filter: blur(10px);
+}
+
+.console-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.console-mode-toggle-mini {
+    display: flex;
+    gap: 2px;
+}
+
+.toggle-btn-mini {
+    background: rgba(0,255,0,0.1);
+    border: 1px solid rgba(0,255,0,0.3);
+    color: #00ff88;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 9px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn-mini:hover {
+    background: rgba(0,255,0,0.2);
+}
+
+.toggle-btn-mini.active {
+    background: rgba(0,255,0,0.3);
+    border-color: rgba(0,255,0,0.5);
+    font-weight: bold;
+}
+
+.console-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.console-btn {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-btn {
+    background: rgba(255,0,0,0.2);
+    border: 1px solid rgba(255,0,0,0.4);
+    color: #ff6666;
+}
+
+.clear-btn:hover {
+    background: rgba(255,0,0,0.3);
+}
+
+.auto-scroll-btn {
+    background: rgba(0,255,0,0.2);
+    border: 1px solid rgba(0,255,0,0.4);
+    color: #00ff88;
+}
+
+.auto-scroll-btn:hover {
+    background: rgba(0,255,0,0.3);
+}
+
+.run-btn {
+    background: rgba(0,255,0,0.2);
+    border: 1px solid rgba(0,255,0,0.4);
+    color: #00ff88;
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+.run-btn:hover {
+    background: rgba(0,255,0,0.3);
+}
+
+.green-console-output {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid rgba(0,255,0,0.1);
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.green-console-output::-webkit-scrollbar {
+    width: 6px;
+}
+
+.green-console-output::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+}
+
+.green-console-output::-webkit-scrollbar-thumb {
+    background-color: rgba(0,255,0,0.3);
+    border-radius: 3px;
+}
+
+.console-input-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.green-console-input {
+    flex: 1;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,0,0.3);
+    color: #00ff88;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 11px;
+}
+
+.green-console-input::placeholder {
+    color: rgba(0,255,0,0.6);
+}
+
+.green-console-input:focus {
+    outline: none;
+    border-color: rgba(0,255,0,0.5);
+    box-shadow: 0 0 0 2px rgba(0,255,0,0.1);
+}
+
+.console-mode-indicator {
+    margin-left: 10px;
+}
+
+.console-mode-indicator #modeIndicator {
+    background: rgba(0,255,0,0.1);
+    color: #00ff88;
+    border: 1px solid rgba(0,255,0,0.3);
+    font-size: 9px;
+}
