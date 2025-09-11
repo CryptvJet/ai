@@ -6,16 +6,19 @@ class AIAdmin {
     }
 
     async checkAuthentication() {
-        const token = localStorage.getItem('ai_admin_token') || sessionStorage.getItem('ai_admin_token');
+        console.log('🔍 Admin Debug: Starting authentication check...');
+        
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        console.log('🔑 Admin Debug: Token found:', token ? token.substring(0, 16) + '...' : 'NO TOKEN');
         
         if (!token) {
-            // No token, redirect to login
+            console.log('❌ Admin Debug: No token found, redirecting to login');
             window.location.href = 'login.html';
             return;
         }
         
         try {
-            // Validate token with server
+            console.log('📡 Admin Debug: Validating token with server...');
             const response = await fetch('../api/validate-session.php', {
                 method: 'POST',
                 headers: {
@@ -24,21 +27,22 @@ class AIAdmin {
                 body: JSON.stringify({ token: token })
             });
             
+            console.log('📡 Admin Debug: Server response status:', response.status);
             const result = await response.json();
+            console.log('📡 Admin Debug: Server response:', result);
             
             if (!result.success) {
-                // Invalid token, redirect to login
-                localStorage.removeItem('ai_admin_token');
-                sessionStorage.removeItem('ai_admin_token');
+                console.log('❌ Admin Debug: Token validation failed, redirecting to login');
+                localStorage.removeItem('admin_token');
+                sessionStorage.removeItem('admin_token');
                 window.location.href = 'login.html';
                 return;
             }
             
-            // Token is valid, continue with admin initialization
-            console.log('Authentication successful for user:', result.user);
+            console.log('✅ Admin Debug: Authentication successful for user:', result.user);
         } catch (error) {
-            console.warn('Authentication check failed:', error);
-            // On error, still allow access but log the issue
+            console.warn('⚠️ Admin Debug: Authentication check failed:', error);
+            console.log('🔄 Admin Debug: Continuing with admin load despite error');
         }
     }
 
@@ -2050,7 +2054,7 @@ function executeBrowserCommand(jsCode) {
 // Authentication functions
 async function logout() {
     try {
-        const token = localStorage.getItem('ai_admin_token') || sessionStorage.getItem('ai_admin_token');
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         if (token) {
             // Call logout API
             await fetch('../api/logout.php', {
@@ -2063,16 +2067,16 @@ async function logout() {
         }
         
         // Clear stored tokens
-        localStorage.removeItem('ai_admin_token');
-        sessionStorage.removeItem('ai_admin_token');
+        localStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_token');
         
         // Redirect to login page
         window.location.href = 'login.html';
     } catch (error) {
         console.error('Logout error:', error);
         // Still redirect even if API call fails
-        localStorage.removeItem('ai_admin_token');
-        sessionStorage.removeItem('ai_admin_token');
+        localStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_token');
         window.location.href = 'login.html';
     }
 }
