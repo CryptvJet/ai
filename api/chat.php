@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'db_config.php';
-require_once 'smart_router.php';
+require_once 'simple_ollama_router.php';
 
 class AIChat {
     private $ai_pdo;
@@ -25,7 +25,7 @@ class AIChat {
         $this->ai_pdo = $ai_pdo;
         $this->pulse_pdo = $pulse_pdo;
         $this->vars_pdo = $vars_pdo;
-        $this->router = new SmartAIRouter();
+        $this->router = new SimpleOllamaRouter();
     }
     
     public function processMessage($message, $session_id, $mode = 'chill', $journal_context = null) {
@@ -152,9 +152,6 @@ class AIChat {
     }
     
     private function generateFallbackResponse($message, $conversation_id, $mode, $journal_context = null) {
-        // Original fallback logic
-        return "I'm experiencing some technical difficulties with the AI routing system. Please try again in a moment.";
-        
         // If in full-power mode, try to call PC AI
         if ($mode === 'full-power') {
             $pc_response = $this->tryPCAIResponse($message, $conversation_id);

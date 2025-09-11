@@ -488,7 +488,7 @@ class AIAdmin {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
             
-            const response = await fetch('../api/pc-bridge-status.php', {
+            const response = await fetch('../api/ollama-status.php', {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -497,33 +497,17 @@ class AIAdmin {
                 const result = await response.json();
                 
                 if (result.success && result.status === 'online') {
-                    this.updateIntegrationStatus('pcaiStatus', true, 'PC Bridge Online');
+                    this.updateIntegrationStatus('pcaiStatus', true, 'Ollama Online');
                     
-                    // Update with real PC system information
+                    // Update with Ollama information
                     if (document.getElementById('currentModel')) {
-                        document.getElementById('currentModel').textContent = `${result.system_info.hostname} (${result.system_info.platform})`;
+                        document.getElementById('currentModel').textContent = result.primary_model || `${result.model_count} models available`;
                     }
                     if (document.getElementById('gpuMemory')) {
-                        if (result.system_info.gpu && result.system_info.gpu.primary) {
-                            const gpu = result.system_info.gpu.primary;
-                            let gpuText = '';
-                            
-                            if (gpu.utilization_gpu !== null) {
-                                gpuText = `${gpu.utilization_gpu}% GPU Usage`;
-                            } else if (gpu.vram) {
-                                gpuText = `${Math.round(gpu.vram / 1024)}GB VRAM`;
-                            } else {
-                                gpuText = `${gpu.vendor} ${gpu.model}`;
-                            }
-                            
-                            document.getElementById('gpuMemory').textContent = gpuText;
-                        } else {
-                            const memoryUsage = result.system_info.memory.usage_percent;
-                            document.getElementById('gpuMemory').textContent = `${memoryUsage}% RAM Used`;
-                        }
+                        document.getElementById('gpuMemory').textContent = `${result.model_count} Model${result.model_count !== 1 ? 's' : ''} Loaded`;
                     }
-                    if (document.getElementById('responseTime')) {
-                        document.getElementById('responseTime').textContent = `${result.seconds_since_ping}s ago`;
+                    if (document.getElementById('pcResponseTime')) {
+                        document.getElementById('pcResponseTime').textContent = `${result.response_time_ms}ms`;
                     }
                     
                     // Add CPU and system info if elements exist
@@ -543,9 +527,9 @@ class AIAdmin {
         } catch (error) {
             // This is expected if PC Bridge isn't running
             console.info('PC Bridge not available (this is normal):', error.message);
-            this.updateIntegrationStatus('pcaiStatus', false, 'PC Bridge not running');
+            this.updateIntegrationStatus('pcaiStatus', false, 'Ollama not running');
             if (document.getElementById('currentModel')) {
-                document.getElementById('currentModel').textContent = 'PC Bridge Disconnected';
+                document.getElementById('currentModel').textContent = 'Ollama Disconnected';
             }
             if (document.getElementById('gpuMemory')) {
                 document.getElementById('gpuMemory').textContent = 'N/A';
