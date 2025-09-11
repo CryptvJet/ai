@@ -6,7 +6,7 @@ class AIAdmin {
     }
 
     async checkAuthentication() {
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        const token = localStorage.getItem('ai_admin_token') || sessionStorage.getItem('ai_admin_token');
         
         if (!token) {
             // No token, redirect to login
@@ -28,8 +28,8 @@ class AIAdmin {
             
             if (!result.success) {
                 // Invalid token, redirect to login
-                localStorage.removeItem('admin_token');
-                sessionStorage.removeItem('admin_token');
+                localStorage.removeItem('ai_admin_token');
+                sessionStorage.removeItem('ai_admin_token');
                 window.location.href = 'login.html';
                 return;
             }
@@ -2050,7 +2050,7 @@ function executeBrowserCommand(jsCode) {
 // Authentication functions
 async function logout() {
     try {
-        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        const token = localStorage.getItem('ai_admin_token') || sessionStorage.getItem('ai_admin_token');
         if (token) {
             // Call logout API
             await fetch('../api/logout.php', {
@@ -2063,16 +2063,16 @@ async function logout() {
         }
         
         // Clear stored tokens
-        localStorage.removeItem('admin_token');
-        sessionStorage.removeItem('admin_token');
+        localStorage.removeItem('ai_admin_token');
+        sessionStorage.removeItem('ai_admin_token');
         
         // Redirect to login page
         window.location.href = 'login.html';
     } catch (error) {
         console.error('Logout error:', error);
         // Still redirect even if API call fails
-        localStorage.removeItem('admin_token');
-        sessionStorage.removeItem('admin_token');
+        localStorage.removeItem('ai_admin_token');
+        sessionStorage.removeItem('ai_admin_token');
         window.location.href = 'login.html';
     }
 }
