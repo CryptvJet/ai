@@ -18,3 +18,14 @@ error.log
 .DS_Store
 Thumbs.db
 launch/
+
+# .NET build artifacts (from desktop app)
+*/bin/
+*/obj/
+*.exe
+*.dll
+*.pdb
+*.user
+*.suo
+*.cache
+.vs/

@@ -1,0 +1,514 @@
+﻿<Window x:Class="ZinAI.AdminWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ZinAI"
+        mc:Ignorable="d"
+        Title="Zin AI Admin Panel" 
+        Height="800" Width="1000" 
+        MinHeight="600" MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Background="#0a0e1a">
+    
+    <Window.Resources>
+        <!-- Import same styles from MainWindow -->
+        <SolidColorBrush x:Key="PrimaryBackground" Color="#0a0e1a"/>
+        <SolidColorBrush x:Key="SecondaryBackground" Color="#0f172a"/>
+        <SolidColorBrush x:Key="AccentPurple" Color="#7c3aed"/>
+        <SolidColorBrush x:Key="AccentCyan" Color="#06b6d4"/>
+        <SolidColorBrush x:Key="AccentPink" Color="#ec4899"/>
+        <SolidColorBrush x:Key="AccentGreen" Color="#10b981"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#e2e8f0"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#94a3b8"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#64748b"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#1e293b"/>
+        <SolidColorBrush x:Key="CardBackground" Color="#1a1b2e"/>
+        
+        <Style x:Key="AdminButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentPurple}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#8b5cf6"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#6d28d9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="AdminInputStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource SecondaryBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="{TemplateBinding Padding}"
+                                        VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentPurple}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" 
+                Background="{StaticResource SecondaryBackground}" 
+                BorderBrush="{StaticResource BorderColor}" 
+                BorderThickness="0,0,0,1" 
+                Padding="30,20">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="⚙️" FontSize="24" Margin="0,0,10,0"/>
+                    <TextBlock Text="Zin AI Admin Panel" 
+                              FontSize="24" 
+                              FontWeight="Bold" 
+                              Foreground="{StaticResource AccentPurple}"/>
+                </StackPanel>
+                <TextBlock Text="Configure your AI assistant, manage response templates, and monitor system performance" 
+                          FontSize="14" 
+                          Foreground="{StaticResource TextSecondary}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" 
+                     VerticalScrollBarVisibility="Auto" 
+                     Padding="30">
+            <StackPanel>
+                
+                <!-- AI Identity Section -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="🤖 AI Identity Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentCyan}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="AI Name:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="AiNameInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="Zin AI"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="AI Personality:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <ComboBox x:Name="PersonalityComboBox" 
+                                     Grid.Row="1" Grid.Column="1"
+                                     Background="{StaticResource SecondaryBackground}"
+                                     Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource BorderColor}"
+                                     Margin="10,0,0,15">
+                                <ComboBoxItem Content="Professional BPT Expert"/>
+                                <ComboBoxItem Content="Friendly Assistant" IsSelected="True"/>
+                                <ComboBoxItem Content="Technical Specialist"/>
+                                <ComboBoxItem Content="Creative Writing Companion"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="System Prompt:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="SystemPromptInput" 
+                                    Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    AcceptsReturn="True"
+                                    TextWrapping="Wrap"
+                                    Height="100"
+                                    Text="You are Zin AI, a specialized assistant for Binary Pulse Theory (BPT). You have direct access to PulseCore database and understand BPT concepts deeply. Be helpful, accurate, and engaging."/>
+                        </Grid>
+
+                        <Button Content="💾 Save AI Configuration" 
+                                Style="{StaticResource AdminButtonStyle}"
+                                Background="{StaticResource AccentGreen}"
+                                HorizontalAlignment="Right"
+                                Margin="0,15,0,0"
+                                Click="SaveAIConfiguration"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Database Configuration -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="🗄️ Database Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentPurple}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="Server:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="DbServerInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="localhost"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="Database Name:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="DbNameInput" 
+                                    Grid.Row="1" Grid.Column="1"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="vemite5_pulse-core"
+                                    Margin="10,0,0,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                      Text="Username:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="DbUserInput" 
+                                    Grid.Row="3" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="root"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="1" 
+                                      Text="Password:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <PasswordBox x:Name="DbPasswordInput" 
+                                        Grid.Row="3" Grid.Column="1"
+                                        Background="{StaticResource SecondaryBackground}"
+                                        Foreground="{StaticResource TextPrimary}"
+                                        BorderBrush="{StaticResource BorderColor}"
+                                        Padding="12,8"
+                                        Margin="10,0,0,15"/>
+
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Orientation="Horizontal" 
+                                       Margin="0,10,0,0">
+                                <Button Content="🔌 Test Connection" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentCyan}"
+                                        Margin="0,0,10,0"
+                                        Click="TestDatabaseConnection"/>
+                                <Button Content="💾 Save Configuration" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentGreen}"
+                                        Click="SaveDatabaseConfiguration"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="DbStatusText" 
+                                      Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="Database connection status will appear here"
+                                      Foreground="{StaticResource TextMuted}"
+                                      Margin="0,10,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- AI Model Configuration -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="🧠 AI Model Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentGreen}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="Ollama Server URL:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="OllamaUrlInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="http://localhost:11434/api/generate"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="Model Name:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="ModelNameInput" 
+                                    Grid.Row="1" Grid.Column="1"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="llama3.2:3b-instruct-q4_K_M"
+                                    Margin="10,0,0,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                      Text="Temperature:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <StackPanel Grid.Row="3" Grid.Column="0" 
+                                       Orientation="Horizontal" 
+                                       Margin="0,0,10,15">
+                                <Slider x:Name="TemperatureSlider" 
+                                       Minimum="0.1" 
+                                       Maximum="2.0" 
+                                       Value="0.7" 
+                                       Width="150"
+                                       ValueChanged="TemperatureChanged"/>
+                                <TextBlock x:Name="TemperatureText" 
+                                          Text="0.7" 
+                                          Foreground="{StaticResource AccentPurple}" 
+                                          Margin="10,0,0,0"
+                                          VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="2" Grid.Column="1" 
+                                      Text="Max Tokens:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="MaxTokensInput" 
+                                    Grid.Row="3" Grid.Column="1"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="2048"
+                                    Margin="10,0,0,15"/>
+
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Orientation="Horizontal" 
+                                       Margin="0,10,0,0">
+                                <Button Content="🔍 Test AI Connection" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentCyan}"
+                                        Margin="0,0,10,0"
+                                        Click="TestAIConnection"/>
+                                <Button Content="📋 List Available Models" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentPink}"
+                                        Margin="0,0,10,0"
+                                        Click="ListAvailableModels"/>
+                                <Button Content="💾 Save AI Settings" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentGreen}"
+                                        Click="SaveAISettings"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="AiStatusText" 
+                                      Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="AI model status will appear here"
+                                      Foreground="{StaticResource TextMuted}"
+                                      Margin="0,10,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- App Configuration -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="⚙️ Application Settings" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentPurple}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="Stats Update Interval (minutes):" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="StatsUpdateIntervalInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="5"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="Auto-start Voice:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <CheckBox x:Name="AutoStartVoiceCheckBox" 
+                                     Grid.Row="1" Grid.Column="1"
+                                     IsChecked="False"
+                                     Margin="10,8,0,15"/>
+
+                            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Content="💾 Save App Settings" 
+                                    Style="{StaticResource AdminButtonStyle}"
+                                    Background="{StaticResource AccentGreen}"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,10,0,0"
+                                    Click="SaveAppSettings"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- System Information -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24">
+                    <StackPanel>
+                        <TextBlock Text="📊 System Information" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentPink}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                                <TextBlock Text="Application Version:" 
+                                          Foreground="{StaticResource TextSecondary}" 
+                                          Margin="0,0,0,5"/>
+                                <TextBlock Text="Zin AI v1.0.0" 
+                                          Foreground="{StaticResource TextPrimary}" 
+                                          FontWeight="Bold"
+                                          Margin="0,0,0,15"/>
+
+                                <TextBlock Text=".NET Runtime:" 
+                                          Foreground="{StaticResource TextSecondary}" 
+                                          Margin="0,0,0,5"/>
+                                <TextBlock x:Name="DotNetVersionText" 
+                                          Text=".NET 8.0" 
+                                          Foreground="{StaticResource TextPrimary}" 
+                                          FontWeight="Bold"
+                                          Margin="0,0,0,15"/>
+
+                                <TextBlock Text="Speech Engine:" 
+                                          Foreground="{StaticResource TextSecondary}" 
+                                          Margin="0,0,0,5"/>
+                                <TextBlock x:Name="SpeechEngineText" 
+                                          Text="Windows Speech Platform" 
+                                          Foreground="{StaticResource TextPrimary}" 
+                                          FontWeight="Bold"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="15,0,0,0">
+                                <TextBlock Text="Last Database Connection:" 
+                                          Foreground="{StaticResource TextSecondary}" 
+                                          Margin="0,0,0,5"/>
+                                <TextBlock x:Name="LastDbConnectionText" 
+                                          Text="Never" 
+                                          Foreground="{StaticResource TextPrimary}" 
+                                          FontWeight="Bold"
+                                          Margin="0,0,0,15"/>
+
+                                <TextBlock Text="Total Chat Messages:" 
+                                          Foreground="{StaticResource TextSecondary}" 
+                                          Margin="0,0,0,5"/>
+                                <TextBlock x:Name="TotalMessagesText" 
+                                          Text="0" 
+                                          Foreground="{StaticResource TextPrimary}" 
+                                          FontWeight="Bold"
+                                          Margin="0,0,0,15"/>
+
+                                <Button Content="🔄 Refresh System Info" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentCyan}"
+                                        Click="RefreshSystemInfo"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

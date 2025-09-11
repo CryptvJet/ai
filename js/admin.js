@@ -1,7 +1,45 @@
 // AI Admin Panel JavaScript
 class AIAdmin {
     constructor() {
+        this.checkAuthentication();
         this.initializeAdmin();
+    }
+
+    async checkAuthentication() {
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        
+        if (!token) {
+            // No token, redirect to login
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        try {
+            // Validate token with server
+            const response = await fetch('../api/validate-session.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                // Invalid token, redirect to login
+                localStorage.removeItem('admin_token');
+                sessionStorage.removeItem('admin_token');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Token is valid, continue with admin initialization
+            console.log('Authentication successful for user:', result.user);
+        } catch (error) {
+            console.warn('Authentication check failed:', error);
+            // On error, still allow access but log the issue
+        }
     }
 
     initializeAdmin() {
@@ -2009,7 +2047,39 @@ function executeBrowserCommand(jsCode) {
     }
 }
 
+// Authentication functions
+async function logout() {
+    try {
+        const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
+        if (token) {
+            // Call logout API
+            await fetch('../api/logout.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            });
+        }
+        
+        // Clear stored tokens
+        localStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_token');
+        
+        // Redirect to login page
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Still redirect even if API call fails
+        localStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_token');
+        window.location.href = 'login.html';
+    }
+}
+
 // Global functions for HTML onclick handlers
+window.logout = logout;
+
 window.clearDebugOutput = function() {
     if (consoleMode === 'debug') {
         clearDebugOutput();

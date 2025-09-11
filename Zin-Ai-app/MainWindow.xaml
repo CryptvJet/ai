@@ -1,0 +1,572 @@
+﻿<Window x:Class="ZinAI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ZinAI"
+        mc:Ignorable="d"
+        Title="Zin AI - Your Trusted Binary Pulse Theory Intelligence" 
+        Height="900" Width="1400" 
+        MinHeight="700" MinWidth="1200"
+        WindowStartupLocation="CenterScreen"
+        Background="#0a0e1a">
+    
+    <Window.Resources>
+        <!-- Zin AI Color Palette -->
+        <SolidColorBrush x:Key="PrimaryBackground" Color="#0a0e1a"/>
+        <SolidColorBrush x:Key="SecondaryBackground" Color="#0f172a"/>
+        <SolidColorBrush x:Key="AccentPurple" Color="#7c3aed"/>
+        <SolidColorBrush x:Key="AccentCyan" Color="#06b6d4"/>
+        <SolidColorBrush x:Key="AccentPink" Color="#ec4899"/>
+        <SolidColorBrush x:Key="AccentGreen" Color="#10b981"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#e2e8f0"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#94a3b8"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#64748b"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#1e293b"/>
+        <SolidColorBrush x:Key="CardBackground" Color="#1a1b2e"/>
+        
+        <!-- Button Styles -->
+        <Style x:Key="ZinButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentPurple}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#8b5cf6"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#6d28d9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Input Styles -->
+        <Style x:Key="ZinInputStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource SecondaryBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                        Margin="{TemplateBinding Padding}"
+                                        VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentPurple}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Main Layout: Three Column Grid -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/> <!-- Left Sidebar -->
+            <ColumnDefinition Width="*"/>   <!-- Main Chat Area -->
+            <ColumnDefinition Width="250"/> <!-- Right Stats Sidebar -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Sidebar -->
+        <Border Grid.Column="0" 
+                Background="{StaticResource SecondaryBackground}" 
+                BorderBrush="{StaticResource BorderColor}" 
+                BorderThickness="0,0,1,0"
+                Padding="16">
+            <StackPanel>
+                <!-- Zin AI Logo -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="🧠" FontSize="24" Margin="0,0,8,0"/>
+                    <TextBlock Text="Zin AI" 
+                              FontSize="18" 
+                              FontWeight="Bold" 
+                              Foreground="{StaticResource AccentPurple}"/>
+                </StackPanel>
+
+                <!-- Mode Toggle -->
+                <Button x:Name="JournalModeBtn" 
+                        Content="📝 Journal Mode" 
+                        Style="{StaticResource ZinButtonStyle}"
+                        Margin="0,0,0,10"
+                        Click="ToggleJournalMode"/>
+
+                <!-- Admin Button -->
+                <Button x:Name="AdminBtn" 
+                        Content="⚙️ Admin Panel" 
+                        Style="{StaticResource ZinButtonStyle}"
+                        Background="{StaticResource AccentCyan}"
+                        Margin="0,0,0,10"
+                        Click="OpenAdmin"/>
+
+                <!-- Clear Chat -->
+                <Button x:Name="ClearBtn" 
+                        Content="🗑️ Clear Chat" 
+                        Style="{StaticResource ZinButtonStyle}"
+                        Background="{StaticResource AccentPink}"
+                        Margin="0,0,0,20"
+                        Click="ClearChat"/>
+
+                <!-- About Section -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="8" 
+                        Padding="12" 
+                        Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Powered by PulseCore" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentGreen}" 
+                                  Margin="0,0,0,5"/>
+                        <TextBlock Text="Zin AI operates on Binary Pulse Theory principles" 
+                                  FontSize="11" 
+                                  Foreground="{StaticResource TextMuted}" 
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Chat Area -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Header -->
+                <RowDefinition Height="*"/>    <!-- Chat/Journal Content -->
+                <RowDefinition Height="Auto"/> <!-- Input Area -->
+            </Grid.RowDefinitions>
+
+            <!-- Chat Header -->
+            <Border Grid.Row="0" 
+                    Background="{StaticResource SecondaryBackground}" 
+                    BorderBrush="{StaticResource BorderColor}" 
+                    BorderThickness="0,0,0,1" 
+                    Padding="20,15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- AI Info -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="🤖" FontSize="24" Margin="0,0,10,0"/>
+                        <StackPanel>
+                            <TextBlock x:Name="AiNameText" 
+                                      Text="Zin AI Assistant" 
+                                      FontSize="18" 
+                                      FontWeight="Bold" 
+                                      Foreground="{StaticResource TextPrimary}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="AiModeText" 
+                                          Text="Chat Mode" 
+                                          FontSize="12" 
+                                          Foreground="{StaticResource AccentCyan}" 
+                                          Margin="0,0,15,0"/>
+                                <TextBlock x:Name="PulseStatusText" 
+                                          Text="PulseCore: ●" 
+                                          FontSize="12" 
+                                          Foreground="{StaticResource AccentGreen}" 
+                                          Margin="0,0,15,0"/>
+                                <TextBlock x:Name="PcStatusText" 
+                                          Text="PC Bridge: ●" 
+                                          FontSize="12" 
+                                          Foreground="{StaticResource AccentGreen}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Control Buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="StopSpeechBtn" 
+                                Content="🔇 Stop Speaking" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource AccentPink}"
+                                Margin="0,0,10,0"
+                                Click="StopSpeech"/>
+                        <Button x:Name="VoiceTestBtn" 
+                                Content="🎤 Voice Test" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource AccentGreen}"
+                                Margin="0,0,10,0"
+                                Click="TestVoice"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Chat Messages Area -->
+            <ScrollViewer x:Name="ChatScrollViewer" 
+                         Grid.Row="1" 
+                         Background="{StaticResource PrimaryBackground}"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Disabled"
+                         Padding="20">
+                <StackPanel x:Name="ChatMessagesPanel">
+                    <!-- Messages will be added here dynamically -->
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Journal Mode (Hidden by default) -->
+            <Grid x:Name="JournalModeGrid" 
+                  Grid.Row="1" 
+                  Background="{StaticResource PrimaryBackground}"
+                  Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Journal Editor -->
+                <Border Grid.Column="0" 
+                        Background="{StaticResource SecondaryBackground}" 
+                        CornerRadius="8" 
+                        Margin="20,20,10,20"
+                        Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Journal Header -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="✍️ Writing Journal" 
+                                      FontSize="18" 
+                                      FontWeight="Bold" 
+                                      Foreground="{StaticResource AccentPurple}" 
+                                      Margin="0,0,20,0"/>
+                            <Button Content="🎤 Voice" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Background="{StaticResource AccentGreen}"
+                                    Click="StartJournalVoice"/>
+                            <Button Content="💾 Save" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Background="{StaticResource AccentCyan}"
+                                    Margin="10,0,0,0"
+                                    Click="SaveJournal"/>
+                        </StackPanel>
+
+                        <!-- Journal Text Area -->
+                        <TextBox x:Name="JournalTextBox" 
+                                Grid.Row="1"
+                                Style="{StaticResource ZinInputStyle}"
+                                AcceptsReturn="True"
+                                AcceptsTab="True"
+                                TextWrapping="Wrap"
+                                VerticalScrollBarVisibility="Auto"
+                                FontSize="14"
+                                Text="Begin speaking or start typing your thoughts here...&#x0a;&#x0a;Your voice will flow into text as you speak. Take your time, explore your ideas, and let your thoughts develop naturally. I'm here to listen and help."
+                                TextChanged="JournalTextChanged"/>
+
+                        <!-- Word Count -->
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock x:Name="WordCountText" 
+                                      Text="0 words" 
+                                      FontSize="12" 
+                                      Foreground="{StaticResource TextMuted}" 
+                                      Margin="0,0,15,0"/>
+                            <TextBlock x:Name="CharCountText" 
+                                      Text="0 characters" 
+                                      FontSize="12" 
+                                      Foreground="{StaticResource TextMuted}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Zin's Writing Companion -->
+                <Border Grid.Column="1" 
+                        Background="{StaticResource SecondaryBackground}" 
+                        CornerRadius="8" 
+                        Margin="10,20,20,20"
+                        Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Zin Header -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="🧠" FontSize="20" Margin="0,0,8,0"/>
+                            <StackPanel>
+                                <TextBlock Text="Zin" 
+                                          FontWeight="Bold" 
+                                          Foreground="{StaticResource AccentPurple}"/>
+                                <TextBlock Text="Writing Companion" 
+                                          FontSize="11" 
+                                          Foreground="{StaticResource TextMuted}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Zin Responses -->
+                        <ScrollViewer x:Name="ZinResponsesScrollViewer" 
+                                     Grid.Row="1"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Margin="0,0,0,15">
+                            <StackPanel x:Name="ZinResponsesPanel">
+                                <Border Background="{StaticResource CardBackground}" 
+                                        CornerRadius="8" 
+                                        Padding="12" 
+                                        Margin="0,0,0,10">
+                                    <TextBlock Text="Hello! I'm Zin, your AI writing companion. I'll appear here with insights and suggestions as you write. Start your journal session and ask me anything about your thoughts!" 
+                                              Foreground="{StaticResource TextPrimary}" 
+                                              TextWrapping="Wrap" 
+                                              FontSize="13"/>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Zin Quick Actions -->
+                        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                            <Button Content="🔍 Analyze" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Background="{StaticResource AccentCyan}"
+                                    Margin="0,0,0,5"
+                                    Click="AnalyzeJournal"/>
+                            <Button Content="✨ Improve" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Background="{StaticResource AccentGreen}"
+                                    Margin="0,0,0,5"
+                                    Click="ImproveJournal"/>
+                            <Button Content="➡️ Continue" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Background="{StaticResource AccentPink}"
+                                    Click="ContinueJournal"/>
+                        </StackPanel>
+
+                        <!-- Zin Input -->
+                        <Grid Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ZinInputBox" 
+                                    Grid.Column="0"
+                                    Style="{StaticResource ZinInputStyle}"
+                                    Text="Ask Zin anything about your writing..."
+                                    FontSize="12"
+                                    KeyDown="ZinInputKeyDown"/>
+                            <Button Grid.Column="1" 
+                                    Content="💭" 
+                                    Style="{StaticResource ZinButtonStyle}"
+                                    Margin="5,0,0,0"
+                                    Click="SendZinMessage"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Input Section -->
+            <Border Grid.Row="2" 
+                    Background="{StaticResource SecondaryBackground}" 
+                    BorderBrush="{StaticResource BorderColor}" 
+                    BorderThickness="0,1,0,0" 
+                    Padding="20,15">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Message Input -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="MessageInputBox" 
+                                Grid.Column="0"
+                                Style="{StaticResource ZinInputStyle}"
+                                Text="Type your message or press the microphone to speak..."
+                                FontSize="14"
+                                KeyDown="MessageInputKeyDown"/>
+
+                        <Button x:Name="VoiceBtn" 
+                                Grid.Column="1"
+                                Content="🎤" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource AccentGreen}"
+                                Margin="10,0,0,0"
+                                Click="ToggleVoice"/>
+
+                        <Button x:Name="SendBtn" 
+                                Grid.Column="2"
+                                Content="➤" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Margin="5,0,0,0"
+                                Click="SendMessage"/>
+                    </Grid>
+
+                    <!-- Quick Actions -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Recent Novas" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource TextMuted}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,8,0"
+                                Click="QuickMessage_RecentNovas"/>
+                        <Button Content="Pattern Analysis" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource TextMuted}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,8,0"
+                                Click="QuickMessage_PatternAnalysis"/>
+                        <Button Content="Optimization Tips" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource TextMuted}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,8,0"
+                                Click="QuickMessage_OptimizationTips"/>
+                        <Button Content="Variables Data" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource TextMuted}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Click="QuickMessage_VariablesData"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Right Stats Sidebar -->
+        <Border Grid.Column="2" 
+                Background="{StaticResource SecondaryBackground}" 
+                BorderBrush="{StaticResource BorderColor}" 
+                BorderThickness="1,0,0,0"
+                Padding="16">
+            <StackPanel>
+                <!-- PulseCore Stats -->
+                <TextBlock Text="📊 PulseCore Stats" 
+                          FontSize="16" 
+                          FontWeight="Bold" 
+                          Foreground="{StaticResource AccentCyan}" 
+                          Margin="0,0,0,15"/>
+
+                <!-- Stats Display -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="8" 
+                        Padding="15" 
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Total Climaxes:" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TotalClimaxesText" Grid.Column="1" Text="-" Foreground="{StaticResource AccentGreen}" FontWeight="Bold"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Total Novas:" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TotalNovasText" Grid.Column="1" Text="-" Foreground="{StaticResource AccentGreen}" FontWeight="Bold"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Avg Complexity:" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="AvgComplexityText" Grid.Column="1" Text="-" Foreground="{StaticResource AccentGreen}" FontWeight="Bold"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Total Sessions:" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TotalSessionsText" Grid.Column="1" Text="-" Foreground="{StaticResource AccentGreen}" FontWeight="Bold"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Voice Settings -->
+                <TextBlock Text="🎛️ Voice Settings" 
+                          FontSize="16" 
+                          FontWeight="Bold" 
+                          Foreground="{StaticResource AccentPurple}" 
+                          Margin="0,0,0,15"/>
+
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="8" 
+                        Padding="15">
+                    <StackPanel>
+                        <!-- Auto-speak Toggle -->
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Auto-speak:" Foreground="{StaticResource TextSecondary}"/>
+                            <CheckBox x:Name="AutoSpeakCheckBox" Grid.Column="1" IsChecked="True"/>
+                        </Grid>
+
+                        <!-- Speech Rate -->
+                        <TextBlock Text="Speed:" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="SpeechRateSlider" 
+                                   Grid.Column="0"
+                                   Minimum="0.5" 
+                                   Maximum="2.5" 
+                                   Value="1.2" 
+                                   TickFrequency="0.1"
+                                   ValueChanged="SpeechRateChanged"/>
+                            <TextBlock x:Name="SpeechRateText" 
+                                      Grid.Column="1" 
+                                      Text="1.2x" 
+                                      Foreground="{StaticResource AccentPurple}" 
+                                      Margin="10,0,0,0"/>
+                        </Grid>
+
+                        <!-- Voice Test -->
+                        <Button Content="🎵 Test Voice" 
+                                Style="{StaticResource ZinButtonStyle}"
+                                Background="{StaticResource AccentGreen}"
+                                Click="TestVoice"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
