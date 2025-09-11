@@ -49,7 +49,7 @@ Before setup, ensure you have:
 Edit `ai/api/db_config.php` and replace these values:
 ```php
 $DB_HOST = 'localhost';
-$DB_NAME = 'vemite5_pulse-core';  // Your PulseCore database
+$DB_NAME = 'vemite5_pulse-core-ai';  // Your AI database
 $DB_USER = 'your_mysql_username';     // Replace with your MySQL username
 $DB_PASS = 'your_mysql_password';     // Replace with your MySQL password
 ```

@@ -2,7 +2,7 @@
 -- Run date: 2024-09-09
 -- Description: Creates core AI tables for conversations, messages, and settings
 
-USE vemite5_pulse_core;
+USE `vemite5_pulse-core-ai`;
 
 -- Conversations table - tracks chat sessions
 CREATE TABLE IF NOT EXISTS ai_conversations (

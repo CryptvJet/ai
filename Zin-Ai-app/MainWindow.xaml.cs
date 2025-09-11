@@ -83,7 +83,7 @@ public partial class MainWindow : Window
     private void LoadConfiguration()
     {
         // Use the actual database credentials
-        connectionString = "Server=localhost;Database=vemite5_pulse-core;Uid=vemite5_p-core;Pwd=HHsJgdR6$ZMpV#F*;";
+        connectionString = "Server=localhost;Database=vemite5_pulse-core-ai;Uid=vemite5_p-core;Pwd=HHsJgdR6$ZMpV#F*;";
         
         // Set initial voice settings
         speechSynthesizer.Rate = 2; // 1.2x speed
