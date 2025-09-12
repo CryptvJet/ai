@@ -134,9 +134,9 @@ class PCBridge {
         this.startServer();
     }
 
-    startServer() {
+    async startServer() {
         // Load SSL configuration if available
-        const sslConfig = this.loadSSLConfig();
+        const sslConfig = await this.loadSSLConfig();
         
         if (sslConfig && sslConfig.enabled) {
             // HTTPS Server
@@ -159,42 +159,60 @@ class PCBridge {
         }
     }
 
-    loadSSLConfig() {
+    async loadSSLConfig() {
         try {
-            const configPath = path.join(__dirname, '../data/pws/ssl_config.json');
-            if (!fs.existsSync(configPath)) {
-                return null;
-            }
-
-            const configData = fs.readFileSync(configPath, 'utf8');
-            const config = JSON.parse(configData);
+            // Load SSL configuration from database
+            const connection = await mysql.createConnection(this.dbConfig);
             
-            if (!config.enabled) {
-                return null;
+            try {
+                const [rows] = await connection.execute(
+                    'SELECT * FROM ai_ssl_config WHERE id = 1'
+                );
+                
+                if (!rows.length) {
+                    console.log('⚠️ No SSL configuration found in database');
+                    return null;
+                }
+                
+                const config = rows[0];
+                
+                if (!config.enabled) {
+                    console.log('🔒 SSL disabled in configuration');
+                    return null;
+                }
+                
+                if (!config.cert_uploaded || !config.key_uploaded) {
+                    console.log('⚠️ SSL enabled but certificates not uploaded, falling back to HTTP');
+                    return null;
+                }
+
+                // Load SSL certificate files
+                const certPath = path.join(__dirname, '../data/pws/certs', config.cert_filename || 'server.crt');
+                const keyPath = path.join(__dirname, '../data/pws/certs', config.key_filename || 'server.key');
+                
+                if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+                    console.log('⚠️ SSL certificate files not found on disk, falling back to HTTP');
+                    return null;
+                }
+
+                const sslOptions = {
+                    cert: fs.readFileSync(certPath),
+                    key: fs.readFileSync(keyPath)
+                };
+
+                console.log('🔒 SSL configuration loaded from database');
+                return {
+                    enabled: true,
+                    port: config.port || 8443,
+                    options: sslOptions
+                };
+
+            } finally {
+                await connection.end();
             }
-
-            // Load SSL certificate files
-            const certPath = path.join(__dirname, '../data/pws/certs', config.cert);
-            const keyPath = path.join(__dirname, '../data/pws/certs', config.key);
-            
-            if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-                console.log('⚠️ SSL certificates not found, falling back to HTTP');
-                return null;
-            }
-
-            const sslOptions = {
-                cert: fs.readFileSync(certPath),
-                key: fs.readFileSync(keyPath)
-            };
-
-            return {
-                enabled: true,
-                port: config.port || 8443,
-                options: sslOptions
-            };
 
         } catch (error) {
-            console.log('⚠️ Could not load SSL configuration, using HTTP');
+            console.log('⚠️ Could not load SSL configuration from database, using HTTP:', error.message);
             return null;
         }
     }

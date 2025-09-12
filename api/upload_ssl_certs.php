@@ -1,7 +1,7 @@
 <?php
 /**
  * Upload SSL Certificates API
- * Handles SSL certificate and key file uploads
+ * Handles SSL certificate and key file uploads and updates database
  */
 
 header('Content-Type: application/json');
@@ -17,6 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'error' => 'Only POST requests allowed']);
     exit;
 }
+
+// Include database configuration
+require_once __DIR__ . '/db_config.php';
 
 try {
     // Check if files were uploaded
@@ -70,13 +73,26 @@ try {
     chmod($certDestination, 0644);
     chmod($keyDestination, 0600); // Private key should be more restrictive
     
+    // Update database to mark certificates as uploaded
+    $updateSql = "INSERT INTO ai_ssl_config (id, cert_uploaded, key_uploaded, cert_upload_date, key_upload_date) 
+                  VALUES (1, 1, 1, NOW(), NOW())
+                  ON DUPLICATE KEY UPDATE 
+                  cert_uploaded = 1, 
+                  key_uploaded = 1, 
+                  cert_upload_date = NOW(), 
+                  key_upload_date = NOW()";
+    
+    $stmt = $ai_pdo->prepare($updateSql);
+    $stmt->execute();
+    
     echo json_encode([
         'success' => true,
         'message' => 'SSL certificates uploaded successfully',
         'files' => [
             'certificate' => 'server.crt',
             'private_key' => 'server.key'
-        ]
+        ],
+        'database_updated' => true
     ]);
     
 } catch (Exception $e) {

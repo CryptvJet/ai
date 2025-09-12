@@ -1050,7 +1050,7 @@ async function testHTTPSConnection() {
 
 async function updateSSLStatus() {
     try {
-        // Check if certificate files exist via API call
+        // Check if certificate files exist via API call (now database-based)
         const response = await fetch('../api/check_ssl_certs.php');
         const result = await response.json();
         
@@ -1062,7 +1062,9 @@ async function updateSSLStatus() {
             
             // Update certificate file status
             if (result.certificate_exists) {
-                certStatus.textContent = 'Uploaded ✓';
+                const uploadDate = result.config.cert_upload_date ? 
+                    new Date(result.config.cert_upload_date).toLocaleDateString() : '';
+                certStatus.textContent = `Uploaded ✓${uploadDate ? ' (' + uploadDate + ')' : ''}`;
                 certStatus.className = 'status-value status-success';
             } else {
                 certStatus.textContent = 'Not uploaded';
@@ -1071,7 +1073,9 @@ async function updateSSLStatus() {
             
             // Update key file status
             if (result.key_exists) {
-                keyStatus.textContent = 'Uploaded ✓';
+                const uploadDate = result.config.key_upload_date ? 
+                    new Date(result.config.key_upload_date).toLocaleDateString() : '';
+                keyStatus.textContent = `Uploaded ✓${uploadDate ? ' (' + uploadDate + ')' : ''}`;
                 keyStatus.className = 'status-value status-success';
             } else {
                 keyStatus.textContent = 'Not uploaded';
@@ -1080,21 +1084,26 @@ async function updateSSLStatus() {
             
             // Update HTTPS status based on configuration and file availability
             if (result.ssl_enabled && result.both_uploaded) {
-                httpsStatus.textContent = `Enabled (Port ${result.ssl_port})`;
+                httpsStatus.textContent = `Enabled (Port ${result.ssl_port}) ✓`;
                 httpsStatus.className = 'status-value status-success';
             } else if (result.ssl_enabled && !result.both_uploaded) {
-                httpsStatus.textContent = 'Enabled (No Certificates)';
+                httpsStatus.textContent = 'Enabled (Missing Certificates)';
+                httpsStatus.className = 'status-value status-warning';
+            } else if (!result.ssl_enabled && result.both_uploaded) {
+                httpsStatus.textContent = 'Disabled (Certificates Ready)';
                 httpsStatus.className = 'status-value status-warning';
             } else {
                 httpsStatus.textContent = 'Disabled';
                 httpsStatus.className = 'status-value status-error';
             }
             
-            // Update the checkbox to match the actual configuration
+            // Update the form fields to match the database configuration
             const enabledCheckbox = document.getElementById('sslEnabledConfig');
             const portInput = document.getElementById('sslPortConfig');
             if (enabledCheckbox) enabledCheckbox.checked = result.ssl_enabled;
             if (portInput) portInput.value = result.ssl_port;
+            
+            console.log('SSL status loaded from database:', result.config);
             
         } else {
             // Fallback to basic status if API call fails
