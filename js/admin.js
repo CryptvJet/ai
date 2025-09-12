@@ -3096,6 +3096,45 @@ async function testAIDatabaseConnection() {
     }
 }
 
+async function loadDatabaseConfigurations() {
+    try {
+        // Load AI database config
+        const aiResponse = await fetch('../api/load_database_config.php?type=ai');
+        const aiResult = await aiResponse.json();
+        
+        if (aiResult.success && aiResult.config) {
+            const aiConfig = aiResult.config;
+            document.getElementById('aiDbServer').value = aiConfig.server_host;
+            document.getElementById('aiDbName').value = aiConfig.database_name;
+            document.getElementById('aiDbUsername').value = aiConfig.username;
+            document.getElementById('aiDbPort').value = aiConfig.server_port;
+            
+            // Show that password is saved without showing actual password
+            const aiPasswordField = document.getElementById('aiDbPassword');
+            aiPasswordField.placeholder = '••••••••••••• (Password saved)';
+        }
+        
+        // Load PulseCore database config
+        const pulseResponse = await fetch('../api/load_database_config.php?type=pulsecore');
+        const pulseResult = await pulseResponse.json();
+        
+        if (pulseResult.success && pulseResult.config) {
+            const pulseConfig = pulseResult.config;
+            document.getElementById('pulsecoreDbServer').value = pulseConfig.server_host;
+            document.getElementById('pulsecoreDbName').value = pulseConfig.database_name;
+            document.getElementById('pulsecoreDbUsername').value = pulseConfig.username;
+            document.getElementById('pulsecoreDbPort').value = pulseConfig.server_port;
+            
+            // Show that password is saved without showing actual password
+            const pulsePasswordField = document.getElementById('pulsecoreDbPassword');
+            pulsePasswordField.placeholder = '••••••••••••• (Password saved)';
+        }
+        
+    } catch (error) {
+        console.error('Error loading database configurations:', error);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
     initializeCommandCopyEvents();
@@ -3109,6 +3148,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             if (document.getElementById('ollamaHost')) {
                 loadOllamaConfiguration();
+            }
+            
+            // Load database configurations on page load
+            if (document.getElementById('aiDbServer')) {
+                loadDatabaseConfigurations();
             }
         }, 1000);
         

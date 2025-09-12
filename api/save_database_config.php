@@ -46,8 +46,7 @@ try {
     
     $config_name = $config_type . '_main';
     
-    // For AI config: use the provided credentials to connect to that database
-    // For PulseCore config: use AI database connection (which should be configured first)
+    // Always save configs to the AI database where the ai_database_configs table exists
     if ($config_type === 'ai') {
         // Create new connection using the provided AI database credentials
         $dsn = "mysql:host={$server_host};port={$server_port};dbname={$database_name};charset=utf8mb4";
@@ -56,10 +55,22 @@ try {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]);
     } else {
-        // For PulseCore config, save to the AI database (which should already be configured)
-        require_once __DIR__ . '/db_config.php';
-        global $ai_pdo;
-        $pdo = $ai_pdo;
+        // For PulseCore config, connect to the AI database using saved AI config
+        $ai_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
+        if (!file_exists($ai_config_path)) {
+            throw new Exception('AI database configuration file not found. Configure AI database first.');
+        }
+        
+        $ai_config = json_decode(file_get_contents($ai_config_path), true);
+        if (!$ai_config) {
+            throw new Exception('Invalid AI database configuration');
+        }
+        
+        $dsn = "mysql:host={$ai_config['Server']};port=3306;dbname={$ai_config['Database']};charset=utf8mb4";
+        $pdo = new PDO($dsn, $ai_config['Username'], $ai_config['Password'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
     }
     
     // Encrypt the password before storing
