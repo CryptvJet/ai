@@ -1025,88 +1025,9 @@ async function uploadSSLCertificates() {
     }
 }
 
-async function saveSSLConfiguration() {
-    try {
-        const connectionType = document.getElementById('bridgeTypeConfig').value;
-        const enabled = connectionType === 'HTTPS';
-        const port = parseInt(document.getElementById('bridgePortConfig').value) || (enabled ? 8443 : 8080);
-        
-        showStatusMessage('sslStatusMessage', 'Saving SSL configuration...', 'info');
-        
-        const response = await fetch('../api/save_ssl_config.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                enabled: enabled,
-                port: port
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showStatusMessage('sslStatusMessage', '✅ SSL configuration saved! Restart bridge server to apply changes.', 'success');
-            updateSSLStatus();
-            if (window.aiAdmin) {
-                window.aiAdmin.showNotification('SSL configuration saved successfully!', 'success');
-            }
-        } else {
-            throw new Error(result.error || 'Failed to save SSL configuration');
-        }
-        
-    } catch (error) {
-        console.error('Error saving SSL configuration:', error);
-        showStatusMessage('sslStatusMessage', 'Error saving SSL configuration: ' + error.message, 'error');
-        if (window.aiAdmin) {
-            window.aiAdmin.showNotification('Error saving SSL configuration: ' + error.message, 'error');
-        }
-    }
-}
+// saveSSLConfiguration function removed - functionality merged into saveBridgeConfiguration
 
-async function testHTTPSConnection() {
-    try {
-        const port = parseInt(document.getElementById('sslPortConfig').value) || 8443;
-        
-        showStatusMessage('sslStatusMessage', 'Testing HTTPS connection...', 'info');
-        
-        // Try to connect to HTTPS endpoint
-        const httpsUrl = `https://localhost:${port}/status`;
-        
-        try {
-            const response = await fetch(httpsUrl, {
-                method: 'GET',
-                mode: 'cors'
-            });
-            
-            if (response.ok) {
-                showStatusMessage('sslStatusMessage', '✅ HTTPS connection successful!', 'success');
-                document.getElementById('httpsStatus').textContent = 'Working';
-                document.getElementById('httpsStatus').className = 'status-value status-success';
-                if (window.aiAdmin) {
-                    window.aiAdmin.showNotification('HTTPS connection test successful!', 'success');
-                }
-            } else {
-                throw new Error(`HTTP ${response.status} ${response.statusText}`);
-            }
-            
-        } catch (fetchError) {
-            // HTTPS might fail due to CORS or self-signed certificates
-            showStatusMessage('sslStatusMessage', '⚠️ HTTPS test completed, but may fail due to browser security policies. Check bridge server logs.', 'warning');
-            if (window.aiAdmin) {
-                window.aiAdmin.showNotification('HTTPS test completed with warnings', 'warning');
-            }
-        }
-        
-    } catch (error) {
-        console.error('Error testing HTTPS connection:', error);
-        showStatusMessage('sslStatusMessage', 'Error testing HTTPS: ' + error.message, 'error');
-        if (window.aiAdmin) {
-            window.aiAdmin.showNotification('Error testing HTTPS connection: ' + error.message, 'error');
-        }
-    }
-}
+// testHTTPSConnection function removed - HTTPS testing integrated into testBridgeConnection
 
 async function updateSSLStatus() {
     try {

@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Linq;
 using MySqlConnector;
 using Newtonsoft.Json;
 using System.Net.Http;
@@ -496,7 +497,16 @@ public partial class AdminWindow : Window
                 // Update UI elements with loaded configuration
                 if (sslConfig != null)
                 {
-                    SSLEnabledCheckBox.IsChecked = sslConfig.enabled ?? false;
+                    // Set connection type based on SSL enabled status
+                    if (BridgeTypeComboBox != null)
+                    {
+                        string connectionType = (sslConfig.enabled ?? false) ? "HTTPS" : "HTTP";
+                        BridgeTypeComboBox.SelectedItem = BridgeTypeComboBox.Items.Cast<ComboBoxItem>()
+                            .FirstOrDefault(item => item.Content.ToString() == connectionType);
+                        
+                        // Trigger the selection changed event to show/hide SSL panel
+                        BridgeTypeComboBox_SelectionChanged(BridgeTypeComboBox, null);
+                    }
                     SSLPortInput.Text = sslConfig.port?.ToString() ?? "8443";
                     
                     // Update status display
@@ -527,7 +537,14 @@ public partial class AdminWindow : Window
     {
         // Update status based on configuration
         bool enabled = sslConfig?.enabled ?? false;
-        SSLEnabledCheckBox.IsChecked = enabled;
+        
+        // Update connection type ComboBox
+        if (BridgeTypeComboBox != null)
+        {
+            string connectionType = enabled ? "HTTPS" : "HTTP";
+            BridgeTypeComboBox.SelectedItem = BridgeTypeComboBox.Items.Cast<ComboBoxItem>()
+                .FirstOrDefault(item => item.Content.ToString() == connectionType);
+        }
         
         if (enabled)
         {
@@ -659,9 +676,16 @@ public partial class AdminWindow : Window
     {
         try
         {
+            // Get enabled status from connection type
+            bool enabled = false;
+            if (BridgeTypeComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                enabled = selectedItem.Content.ToString() == "HTTPS";
+            }
+            
             var sslConfig = new
             {
-                enabled = SSLEnabledCheckBox.IsChecked == true,
+                enabled = enabled,
                 port = int.TryParse(SSLPortInput.Text, out int port) ? port : 8443,
                 cert = "server.crt",
                 key = "server.key",
@@ -1361,6 +1385,37 @@ public partial class AdminWindow : Window
         aiDbConnection?.Dispose();
         pulseDbConnection?.Dispose();
         base.OnClosed(e);
+    }
+
+    private void BridgeTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+        {
+            string connectionType = selectedItem.Content.ToString();
+            
+            // Show/hide SSL configuration panel based on connection type
+            if (SSLConfigurationPanel != null)
+            {
+                if (connectionType == "HTTPS")
+                {
+                    SSLConfigurationPanel.Visibility = Visibility.Visible;
+                    // Update port to HTTPS default if currently on HTTP default
+                    if (SSLPortInput?.Text == "8080" || SSLPortInput?.Text == "80")
+                    {
+                        SSLPortInput.Text = "8443";
+                    }
+                }
+                else
+                {
+                    SSLConfigurationPanel.Visibility = Visibility.Collapsed;
+                    // Update port to HTTP default if currently on HTTPS default
+                    if (connectionType == "HTTP" && (SSLPortInput?.Text == "8443" || SSLPortInput?.Text == "443"))
+                    {
+                        SSLPortInput.Text = "8080";
+                    }
+                }
+            }
+        }
     }
 
     #endregion
