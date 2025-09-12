@@ -500,12 +500,16 @@ public partial class AdminWindow : Window
                     // Set connection type based on SSL enabled status
                     if (BridgeTypeComboBox != null)
                     {
-                        string connectionType = (sslConfig.enabled ?? false) ? "HTTPS" : "HTTP";
+                        bool isEnabled = sslConfig.enabled != null ? (bool)sslConfig.enabled : false;
+                        string connectionType = isEnabled ? "HTTPS" : "HTTP";
                         BridgeTypeComboBox.SelectedItem = BridgeTypeComboBox.Items.Cast<ComboBoxItem>()
                             .FirstOrDefault(item => item.Content.ToString() == connectionType);
                         
-                        // Trigger the selection changed event to show/hide SSL panel
-                        BridgeTypeComboBox_SelectionChanged(BridgeTypeComboBox, null);
+                        // Update SSL panel visibility directly to avoid recursion
+                        if (SSLConfigurationPanel != null)
+                        {
+                            SSLConfigurationPanel.Visibility = connectionType == "HTTPS" ? Visibility.Visible : Visibility.Collapsed;
+                        }
                     }
                     SSLPortInput.Text = sslConfig.port?.ToString() ?? "8443";
                     
@@ -1391,7 +1395,7 @@ public partial class AdminWindow : Window
     {
         if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
         {
-            string connectionType = selectedItem.Content.ToString();
+            string connectionType = selectedItem.Content?.ToString() ?? "HTTP";
             
             // Show/hide SSL configuration panel based on connection type
             if (SSLConfigurationPanel != null)

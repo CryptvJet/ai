@@ -614,8 +614,8 @@ class AIAdmin {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
             
-            // Use same protocol as current page to avoid mixed content issues
-            const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+            // Use protocol from bridge configuration
+            const protocol = bridgeConfig.type.toLowerCase() === 'https' ? 'https' : 'http';
             const bridgeUrl = `${protocol}://${bridgeConfig.host}:${bridgeConfig.port}/api/status`;
             const startTime = Date.now();
             
@@ -885,12 +885,12 @@ async function saveBridgeConfiguration() {
         const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
         const type = document.getElementById('bridgeTypeConfig').value || 'HTTPS';
 
-        // If HTTPS is selected, first upload SSL certificates if they exist
+        // If HTTPS is selected, first upload SSL certificates if both files exist
         if (type === 'HTTPS') {
             const certFile = document.getElementById('sslCertFile').files[0];
             const keyFile = document.getElementById('sslKeyFile').files[0];
             
-            if (certFile || keyFile) {
+            if (certFile && keyFile) {
                 await uploadSSLCertificates();
             }
         }
