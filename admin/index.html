@@ -23,6 +23,7 @@
             <button class="nav-btn" onclick="showSection('responses')">💬 Responses</button>
             <button class="nav-btn" onclick="showSection('conversations')">📊 Conversations</button>
             <button class="nav-btn" onclick="showSection('integrations')">🔗 Integrations</button>
+            <button class="nav-btn" onclick="showSection('ssl')">🔒 SSL Certificates</button>
             <button class="nav-btn" onclick="showSection('learning')">🧠 Learning</button>
             <button class="nav-btn" onclick="showSection('console')">🔍 Console</button>
         </nav>
@@ -224,6 +225,67 @@
                         <button onclick="testBridgeConnection()" class="btn-secondary">🧪 Test Connection</button>
                         <button onclick="saveBridgeConfiguration()" class="btn-primary">💾 Save Bridge Settings</button>
                     </div>
+                </div>
+            </section>
+
+            <!-- SSL Certificate Management -->
+            <section id="ssl" class="admin-section">
+                <h2>🔒 SSL Certificate Management</h2>
+                
+                <div class="ssl-config-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sslCertFile">SSL Certificate (.crt/.pem):</label>
+                            <input type="file" id="sslCertFile" accept=".crt,.pem,.cert" class="file-input">
+                            <small>Upload your SSL certificate file from cPanel</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sslKeyFile">Private Key (.key):</label>
+                            <input type="file" id="sslKeyFile" accept=".key,.pem" class="file-input">
+                            <small>Upload your private key file from cPanel</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sslPortConfig">HTTPS Port:</label>
+                            <input type="number" id="sslPortConfig" value="8443" placeholder="8443">
+                            <small>Port for HTTPS bridge server (typically 8443)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="sslEnabledConfig">
+                                <span class="checkmark"></span>
+                                Enable HTTPS
+                            </label>
+                            <small>Enable HTTPS for secure bridge connections</small>
+                        </div>
+                    </div>
+
+                    <div class="ssl-status-display">
+                        <div class="status-item">
+                            <span class="status-label">Certificate Status:</span>
+                            <span id="sslCertStatus" class="status-value">Not uploaded</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Key Status:</span>
+                            <span id="sslKeyStatus" class="status-value">Not uploaded</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">HTTPS Status:</span>
+                            <span id="httpsStatus" class="status-value">Disabled</span>
+                        </div>
+                    </div>
+
+                    <div class="ssl-config-actions">
+                        <button onclick="uploadSSLCertificates()" class="btn-secondary">📤 Upload Certificates</button>
+                        <button onclick="testHTTPSConnection()" class="btn-secondary">🧪 Test HTTPS</button>
+                        <button onclick="saveSSLConfiguration()" class="btn-primary">💾 Save SSL Config</button>
+                    </div>
+
+                    <div id="sslStatusMessage" class="status-message"></div>
                 </div>
             </section>
 

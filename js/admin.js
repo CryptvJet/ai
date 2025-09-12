@@ -916,6 +916,159 @@ async function saveBridgeConfiguration() {
     }
 }
 
+// SSL Certificate Management Functions
+async function uploadSSLCertificates() {
+    try {
+        const certFile = document.getElementById('sslCertFile').files[0];
+        const keyFile = document.getElementById('sslKeyFile').files[0];
+        
+        if (!certFile || !keyFile) {
+            showStatusMessage('sslStatusMessage', 'Please select both certificate and key files', 'error');
+            return;
+        }
+        
+        showStatusMessage('sslStatusMessage', 'Uploading SSL certificates...', 'info');
+        
+        const formData = new FormData();
+        formData.append('certificate', certFile);
+        formData.append('private_key', keyFile);
+        
+        const response = await fetch('../api/upload_ssl_certs.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatusMessage('sslStatusMessage', '✅ SSL certificates uploaded successfully!', 'success');
+            updateSSLStatus();
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('SSL certificates uploaded successfully!', 'success');
+            }
+        } else {
+            throw new Error(result.error || 'Failed to upload certificates');
+        }
+        
+    } catch (error) {
+        console.error('Error uploading SSL certificates:', error);
+        showStatusMessage('sslStatusMessage', 'Error uploading certificates: ' + error.message, 'error');
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error uploading SSL certificates: ' + error.message, 'error');
+        }
+    }
+}
+
+async function saveSSLConfiguration() {
+    try {
+        const enabled = document.getElementById('sslEnabledConfig').checked;
+        const port = parseInt(document.getElementById('sslPortConfig').value) || 8443;
+        
+        showStatusMessage('sslStatusMessage', 'Saving SSL configuration...', 'info');
+        
+        const response = await fetch('../api/save_ssl_config.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enabled: enabled,
+                port: port
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatusMessage('sslStatusMessage', '✅ SSL configuration saved! Restart bridge server to apply changes.', 'success');
+            updateSSLStatus();
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('SSL configuration saved successfully!', 'success');
+            }
+        } else {
+            throw new Error(result.error || 'Failed to save SSL configuration');
+        }
+        
+    } catch (error) {
+        console.error('Error saving SSL configuration:', error);
+        showStatusMessage('sslStatusMessage', 'Error saving SSL configuration: ' + error.message, 'error');
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error saving SSL configuration: ' + error.message, 'error');
+        }
+    }
+}
+
+async function testHTTPSConnection() {
+    try {
+        const port = parseInt(document.getElementById('sslPortConfig').value) || 8443;
+        
+        showStatusMessage('sslStatusMessage', 'Testing HTTPS connection...', 'info');
+        
+        // Try to connect to HTTPS endpoint
+        const httpsUrl = `https://localhost:${port}/status`;
+        
+        try {
+            const response = await fetch(httpsUrl, {
+                method: 'GET',
+                mode: 'cors'
+            });
+            
+            if (response.ok) {
+                showStatusMessage('sslStatusMessage', '✅ HTTPS connection successful!', 'success');
+                document.getElementById('httpsStatus').textContent = 'Working';
+                document.getElementById('httpsStatus').className = 'status-value status-success';
+                if (window.aiAdmin) {
+                    window.aiAdmin.showNotification('HTTPS connection test successful!', 'success');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status} ${response.statusText}`);
+            }
+            
+        } catch (fetchError) {
+            // HTTPS might fail due to CORS or self-signed certificates
+            showStatusMessage('sslStatusMessage', '⚠️ HTTPS test completed, but may fail due to browser security policies. Check bridge server logs.', 'warning');
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('HTTPS test completed with warnings', 'warning');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error testing HTTPS connection:', error);
+        showStatusMessage('sslStatusMessage', 'Error testing HTTPS: ' + error.message, 'error');
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error testing HTTPS connection: ' + error.message, 'error');
+        }
+    }
+}
+
+function updateSSLStatus() {
+    // Check if certificate files exist and update status accordingly
+    const enabled = document.getElementById('sslEnabledConfig').checked;
+    
+    document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
+    document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
+    
+    // Update certificate status (would need API call to check actual files)
+    document.getElementById('sslCertStatus').textContent = 'Check required';
+    document.getElementById('sslKeyStatus').textContent = 'Check required';
+}
+
+function showStatusMessage(elementId, message, type) {
+    const statusElement = document.getElementById(elementId);
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `status-message status-${type}`;
+        
+        // Clear message after 5 seconds for non-error messages
+        if (type !== 'error') {
+            setTimeout(() => {
+                statusElement.textContent = '';
+                statusElement.className = 'status-message';
+            }, 5000);
+        }
+    }
+}
+
 async function analyzeConversations() {
     try {
         const response = await fetch('../api/conversation-analysis.php');
