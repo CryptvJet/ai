@@ -45,36 +45,37 @@ try {
         exit;
     }
     
-    // Ensure certificates directory exists
-    $certsDir = __DIR__ . '/../../data/pws/certs';
-    if (!is_dir($certsDir)) {
-        mkdir($certsDir, 0755, true);
+    // Read private key file content
+    $keyContent = file_get_contents($keyFile['tmp_name']);
+    if ($keyContent === false) {
+        throw new Exception('Failed to read private key file');
     }
     
-    // Move uploaded file to secure location
-    $keyDestination = $certsDir . '/server.key';
-    
-    if (!move_uploaded_file($keyFile['tmp_name'], $keyDestination)) {
-        throw new Exception('Failed to save private key file');
+    // Validate private key content (basic check)
+    if (strpos($keyContent, '-----BEGIN PRIVATE KEY-----') === false && 
+        strpos($keyContent, '-----BEGIN RSA PRIVATE KEY-----') === false) {
+        throw new Exception('Invalid private key format - must contain BEGIN PRIVATE KEY');
     }
     
-    // Set secure file permissions (more restrictive for private key)
-    chmod($keyDestination, 0600);
-    
-    // Update database to mark private key as uploaded
-    $updateSql = "INSERT INTO ai_ssl_config (id, key_uploaded, key_upload_date) 
-                  VALUES (1, 1, NOW())
+    // Save private key content to database
+    $updateSql = "INSERT INTO ai_ssl_config (id, key_uploaded, key_upload_date, key_content, key_filename) 
+                  VALUES (1, 1, NOW(), :key_content, :key_filename)
                   ON DUPLICATE KEY UPDATE 
                   key_uploaded = 1, 
-                  key_upload_date = NOW()";
+                  key_upload_date = NOW(),
+                  key_content = :key_content,
+                  key_filename = :key_filename";
     
     $stmt = $pulse_pdo->prepare($updateSql);
-    $stmt->execute();
+    $stmt->execute([
+        ':key_content' => $keyContent,
+        ':key_filename' => $keyFile['name']
+    ]);
     
     echo json_encode([
         'success' => true,
         'message' => 'SSL private key uploaded successfully',
-        'file' => 'server.key',
+        'file' => $keyFile['name'],
         'database_updated' => true
     ]);
     

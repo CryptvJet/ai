@@ -31,22 +31,18 @@ try {
         ];
     }
     
-    // Also verify files physically exist (double-check)
-    $certsDir = dirname(__DIR__) . '/data/pws/certs';
-    $certFile = $certsDir . '/server.crt';
-    $keyFile = $certsDir . '/server.key';
+    // Verify certificate and key content exists in database
+    $certContentExists = !empty($config['cert_content']);
+    $keyContentExists = !empty($config['key_content']);
     
-    $certPhysicallyExists = file_exists($certFile);
-    $keyPhysicallyExists = file_exists($keyFile);
-    
-    // If database says files are uploaded but they don't exist physically, update database
-    if ($config['cert_uploaded'] && !$certPhysicallyExists) {
+    // If database says files are uploaded but content is missing, update database
+    if ($config['cert_uploaded'] && !$certContentExists) {
         $updateSql = "UPDATE ai_ssl_config SET cert_uploaded = 0, cert_upload_date = NULL WHERE id = 1";
         $pulse_pdo->prepare($updateSql)->execute();
         $config['cert_uploaded'] = false;
     }
     
-    if ($config['key_uploaded'] && !$keyPhysicallyExists) {
+    if ($config['key_uploaded'] && !$keyContentExists) {
         $updateSql = "UPDATE ai_ssl_config SET key_uploaded = 0, key_upload_date = NULL WHERE id = 1";
         $pulse_pdo->prepare($updateSql)->execute();
         $config['key_uploaded'] = false;

@@ -45,36 +45,36 @@ try {
         exit;
     }
     
-    // Ensure certificates directory exists
-    $certsDir = __DIR__ . '/../../data/pws/certs';
-    if (!is_dir($certsDir)) {
-        mkdir($certsDir, 0755, true);
+    // Read certificate file content
+    $certContent = file_get_contents($certFile['tmp_name']);
+    if ($certContent === false) {
+        throw new Exception('Failed to read certificate file');
     }
     
-    // Move uploaded file to secure location
-    $certDestination = $certsDir . '/server.crt';
-    
-    if (!move_uploaded_file($certFile['tmp_name'], $certDestination)) {
-        throw new Exception('Failed to save certificate file');
+    // Validate certificate content (basic check)
+    if (strpos($certContent, '-----BEGIN CERTIFICATE-----') === false) {
+        throw new Exception('Invalid certificate format - must contain BEGIN CERTIFICATE');
     }
     
-    // Set secure file permissions
-    chmod($certDestination, 0644);
-    
-    // Update database to mark certificate as uploaded
-    $updateSql = "INSERT INTO ai_ssl_config (id, cert_uploaded, cert_upload_date) 
-                  VALUES (1, 1, NOW())
+    // Save certificate content to database
+    $updateSql = "INSERT INTO ai_ssl_config (id, cert_uploaded, cert_upload_date, cert_content, cert_filename) 
+                  VALUES (1, 1, NOW(), :cert_content, :cert_filename)
                   ON DUPLICATE KEY UPDATE 
                   cert_uploaded = 1, 
-                  cert_upload_date = NOW()";
+                  cert_upload_date = NOW(),
+                  cert_content = :cert_content,
+                  cert_filename = :cert_filename";
     
     $stmt = $pulse_pdo->prepare($updateSql);
-    $stmt->execute();
+    $stmt->execute([
+        ':cert_content' => $certContent,
+        ':cert_filename' => $certFile['name']
+    ]);
     
     echo json_encode([
         'success' => true,
         'message' => 'SSL certificate uploaded successfully',
-        'file' => 'server.crt',
+        'file' => $certFile['name'],
         'database_updated' => true
     ]);
     
