@@ -14,42 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 try {
-    // Include database configuration
-    require_once __DIR__ . '/db_config.php';
+    // Use centralized config loader
+    require_once __DIR__ . '/ollama_config_loader.php';
+    $config = OllamaConfigLoader::getConfig();
     
-    // Force switch to the correct database
-    $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
-    
-    // Get Ollama configuration from database
-    $sql = "SELECT * FROM ollama_config WHERE id = 1";
-    $stmt = $ai_pdo->prepare($sql);
-    $stmt->execute();
-    $config = $stmt->fetch();
-    
-    if ($config) {
-        echo json_encode([
-            'success' => true,
-            'config' => [
-                'host' => $config['host'] ?? 'localhost',
-                'port' => (int)($config['port'] ?? 11434),
-                'protocol' => $config['protocol'] ?? 'http',
-                'default_model' => $config['default_model'] ?? 'llama3.2',
-                'updated_at' => $config['updated_at'] ?? null
-            ]
-        ]);
-    } else {
-        // Return default configuration if no config exists
-        echo json_encode([
-            'success' => true,
-            'config' => [
-                'host' => 'localhost',
-                'port' => 11434,
-                'protocol' => 'http',
-                'default_model' => 'llama3.2',
-                'updated_at' => null
-            ]
-        ]);
-    }
+    echo json_encode([
+        'success' => true,
+        'config' => $config
+    ]);
     
 } catch (Exception $e) {
     echo json_encode([

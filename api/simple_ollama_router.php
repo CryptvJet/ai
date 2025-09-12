@@ -4,7 +4,12 @@
  */
 
 class SimpleOllamaRouter {
-    private $ollama_url = 'http://localhost:11434';
+    private $ollama_url;
+    
+    public function __construct() {
+        require_once __DIR__ . '/ollama_config_loader.php';
+        $this->ollama_url = OllamaConfigLoader::getOllamaUrl();
+    }
     
     public function routeRequest($message, $session_id, $mode = 'auto', $context = null) {
         // Check if Ollama is available

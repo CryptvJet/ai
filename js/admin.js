@@ -2891,8 +2891,12 @@ async function testOllamaConnection() {
         document.getElementById('ollamaModelsCount').textContent = '-';
         document.getElementById('ollamaResponseTime').textContent = '-';
         
+        console.log('🌐 Fetching Ollama status from ../api/ollama-status.php');
         const response = await fetch('../api/ollama-status.php');
+        console.log('📡 Response status:', response.status);
+        
         const result = await response.json();
+        console.log('📊 Ollama API response:', result);
         
         testButton.textContent = originalText;
         testButton.disabled = false;

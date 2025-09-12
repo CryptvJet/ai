@@ -20,7 +20,8 @@ class LocalLlamaAPI {
     private $connection_timeout;
     
     public function __construct() {
-        $this->ollama_url = 'http://localhost:11434';
+        require_once __DIR__ . '/ollama_config_loader.php';
+        $this->ollama_url = OllamaConfigLoader::getOllamaUrl();
         $this->default_model = 'llama3.1:8b-instruct-q4_K_M'; // fallback options will be tested
         $this->available_models = [
             'llama3.1:8b-instruct-q4_K_M',

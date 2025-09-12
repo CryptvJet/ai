@@ -14,41 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function checkOllamaStatus() {
-    // Load Ollama configuration from database
-    try {
-        require_once __DIR__ . '/db_config.php';
-        $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
-        
-        $sql = "SELECT * FROM ollama_config WHERE id = 1";
-        $stmt = $ai_pdo->prepare($sql);
-        $stmt->execute();
-        $config = $stmt->fetch();
-        
-        if ($config) {
-            $protocol = $config['protocol'] ?: 'http';
-            $host = trim($config['host'] ?: 'localhost');
-            $port = $config['port'] ?: 11434;
-            
-            // Validate host - only default to localhost if truly empty
-            if (empty($host)) {
-                $host = 'localhost';
-            }
-            
-            // Remove any protocol prefix from host if accidentally included
-            $host = preg_replace('/^https?:\/\//', '', $host);
-            
-            $ollama_url = $protocol . '://' . $host . ':' . $port;
-            
-            // Log the constructed URL for debugging
-            error_log("Ollama URL constructed: " . $ollama_url);
-        } else {
-            $ollama_url = 'http://localhost:11434'; // Fallback if no config
-        }
-        
-    } catch (Exception $e) {
-        error_log("Failed to load Ollama config from database: " . $e->getMessage());
-        $ollama_url = 'http://localhost:11434'; // Fallback on error
-    }
+    // Load Ollama configuration using centralized loader
+    require_once __DIR__ . '/ollama_config_loader.php';
+    $ollama_url = OllamaConfigLoader::getOllamaUrl();
     
     // Check if Ollama is running
     error_log("Attempting to connect to Ollama at: " . $ollama_url . '/api/tags');

@@ -28,6 +28,7 @@ try {
     
     // Include database configuration
     require_once __DIR__ . '/db_config.php';
+    require_once __DIR__ . '/ollama_config_loader.php';
     
     // Validate and sanitize inputs
     $host = $input['host'] ?? 'localhost';
@@ -35,8 +36,21 @@ try {
     $protocol = $input['protocol'] ?? 'http';
     $default_model = $input['default_model'] ?? 'llama3.2';
     
-    // Force switch to the correct database
-    $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
+    global $ai_pdo;
+    
+    // Load database configuration to get the correct database name
+    $db_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
+    if (!file_exists($db_config_path)) {
+        throw new Exception('Database configuration file not found');
+    }
+    
+    $db_config = json_decode(file_get_contents($db_config_path), true);
+    if (!$db_config) {
+        throw new Exception('Invalid database configuration');
+    }
+    
+    $database_name = $db_config['database'];
+    $ai_pdo->exec("USE `$database_name`");
     
     // Save configuration to database
     $sql = "INSERT INTO ollama_config (id, host, port, protocol, default_model, updated_at) 
@@ -59,6 +73,9 @@ try {
         ':protocol2' => $protocol,
         ':model2' => $default_model
     ]);
+    
+    // Clear the config cache so it gets reloaded
+    OllamaConfigLoader::clearCache();
     
     echo json_encode([
         'success' => true,
