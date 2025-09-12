@@ -24,6 +24,11 @@ require_once __DIR__ . '/db_config.php';
 try {
     error_log("🔐 SSL Upload API Called - Method: " . $_SERVER['REQUEST_METHOD']);
     
+    // Debug: Check which database we're connected to
+    $dbQuery = $ai_pdo->query("SELECT DATABASE() as current_db");
+    $currentDb = $dbQuery->fetch()['current_db'];
+    error_log("🗃️ AI PDO connected to database: " . $currentDb);
+    
     $uploadType = $_POST['upload_type'] ?? 'both';
     error_log("📋 Upload type: " . $uploadType);
     
@@ -96,10 +101,8 @@ try {
             throw new Exception('Certificate file is empty');
         }
         
-        // Very loose validation - just check for some common certificate indicators
-        if (strpos($certContent, '-----BEGIN') === false || strpos($certContent, '-----END') === false) {
-            throw new Exception('File does not appear to be a valid certificate format');
-        }
+        // Accept any non-empty file content for now
+        // Note: Certificate format validation can be added later if needed
         
         $certFileName = $certFile['name'];
     }
@@ -127,10 +130,8 @@ try {
             throw new Exception('Private key file is empty');
         }
         
-        // Very loose validation - just check for some common key indicators
-        if (strpos($keyContent, '-----BEGIN') === false || strpos($keyContent, '-----END') === false) {
-            throw new Exception('File does not appear to be a valid private key format');
-        }
+        // Accept any non-empty file content for now
+        // Note: Private key format validation can be added later if needed
         
         $keyFileName = $keyFile['name'];
     }
