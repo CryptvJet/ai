@@ -4,16 +4,90 @@
  * Copy this to db_config.php and update with your credentials
  */
 
-// All connections use the same database (your_database_name)
-$DB_HOST = 'localhost';
-$DB_NAME = 'your_database_name';
-$DB_USER = 'your_username';  // Replace with your actual MySQL username
-$DB_PASS = 'your_password';  // Replace with your actual MySQL password
+// Load configuration from external files
+function loadDatabaseConfig() {
+    // Try to load from the secure config directory first (for local development)
+    $configFiles = [
+        __DIR__ . '/../../data/pws/pulse_db_config.json',
+        __DIR__ . '/../../data/pws/ai_db_config.json'
+    ];
+    
+    $config = [
+        'pulse_host' => 'localhost',
+        'pulse_user' => 'your_db_username',
+        'pulse_pass' => 'your_database_password',
+        'pulse_db' => 'your_pulsecore_database',
+        'ai_host' => 'localhost',
+        'ai_user' => 'your_db_username',
+        'ai_pass' => 'your_database_password',
+        'ai_db' => 'your_ai_database'
+    ];
+    
+    // Load PulseCore database config if available
+    if (file_exists($configFiles[0])) {
+        try {
+            $pulseConfig = json_decode(file_get_contents($configFiles[0]), true);
+            if ($pulseConfig) {
+                $config['pulse_host'] = $pulseConfig['Server'] ?? 'localhost';
+                $config['pulse_user'] = $pulseConfig['Username'] ?? 'your_db_username';
+                $config['pulse_pass'] = $pulseConfig['Password'] ?? 'your_database_password';
+                $config['pulse_db'] = $pulseConfig['Database'] ?? 'your_pulsecore_database';
+            }
+        } catch (Exception $e) {
+            // Use defaults if config loading fails
+            error_log("Failed to load PulseCore config: " . $e->getMessage());
+        }
+    }
+    
+    // Load AI database config if available
+    if (file_exists($configFiles[1])) {
+        try {
+            $aiConfig = json_decode(file_get_contents($configFiles[1]), true);
+            if ($aiConfig) {
+                $config['ai_host'] = $aiConfig['Server'] ?? 'localhost';
+                $config['ai_user'] = $aiConfig['Username'] ?? 'your_db_username';
+                $config['ai_pass'] = $aiConfig['Password'] ?? 'your_database_password';
+                $config['ai_db'] = $aiConfig['Database'] ?? 'your_ai_database';
+            }
+        } catch (Exception $e) {
+            // Use defaults if config loading fails
+            error_log("Failed to load AI config: " . $e->getMessage());
+        }
+    }
+    
+    return $config;
+}
+
+$dbConfig = loadDatabaseConfig();
+
+// AI Database connection settings
+$AI_DB_HOST = $dbConfig['ai_host'];
+$AI_DB_USER = $dbConfig['ai_user'];
+$AI_DB_PASS = $dbConfig['ai_pass'];
+$AI_DB_NAME = $dbConfig['ai_db'];
+
+// PulseCore Database connection settings  
+$DB_HOST = $dbConfig['pulse_host'];
+$DB_USER = $dbConfig['pulse_user'];
+$DB_PASS = $dbConfig['pulse_pass'];
+$PULSE_DB_NAME = $dbConfig['pulse_db'];
 
 try {
-    // Main PDO connection for all AI tables
+    // AI PDO connection for AI tables (conversations, messages, settings, ollama_config)
     $ai_pdo = new PDO(
-        "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4", 
+        "mysql:host=$AI_DB_HOST;dbname=$AI_DB_NAME;charset=utf8mb4", 
+        $AI_DB_USER, 
+        $AI_DB_PASS,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ]
+    );
+    
+    // PulseCore PDO connection for PulseCore tables (nova_events, climax_groups)
+    $pulse_pdo = new PDO(
+        "mysql:host=$DB_HOST;dbname=$PULSE_DB_NAME;charset=utf8mb4", 
         $DB_USER, 
         $DB_PASS,
         [
@@ -23,11 +97,8 @@ try {
         ]
     );
     
-    // Use same connection for PulseCore tables (nova_events, climax_groups)
-    $pulse_pdo = $ai_pdo;
-    
-    // Use same connection for Variables table (pulse_core_variables)
-    $vars_pdo = $ai_pdo;
+    // Variables PDO connection for Variables table (pulse_core_variables)
+    $vars_pdo = $pulse_pdo;
     
 } catch (PDOException $e) {
     // Log error and return JSON response
