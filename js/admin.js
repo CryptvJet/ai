@@ -985,10 +985,7 @@ function toggleConnectionSettings() {
         if (sslSection) {
             sslSection.style.display = 'block';
         }
-        // Update port to HTTPS default
-        if (portInput.value === '8080' || portInput.value === '80') {
-            portInput.value = '8443';
-        }
+        // Don't auto-change port - let user set it manually
         portHelpText.textContent = 'Port for HTTPS bridge server (typically 8443)';
     } else if (connectionType === 'HTTP') {
         console.log('❌ Hiding SSL section');
@@ -996,10 +993,7 @@ function toggleConnectionSettings() {
         if (sslSection) {
             sslSection.style.display = 'none';
         }
-        // Update port to HTTP default
-        if (portInput.value === '8443' || portInput.value === '443') {
-            portInput.value = '8080';
-        }
+        // Don't auto-change port - let user set it manually
         portHelpText.textContent = 'Port for HTTP bridge server (typically 8080)';
     } else if (connectionType === 'WebSocket') {
         // Hide SSL section

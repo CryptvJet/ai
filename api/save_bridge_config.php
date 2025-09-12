@@ -57,6 +57,29 @@ try {
         throw new Exception('Failed to write configuration file');
     }
     
+    // Also update SSL configuration in database if HTTPS
+    if ($config['type'] === 'HTTPS') {
+        try {
+            require_once __DIR__ . '/db_config.php';
+            $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
+            
+            $updateSql = "INSERT INTO ai_ssl_config (id, port, enabled) 
+                          VALUES (1, :port, 1)
+                          ON DUPLICATE KEY UPDATE 
+                          port = :port2, enabled = 1";
+            
+            $stmt = $ai_pdo->prepare($updateSql);
+            $stmt->execute([
+                ':port' => (int)$config['port'],
+                ':port2' => (int)$config['port']
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Warning: Could not update SSL config: " . $e->getMessage());
+            // Don't fail the whole operation if SSL update fails
+        }
+    }
+    
     echo json_encode([
         'success' => true,
         'message' => 'Bridge configuration saved successfully',
