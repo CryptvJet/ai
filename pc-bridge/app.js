@@ -11,7 +11,7 @@ const http = require('http');
 class PCBridge {
     constructor() {
         this.app = express();
-        this.port = 8080;
+        this.port = 8081;
         this.dbConfig = this.loadDatabaseConfig();
         this.isConnected = false;
         

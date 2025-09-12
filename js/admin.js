@@ -652,7 +652,12 @@ class AIAdmin {
                 }
             }
         } catch (error) {
-            console.info('Bridge not available:', error.message);
+            console.error('🌉 Bridge connection failed:', {
+                url: bridgeUrl,
+                error: error.message,
+                type: error.constructor.name,
+                stack: error.stack
+            });
             this.updateIntegrationStatus('bridgeStatus', false, 'Bridge not available');
             if (document.getElementById('bridgeResponseTime')) {
                 document.getElementById('bridgeResponseTime').textContent = '-';
