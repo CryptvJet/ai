@@ -649,6 +649,13 @@ class AIAdmin {
                 document.getElementById('bridgeResponseTime').textContent = '-';
             }
         }
+        
+        // Load SSL certificate status
+        try {
+            updateSSLStatus();
+        } catch (error) {
+            console.error('Error loading SSL status:', error);
+        }
     }
 
     updateIntegrationStatus(elementId, connected, message) {
@@ -685,13 +692,6 @@ class AIAdmin {
                 notification.remove();
             }
         }, 5000);
-    }
-    
-    // Load SSL certificate status
-    try {
-        updateSSLStatus();
-    } catch (error) {
-        console.error('Error loading SSL status:', error);
     }
 }
 
