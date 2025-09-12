@@ -83,7 +83,7 @@ public partial class MainWindow : Window
     private void LoadConfiguration()
     {
         // Use the actual database credentials
-        connectionString = "Server=localhost;Database=vemite5_pulse-core-ai;Uid=vemite5_p-core;Pwd=HHsJgdR6$ZMpV#F*;";
+        connectionString = "Server=localhost;Database=your_ai_database;Uid=your_username;Pwd=your_password;";
         
         // Set initial voice settings
         speechSynthesizer.Rate = 2; // 1.2x speed
@@ -722,11 +722,4 @@ public class OllamaResponse
 {
     public string Response { get; set; } = string.Empty;
     public bool Done { get; set; }
-}
-
-public class AppConfiguration
-{
-    public int StatsUpdateIntervalMinutes { get; set; } = 5;
-    public bool AutoStartVoice { get; set; } = false;
-    public bool MinimizeToTray { get; set; } = false;
 }

@@ -6,7 +6,7 @@ This is a complete web-based AI chat system that integrates with your PulseCore 
 
 - **Web Chat Interface** (`ai/index.html`) - Voice-enabled chat for users
 - **Admin Panel** (`ai/admin/index.html`) - Management interface
-- **Database Integration** - Connects to your existing `vemite5_pulse-core` MySQL database
+- **Database Integration** - Connects to your existing PulseCore MySQL database
 - **PulseCore Analysis** - Real-time nova events and complexity data analysis
 - **Voice Features** - Speech recognition and text-to-speech
 - **Learning System** - AI learns from conversations and data patterns
@@ -14,7 +14,7 @@ This is a complete web-based AI chat system that integrates with your PulseCore 
 ## Prerequisites
 
 Before setup, ensure you have:
-- **MySQL Server** running with `vemite5_pulse-core` database
+- **MySQL Server** running with your PulseCore database
 - **PHP 7.4+** with PDO MySQL extension
 - **Web Server** (Apache/Nginx) or local development server
 - **Modern Browser** (Chrome/Edge recommended for voice features)
@@ -49,14 +49,14 @@ Before setup, ensure you have:
 Edit `ai/api/db_config.php` and replace these values:
 ```php
 $DB_HOST = 'localhost';
-$DB_NAME = 'vemite5_pulse-core-ai';  // Your AI database
+$DB_NAME = 'your_ai_database';  // Your AI database
 $DB_USER = 'your_mysql_username';     // Replace with your MySQL username
 $DB_PASS = 'your_mysql_password';     // Replace with your MySQL password
 ```
 
 ### 2. Database Structure
 
-The system uses your existing `vemite5_pulse-core` database and adds AI tables:
+The system uses your existing PulseCore database and adds AI tables:
 - `ai_conversations` - Chat sessions
 - `ai_messages` - All messages and responses  
 - `ai_response_templates` - Admin-editable responses
@@ -396,10 +396,10 @@ cp ai/api/db_config.php ai/api/db_config_test.php
 #### Backup and Recovery
 ```bash
 # Daily backup script
-mysqldump -u username -p vemite5_pulse-core > backup_$(date +%Y%m%d).sql
+mysqldump -u username -p your_database > backup_$(date +%Y%m%d).sql
 
 # Recovery
-mysql -u username -p vemite5_pulse-core < backup_20240909.sql
+mysql -u username -p your_database < backup_20240909.sql
 ```
 
 ## Troubleshooting
@@ -411,7 +411,7 @@ php api/db_config.php
 
 # Common fixes:
 # 1. Check MySQL credentials
-# 2. Verify database name: vemite5_pulse-core
+# 2. Verify database name: your_database
 # 3. Ensure user has permissions on database
 ```
 
@@ -424,7 +424,7 @@ php migrate.php status
 php migrate.php pending
 
 # Manual SQL execution if needed
-mysql -u username -p vemite5_pulse-core < migrations/001_initial_ai_tables.sql
+mysql -u username -p your_database < migrations/001_initial_ai_tables.sql
 ```
 
 ### No PulseCore Data

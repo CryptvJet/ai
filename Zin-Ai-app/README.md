@@ -44,7 +44,7 @@ This is NOT a standalone chat app - it's a **management hub** that connects to a
 ## Requirements
 
 - .NET 8.0 SDK
-- Running MySQL server with `vemite5_pulse-core` database
+- Running MySQL server with your PulseCore database
 - Your existing web AI chat system (in `/ai` directory)
 - Ollama server (for AI model testing)
 
@@ -52,8 +52,8 @@ This is NOT a standalone chat app - it's a **management hub** that connects to a
 
 The app connects to your existing database using credentials from `ai/api/db_config.php`:
 - **Server**: localhost
-- **Database**: vemite5_pulse-core  
-- **User**: vemite5_p-core
+- **Database**: your_pulsecore_database  
+- **User**: your_username
 - **Password**: [automatically loaded]
 
 ## Main Interface Layout

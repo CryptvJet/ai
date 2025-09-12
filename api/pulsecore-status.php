@@ -61,7 +61,7 @@ try {
     
     // Connection info
     $stats['connection_time'] = date('Y-m-d H:i:s');
-    $stats['database_name'] = 'vemite5_pulse-core';
+    $stats['database_name'] = 'your_pulsecore_database';
     
     echo json_encode([
         'success' => true,

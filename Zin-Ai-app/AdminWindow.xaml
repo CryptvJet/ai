@@ -187,13 +187,13 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Database Configuration -->
+                <!-- AI Database Configuration -->
                 <Border Background="{StaticResource CardBackground}" 
                         CornerRadius="12" 
                         Padding="24" 
                         Margin="0,0,0,24">
                     <StackPanel>
-                        <TextBlock Text="🗄️ Database Configuration" 
+                        <TextBlock Text="🗄️ AI Database Configuration" 
                                   FontSize="18" 
                                   FontWeight="Bold" 
                                   Foreground="{StaticResource AccentPurple}" 
@@ -217,7 +217,7 @@
                                       Text="Server:" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <TextBox x:Name="DbServerInput" 
+                            <TextBox x:Name="AiDbServerInput" 
                                     Grid.Row="1" Grid.Column="0"
                                     Style="{StaticResource AdminInputStyle}"
                                     Text="localhost"
@@ -227,51 +227,154 @@
                                       Text="Database Name:" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <TextBox x:Name="DbNameInput" 
+                            <TextBox x:Name="AiDbNameInput" 
                                     Grid.Row="1" Grid.Column="1"
                                     Style="{StaticResource AdminInputStyle}"
-                                    Text="vemite5_pulse-core"
+                                    Text="your_ai_database"
                                     Margin="10,0,0,15"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" 
                                       Text="Username:" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <TextBox x:Name="DbUserInput" 
+                            <TextBox x:Name="AiDbUserInput" 
                                     Grid.Row="3" Grid.Column="0"
                                     Style="{StaticResource AdminInputStyle}"
-                                    Text="root"
+                                    Text="your_username"
                                     Margin="0,0,10,15"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="1" 
                                       Text="Password:" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <PasswordBox x:Name="DbPasswordInput" 
+                            <PasswordBox x:Name="AiDbPasswordInput" 
                                         Grid.Row="3" Grid.Column="1"
                                         Background="{StaticResource SecondaryBackground}"
                                         Foreground="{StaticResource TextPrimary}"
                                         BorderBrush="{StaticResource BorderColor}"
                                         Padding="12,8"
+                                        Password=""
                                         Margin="10,0,0,15"/>
 
                             <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
                                        Orientation="Horizontal" 
                                        Margin="0,10,0,0">
-                                <Button Content="🔌 Test Connection" 
+                                <Button Content="🔍 Test Connection" 
                                         Style="{StaticResource AdminButtonStyle}"
                                         Background="{StaticResource AccentCyan}"
                                         Margin="0,0,10,0"
-                                        Click="TestDatabaseConnection"/>
-                                <Button Content="💾 Save Configuration" 
+                                        Click="TestAiDatabaseConnection"/>
+                                <Button Content="🔌 Connect" 
                                         Style="{StaticResource AdminButtonStyle}"
                                         Background="{StaticResource AccentGreen}"
-                                        Click="SaveDatabaseConfiguration"/>
+                                        Margin="0,0,10,0"
+                                        Click="ConnectAiDatabase"/>
+                                <Button Content="💾 Save Configuration" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentPurple}"
+                                        Click="SaveAiDatabaseConfiguration"/>
                             </StackPanel>
 
-                            <TextBlock x:Name="DbStatusText" 
+                            <TextBlock x:Name="AiDbStatusText" 
                                       Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
-                                      Text="Database connection status will appear here"
+                                      Text="AI database connection status will appear here"
+                                      Foreground="{StaticResource TextMuted}"
+                                      Margin="0,10,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- PulseCore Database Configuration -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="🌊 PulseCore Database Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentCyan}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="Server:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="PulseDbServerInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="localhost"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="Database Name:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="PulseDbNameInput" 
+                                    Grid.Row="1" Grid.Column="1"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="your_pulsecore_database"
+                                    Margin="10,0,0,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                      Text="Username:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="PulseDbUserInput" 
+                                    Grid.Row="3" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="your_username"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="1" 
+                                      Text="Password:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <PasswordBox x:Name="PulseDbPasswordInput" 
+                                        Grid.Row="3" Grid.Column="1"
+                                        Background="{StaticResource SecondaryBackground}"
+                                        Foreground="{StaticResource TextPrimary}"
+                                        BorderBrush="{StaticResource BorderColor}"
+                                        Padding="12,8"
+                                        Password=""
+                                        Margin="10,0,0,15"/>
+
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Orientation="Horizontal" 
+                                       Margin="0,10,0,0">
+                                <Button Content="🔍 Test Connection" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentCyan}"
+                                        Margin="0,0,10,0"
+                                        Click="TestPulseDatabaseConnection"/>
+                                <Button Content="🔌 Connect" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentGreen}"
+                                        Margin="0,0,10,0"
+                                        Click="ConnectPulseDatabase"/>
+                                <Button Content="💾 Save Configuration" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentPurple}"
+                                        Click="SavePulseDatabaseConfiguration"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="PulseDbStatusText" 
+                                      Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="PulseCore database connection status will appear here"
                                       Foreground="{StaticResource TextMuted}"
                                       Margin="0,10,0,0"/>
                         </Grid>

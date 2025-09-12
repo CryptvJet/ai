@@ -4,9 +4,9 @@
  * Copy this to db_config.php and update with your credentials
  */
 
-// All connections use the same database (vemite5_pulse-core)
+// All connections use the same database (your_database_name)
 $DB_HOST = 'localhost';
-$DB_NAME = 'vemite5_pulse-core';
+$DB_NAME = 'your_database_name';
 $DB_USER = 'your_username';  // Replace with your actual MySQL username
 $DB_PASS = 'your_password';  // Replace with your actual MySQL password
 

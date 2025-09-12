@@ -11,8 +11,8 @@ header('Access-Control-Allow-Methods: GET');
 try {
     // Database connection
     $host = 'pulsecore.one';
-    $dbname = 'vemite5_pulse-core';
-    $username = 'vemite5_p-core';
+    $dbname = 'your_pulsecore_database';
+    $username = 'your_username';
     $password = 'l%tN!^6^u4=2';
     
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
