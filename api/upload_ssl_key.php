@@ -68,7 +68,7 @@ try {
                   key_uploaded = 1, 
                   key_upload_date = NOW()";
     
-    $stmt = $ai_pdo->prepare($updateSql);
+    $stmt = $pulse_pdo->prepare($updateSql);
     $stmt->execute();
     
     echo json_encode([
