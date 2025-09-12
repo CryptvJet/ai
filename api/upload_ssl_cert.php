@@ -68,7 +68,7 @@ try {
                   cert_uploaded = 1, 
                   cert_upload_date = NOW()";
     
-    $stmt = $ai_pdo->prepare($updateSql);
+    $stmt = $pulse_pdo->prepare($updateSql);
     $stmt->execute();
     
     echo json_encode([
