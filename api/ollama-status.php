@@ -51,16 +51,20 @@ function checkOllamaStatus() {
     }
     
     // Check if Ollama is running
+    error_log("Attempting to connect to Ollama at: " . $ollama_url . '/api/tags');
+    
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $ollama_url . '/api/tags');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
+    
+    error_log("Ollama connection result - HTTP Code: $httpCode, Error: " . ($error ?: 'none'));
     
     if ($error || $httpCode !== 200) {
         return [
