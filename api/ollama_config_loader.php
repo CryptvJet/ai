@@ -1,7 +1,7 @@
 <?php
 /**
  * Centralized Ollama Configuration Loader
- * Reads configuration from database without hardcoding table names
+ * Uses existing database connection from db_config.php
  */
 
 class OllamaConfigLoader {
@@ -16,21 +16,6 @@ class OllamaConfigLoader {
             require_once __DIR__ . '/db_config.php';
             global $ai_pdo;
             
-            // Load database configuration to get the correct database and table names
-            $db_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
-            if (!file_exists($db_config_path)) {
-                throw new Exception('Database configuration file not found');
-            }
-            
-            $db_config = json_decode(file_get_contents($db_config_path), true);
-            if (!$db_config) {
-                throw new Exception('Invalid database configuration');
-            }
-            
-            $database_name = $db_config['Database'];
-            $ai_pdo->exec("USE `$database_name`");
-            
-            // Get Ollama configuration from the configured table
             $sql = "SELECT * FROM ollama_config WHERE id = 1";
             $stmt = $ai_pdo->prepare($sql);
             $stmt->execute();
@@ -41,14 +26,11 @@ class OllamaConfigLoader {
                 $host = trim($config['host'] ?: 'localhost');
                 $port = $config['port'] ?: 11434;
                 
-                // Validate host
                 if (empty($host)) {
                     $host = 'localhost';
                 }
                 
-                // Clean host of any protocol prefixes
                 $host = preg_replace('/^https?:\/\//', '', $host);
-                
                 $url = $protocol . '://' . $host . ':' . $port;
                 self::$config_cache = $url;
                 
@@ -74,20 +56,6 @@ class OllamaConfigLoader {
         try {
             require_once __DIR__ . '/db_config.php';
             global $ai_pdo;
-            
-            // Load database configuration
-            $db_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
-            if (!file_exists($db_config_path)) {
-                throw new Exception('Database configuration file not found');
-            }
-            
-            $db_config = json_decode(file_get_contents($db_config_path), true);
-            if (!$db_config) {
-                throw new Exception('Invalid database configuration');
-            }
-            
-            $database_name = $db_config['Database'];
-            $ai_pdo->exec("USE `$database_name`");
             
             $sql = "SELECT * FROM ollama_config WHERE id = 1";
             $stmt = $ai_pdo->prepare($sql);

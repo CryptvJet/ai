@@ -2999,6 +2999,7 @@ async function loadOllamaConfiguration() {
     }
 }
 
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
     initializeCommandCopyEvents();

@@ -38,20 +38,6 @@ try {
     
     global $ai_pdo;
     
-    // Load database configuration to get the correct database name
-    $db_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
-    if (!file_exists($db_config_path)) {
-        throw new Exception('Database configuration file not found');
-    }
-    
-    $db_config = json_decode(file_get_contents($db_config_path), true);
-    if (!$db_config) {
-        throw new Exception('Invalid database configuration');
-    }
-    
-    $database_name = $db_config['Database'];
-    $ai_pdo->exec("USE `$database_name`");
-    
     // Save configuration to database
     $sql = "INSERT INTO ollama_config (id, host, port, protocol, default_model, updated_at) 
             VALUES (1, :host1, :port1, :protocol1, :model1, NOW())

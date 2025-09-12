@@ -323,6 +323,50 @@
                         <div id="ollamaStatusMessage" class="status-message"></div>
                     </div>
                 </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Database Configuration Section -->
+                <h3>💾 PulseCore Database Configuration</h3>
+                
+                <div class="database-config-form">
+                    <div class="form-group">
+                        <label for="dbServer">Database Server:</label>
+                        <input type="text" id="dbServer" value="localhost" placeholder="localhost">
+                        <small>Server hostname or IP address</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dbName">Database Name:</label>
+                        <input type="text" id="dbName" value="pulsecore" placeholder="pulsecore">
+                        <small>Name of the PulseCore database</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dbUsername">Username:</label>
+                        <input type="text" id="dbUsername" value="root" placeholder="root">
+                        <small>Database username</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dbPassword">Password:</label>
+                        <input type="password" id="dbPassword" placeholder="Enter database password">
+                        <small>Database password (will be encrypted)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dbPort">Port:</label>
+                        <input type="number" id="dbPort" value="3306" placeholder="3306">
+                        <small>Database port (default: 3306)</small>
+                    </div>
+
+                    <div class="database-config-actions">
+                        <button onclick="testPulseCoreConnection()" class="btn-secondary">🧪 Test Connection</button>
+                        <button onclick="testVariablesConnection()" class="btn-secondary">🧪 Test Variables</button>
+                    </div>
+
+                    <div id="dbStatusMessage" class="status-message"></div>
+                </div>
             </section>
 
             <!-- Learning Section -->
