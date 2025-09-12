@@ -62,6 +62,9 @@ try {
         $pdo = $ai_pdo;
     }
     
+    // Encrypt the password before storing
+    $encrypted_password = base64_encode(openssl_encrypt($password, 'AES-256-CBC', 'zin-ai-secret-key-2024', 0, '1234567890123456'));
+    
     // Save configuration to database
     $sql = "INSERT INTO ai_database_configs 
             (config_name, config_type, server_host, server_port, database_name, username, password, updated_at) 
@@ -83,7 +86,7 @@ try {
         ':server_port' => $server_port,
         ':database_name' => $database_name,
         ':username' => $username,
-        ':password' => $password
+        ':password' => $encrypted_password
     ]);
     
     echo json_encode([

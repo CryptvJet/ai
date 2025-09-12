@@ -53,11 +53,14 @@ try {
         exit;
     }
     
+    // Decrypt the password
+    $decrypted_password = openssl_decrypt(base64_decode($config['password']), 'AES-256-CBC', 'zin-ai-secret-key-2024', 0, '1234567890123456');
+    
     // Now ACTUALLY TEST the database connection using the saved credentials
     $start_time = microtime(true);
     
     $test_dsn = "mysql:host={$config['server_host']};port={$config['server_port']};dbname={$config['database_name']};charset=utf8mb4";
-    $test_pdo = new PDO($test_dsn, $config['username'], $config['password'], [
+    $test_pdo = new PDO($test_dsn, $config['username'], $decrypted_password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_TIMEOUT => 5
