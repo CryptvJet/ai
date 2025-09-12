@@ -82,12 +82,39 @@ public partial class MainWindow : Window
 
     private void LoadConfiguration()
     {
-        // Use the actual database credentials
-        connectionString = "Server=localhost;Database=your_ai_database;Uid=your_username;Pwd=your_password;";
+        // Load PulseCore database configuration
+        LoadPulseCoreConfig();
         
         // Set initial voice settings
         speechSynthesizer.Rate = 2; // 1.2x speed
         speechSynthesizer.Volume = 80; // 0.8 volume
+    }
+    
+    private void LoadPulseCoreConfig()
+    {
+        try
+        {
+            var baseDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
+            var configPath = System.IO.Path.Combine(baseDir, "data", "pws", "pulse_db_config.json");
+            
+            if (File.Exists(configPath))
+            {
+                var configJson = File.ReadAllText(configPath);
+                var config = JsonConvert.DeserializeObject<DatabaseConfiguration>(configJson);
+                if (config != null)
+                {
+                    connectionString = $"Server={config.Server};Database={config.Database};Uid={config.Username};Pwd={config.Password};";
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            // Fall back to default if config loading fails
+        }
+        
+        // Default fallback - user needs to configure via admin panel
+        connectionString = "Server=localhost;Database=your_pulsecore_database;Uid=your_username;Pwd=your_password;";
     }
 
     private void StartStatsUpdates()
@@ -723,3 +750,4 @@ public class OllamaResponse
     public string Response { get; set; } = string.Empty;
     public bool Done { get; set; }
 }
+

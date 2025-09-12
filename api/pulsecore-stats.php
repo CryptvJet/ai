@@ -10,7 +10,11 @@ header('Access-Control-Allow-Origin: *');
 require_once 'db_config.php';
 
 try {
-    // Get nova event statistics
+    // Get total climaxes (from climax_groups table)
+    $stmt = $pulse_pdo->query("SELECT COUNT(*) as total_climaxes FROM climax_groups");
+    $climax_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Get nova event statistics  
     $stmt = $pulse_pdo->query("
         SELECT 
             COUNT(*) as total_novas,
@@ -23,6 +27,10 @@ try {
         WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY)
     ");
     $nova_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Get all-time total novas (not just 30 day)
+    $stmt = $pulse_pdo->query("SELECT COUNT(*) as total_novas_all_time FROM nova_events");
+    $total_novas_stats = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Get recent activity
     $stmt = $pulse_pdo->query("
@@ -82,7 +90,9 @@ try {
     echo json_encode([
         'success' => true,
         'data' => [
-            'total_novas' => (int)$nova_stats['total_novas'],
+            'total_climaxes' => (int)$climax_stats['total_climaxes'],
+            'total_novas' => (int)$total_novas_stats['total_novas_all_time'], // Use all-time count
+            'recent_novas' => (int)$nova_stats['total_novas'], // 30-day count for recent activity
             'last_complexity' => $nova_stats['max_complexity'] ? (int)$nova_stats['max_complexity'] : null,
             'avg_complexity' => $nova_stats['avg_complexity'] ? round($nova_stats['avg_complexity'], 1) : null,
             'avg_energy' => $nova_stats['avg_energy'] ? round($nova_stats['avg_energy'], 3) : null,
