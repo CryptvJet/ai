@@ -58,6 +58,36 @@
                     <label for="systemPrompt">System Prompt:</label>
                     <textarea id="systemPrompt" rows="5" placeholder="Base instructions for the AI...">You are an AI assistant specialized in analyzing PulseCore simulations and helping with data analysis. You have access to nova events, pattern data, and variables calculations.</textarea>
                 </div>
+
+                <div class="section-divider"></div>
+
+                <h3>🌉 Bridge Connection Settings</h3>
+                
+                <div class="form-group">
+                    <label for="bridgeHost">Bridge Host:</label>
+                    <input type="text" id="bridgeHostConfig" value="localhost" placeholder="localhost">
+                </div>
+
+                <div class="form-group">
+                    <label for="bridgePort">Bridge Port:</label>
+                    <input type="number" id="bridgePortConfig" value="8080" placeholder="8080">
+                </div>
+
+                <div class="form-group">
+                    <label for="bridgeApiKey">API Key:</label>
+                    <input type="password" id="bridgeApiKeyConfig" placeholder="Optional API key for authentication">
+                </div>
+
+                <div class="form-group">
+                    <label for="bridgeType">Connection Type:</label>
+                    <select id="bridgeTypeConfig">
+                        <option value="HTTP">HTTP</option>
+                        <option value="WebSocket">WebSocket</option>
+                        <option value="TCP">TCP</option>
+                    </select>
+                </div>
+
+                <button onclick="saveBridgeConfiguration()" class="btn-primary">💾 Save Bridge Settings</button>
             </section>
 
             <!-- Responses Section -->
@@ -168,6 +198,21 @@
                             <p>Response Time: <span id="pcResponseTime">-</span></p>
                         </div>
                         <button onclick="testPCAIConnection()" class="btn-test">Test Connection</button>
+                    </div>
+
+                    <div class="integration-card">
+                        <h3>🌉 Bridge Connection</h3>
+                        <div class="integration-status" id="bridgeStatus">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Checking...</span>
+                        </div>
+                        <div class="integration-stats">
+                            <p>Host: <span id="bridgeHost">localhost</span></p>
+                            <p>Port: <span id="bridgePort">8080</span></p>
+                            <p>Type: <span id="bridgeType">HTTP</span></p>
+                            <p>Response Time: <span id="bridgeResponseTime">-</span></p>
+                        </div>
+                        <button onclick="testBridgeConnection()" class="btn-test">Test Connection</button>
                     </div>
                 </div>
             </section>

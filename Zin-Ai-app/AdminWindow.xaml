@@ -498,6 +498,108 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Bridge Connection Configuration -->
+                <Border Background="{StaticResource CardBackground}" 
+                        CornerRadius="12" 
+                        Padding="24" 
+                        Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="🌉 Bridge Connection Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="Bold" 
+                                  Foreground="{StaticResource AccentYellow}" 
+                                  Margin="0,0,0,20"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="Bridge Host:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="BridgeHostInput" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="localhost"
+                                    Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="Bridge Port:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <TextBox x:Name="BridgePortInput" 
+                                    Grid.Row="1" Grid.Column="1"
+                                    Style="{StaticResource AdminInputStyle}"
+                                    Text="8080"
+                                    Margin="10,0,0,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                      Text="API Key:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <PasswordBox x:Name="BridgeApiKeyInput" 
+                                        Grid.Row="3" Grid.Column="0"
+                                        Background="{StaticResource SecondaryBackground}"
+                                        Foreground="{StaticResource TextPrimary}"
+                                        BorderBrush="{StaticResource BorderColor}"
+                                        Padding="12,8"
+                                        Password=""
+                                        Margin="0,0,10,15"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="1" 
+                                      Text="Connection Type:" 
+                                      Foreground="{StaticResource TextSecondary}" 
+                                      Margin="0,0,0,5"/>
+                            <ComboBox x:Name="BridgeTypeComboBox" 
+                                     Grid.Row="3" Grid.Column="1"
+                                     Background="{StaticResource SecondaryBackground}"
+                                     Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource BorderColor}"
+                                     Margin="10,0,0,15">
+                                <ComboBoxItem Content="HTTP" IsSelected="True"/>
+                                <ComboBoxItem Content="WebSocket"/>
+                                <ComboBoxItem Content="TCP"/>
+                            </ComboBox>
+
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Orientation="Horizontal" 
+                                       Margin="0,10,0,0">
+                                <Button Content="🔍 Test Bridge Connection" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentCyan}"
+                                        Margin="0,0,10,0"
+                                        Click="TestBridgeConnection"/>
+                                <Button Content="🔌 Connect Bridge" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentGreen}"
+                                        Margin="0,0,10,0"
+                                        Click="ConnectBridge"/>
+                                <Button Content="💾 Save Bridge Configuration" 
+                                        Style="{StaticResource AdminButtonStyle}"
+                                        Background="{StaticResource AccentYellow}"
+                                        Click="SaveBridgeConfiguration"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="BridgeStatusText" 
+                                      Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="Bridge connection status will appear here"
+                                      Foreground="{StaticResource TextMuted}"
+                                      Margin="0,10,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- PulseCore Database Configuration -->
                 <Border Background="{StaticResource CardBackground}" 
                         CornerRadius="12" 

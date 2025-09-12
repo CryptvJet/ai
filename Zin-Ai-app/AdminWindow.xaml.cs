@@ -150,6 +150,33 @@ public partial class AdminWindow : Window
             }
         }
         catch { /* Ignore config load errors */ }
+
+        // Load Bridge Configuration
+        try
+        {
+            var bridgeConfigPath = GetConfigPath("bridge_config.json", true);
+            if (File.Exists(bridgeConfigPath))
+            {
+                var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
+                var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
+                if (bridgeConfig != null)
+                {
+                    BridgeHostInput.Text = bridgeConfig.Host;
+                    BridgePortInput.Text = bridgeConfig.Port.ToString();
+                    BridgeApiKeyInput.Password = bridgeConfig.ApiKey;
+                    // Set connection type combo box
+                    foreach (ComboBoxItem item in BridgeTypeComboBox.Items)
+                    {
+                        if (item.Content?.ToString() == bridgeConfig.ConnectionType)
+                        {
+                            BridgeTypeComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        catch { /* Ignore config load errors */ }
         
         // Update system info
         DotNetVersionText.Text = Environment.Version.ToString();
@@ -335,6 +362,114 @@ public partial class AdminWindow : Window
         {
             GeneralConfigStatusText.Text = $"❌ Error saving configuration: {ex.Message}";
             GeneralConfigStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    #endregion
+
+    #region Bridge Connection Configuration
+
+    private async void TestBridgeConnection(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            BridgeStatusText.Text = "Testing bridge connection...";
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            
+            var bridgeUrl = $"http://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/status";
+            
+            using var request = new HttpRequestMessage(HttpMethod.Get, bridgeUrl);
+            if (!string.IsNullOrEmpty(BridgeApiKeyInput.Password))
+            {
+                request.Headers.Add("Authorization", $"Bearer {BridgeApiKeyInput.Password}");
+            }
+            
+            var response = await httpClient.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                BridgeStatusText.Text = $"✅ Bridge connection successful! Response: {response.StatusCode}";
+                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+            }
+            else
+            {
+                BridgeStatusText.Text = $"❌ Bridge connection failed: HTTP {response.StatusCode}";
+                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            }
+        }
+        catch (Exception ex)
+        {
+            BridgeStatusText.Text = $"❌ Bridge connection failed: {ex.Message}";
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    private async void ConnectBridge(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            BridgeStatusText.Text = "Connecting to bridge...";
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            
+            var bridgeUrl = $"http://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/connect";
+            var connectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
+            
+            var requestData = new
+            {
+                type = connectionType,
+                apiKey = BridgeApiKeyInput.Password
+            };
+            
+            var jsonRequest = JsonConvert.SerializeObject(requestData);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            var response = await httpClient.PostAsync(bridgeUrl, content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                BridgeStatusText.Text = $"✅ Bridge connected successfully! Type: {connectionType}";
+                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                ((Button)sender).Content = "❌ Disconnect Bridge";
+            }
+            else
+            {
+                BridgeStatusText.Text = $"❌ Bridge connection failed: HTTP {response.StatusCode}";
+                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            }
+        }
+        catch (Exception ex)
+        {
+            BridgeStatusText.Text = $"❌ Bridge connection failed: {ex.Message}";
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    private void SaveBridgeConfiguration(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var config = new BridgeConfiguration
+            {
+                Host = BridgeHostInput.Text,
+                Port = int.Parse(BridgePortInput.Text),
+                ApiKey = BridgeApiKeyInput.Password,
+                ConnectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP"
+            };
+            
+            // Save to configuration file
+            var configJson = JsonConvert.SerializeObject(config, Formatting.Indented);
+            var configPath = GetConfigPath("bridge_config.json", true); // Save to /data/pws (contains API key)
+            File.WriteAllText(configPath, configJson);
+            
+            MessageBox.Show("Bridge configuration saved successfully!", "Configuration Saved", 
+                          MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error saving bridge configuration: {ex.Message}", "Save Error", 
+                          MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -892,5 +1027,13 @@ public class GeneralConfiguration
 {
     public int UpdateIntervalSeconds { get; set; } = 5;
     public bool AutoRefreshEnabled { get; set; } = true;
+}
+
+public class BridgeConfiguration
+{
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; } = 8080;
+    public string ApiKey { get; set; } = string.Empty;
+    public string ConnectionType { get; set; } = "HTTP";
 }
 

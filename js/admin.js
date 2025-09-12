@@ -111,6 +111,21 @@ class AIAdmin {
         } catch (error) {
             console.error('Error loading settings:', error);
         }
+
+        // Load bridge configuration from localStorage
+        try {
+            const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
+            const bridgePort = localStorage.getItem('bridge_port') || '8080';
+            const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
+            const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
+
+            document.getElementById('bridgeHostConfig').value = bridgeHost;
+            document.getElementById('bridgePortConfig').value = bridgePort;
+            document.getElementById('bridgeApiKeyConfig').value = bridgeApiKey;
+            document.getElementById('bridgeTypeConfig').value = bridgeType;
+        } catch (error) {
+            console.error('Error loading bridge configuration:', error);
+        }
     }
 
     async saveAllSettings() {
@@ -538,6 +553,75 @@ class AIAdmin {
                 document.getElementById('responseTime').textContent = '-';
             }
         }
+
+        // Check Bridge connection
+        try {
+            debugLog('Checking Bridge connection...');
+            
+            // Load bridge configuration from localStorage or default values
+            const bridgeConfig = {
+                host: localStorage.getItem('bridge_host') || 'localhost',
+                port: localStorage.getItem('bridge_port') || '8080',
+                apiKey: localStorage.getItem('bridge_apikey') || '',
+                type: localStorage.getItem('bridge_type') || 'HTTP'
+            };
+
+            // Update bridge info in the UI
+            if (document.getElementById('bridgeHost')) {
+                document.getElementById('bridgeHost').textContent = bridgeConfig.host;
+            }
+            if (document.getElementById('bridgePort')) {
+                document.getElementById('bridgePort').textContent = bridgeConfig.port;
+            }
+            if (document.getElementById('bridgeType')) {
+                document.getElementById('bridgeType').textContent = bridgeConfig.type;
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+            
+            const bridgeUrl = `http://${bridgeConfig.host}:${bridgeConfig.port}/api/status`;
+            const startTime = Date.now();
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add authorization header if API key is configured
+            if (bridgeConfig.apiKey) {
+                headers['Authorization'] = `Bearer ${bridgeConfig.apiKey}`;
+            }
+            
+            const response = await fetch(bridgeUrl, {
+                signal: controller.signal,
+                headers: headers
+            });
+            
+            clearTimeout(timeoutId);
+            const responseTime = Date.now() - startTime;
+            
+            debugLog(`Bridge response: ${response.status} ${response.statusText} (${responseTime}ms)`);
+            
+            if (response.ok) {
+                this.updateIntegrationStatus('bridgeStatus', true, 'Connected');
+                debugLog('✅ Bridge connection successful');
+                
+                if (document.getElementById('bridgeResponseTime')) {
+                    document.getElementById('bridgeResponseTime').textContent = `${responseTime}ms`;
+                }
+            } else {
+                this.updateIntegrationStatus('bridgeStatus', false, `HTTP ${response.status}`);
+                if (document.getElementById('bridgeResponseTime')) {
+                    document.getElementById('bridgeResponseTime').textContent = '-';
+                }
+            }
+        } catch (error) {
+            console.info('Bridge not available:', error.message);
+            this.updateIntegrationStatus('bridgeStatus', false, 'Bridge not available');
+            if (document.getElementById('bridgeResponseTime')) {
+                document.getElementById('bridgeResponseTime').textContent = '-';
+            }
+        }
     }
 
     updateIntegrationStatus(elementId, connected, message) {
@@ -740,6 +824,48 @@ function testPCAIConnection() {
     }).catch(() => {
         hideTestDialog('pcaiStatus');
     });
+}
+
+function testBridgeConnection() {
+    showTestDialog('bridgeStatus', 'Testing Bridge connection...');
+    window.aiAdmin.checkIntegrations().then(() => {
+        hideTestDialog('bridgeStatus');
+    }).catch(() => {
+        hideTestDialog('bridgeStatus');
+    });
+}
+
+function saveBridgeConfiguration() {
+    try {
+        const host = document.getElementById('bridgeHostConfig').value || 'localhost';
+        const port = document.getElementById('bridgePortConfig').value || '8080';
+        const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
+        const type = document.getElementById('bridgeTypeConfig').value || 'HTTP';
+
+        // Save to localStorage
+        localStorage.setItem('bridge_host', host);
+        localStorage.setItem('bridge_port', port);
+        localStorage.setItem('bridge_apikey', apiKey);
+        localStorage.setItem('bridge_type', type);
+
+        // Show success notification
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Bridge configuration saved successfully!', 'success');
+        }
+
+        // Refresh integrations to update the connection status
+        setTimeout(() => {
+            if (window.aiAdmin) {
+                window.aiAdmin.checkIntegrations();
+            }
+        }, 500);
+
+    } catch (error) {
+        console.error('Error saving bridge configuration:', error);
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error saving bridge configuration: ' + error.message, 'error');
+        }
+    }
 }
 
 async function analyzeConversations() {
