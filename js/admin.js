@@ -607,7 +607,9 @@ class AIAdmin {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
             
-            const bridgeUrl = `http://${bridgeConfig.host}:${bridgeConfig.port}/api/status`;
+            // Use same protocol as current page to avoid mixed content issues
+            const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+            const bridgeUrl = `${protocol}://${bridgeConfig.host}:${bridgeConfig.port}/api/status`;
             const startTime = Date.now();
             
             const headers = {

@@ -25,7 +25,7 @@ try {
                 'success' => true,
                 'config' => [
                     'host' => $config['host'] ?? 'localhost',
-                    'port' => $config['port'] ?? '3001',
+                    'port' => $config['port'] ?? '8080',
                     'api_key' => $config['api_key'] ?? '',
                     'type' => $config['type'] ?? 'HTTP',
                     'enabled' => $config['enabled'] ?? true,
@@ -41,7 +41,7 @@ try {
         'success' => true,
         'config' => [
             'host' => 'localhost',
-            'port' => '3001',
+            'port' => '8080',
             'api_key' => '',
             'type' => 'HTTP',
             'enabled' => true,
