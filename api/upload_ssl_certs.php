@@ -29,6 +29,8 @@ try {
     $currentDb = $dbQuery->fetch()['current_db'];
     error_log("🗃️ AI PDO connected to database: " . $currentDb);
     
+    // Database should now be correctly configured via ai_db_config.json
+    
     $uploadType = $_POST['upload_type'] ?? 'both';
     error_log("📋 Upload type: " . $uploadType);
     
