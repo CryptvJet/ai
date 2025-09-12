@@ -143,56 +143,64 @@ try {
     // Update database based on upload type
     if ($uploadType === 'certificate_only') {
         $updateSql = "INSERT INTO ai_ssl_config (id, cert_uploaded, cert_upload_date, cert_content, cert_filename) 
-                      VALUES (1, 1, NOW(), :cert_content, :cert_filename)
+                      VALUES (1, 1, NOW(), :cert_content1, :cert_filename1)
                       ON DUPLICATE KEY UPDATE 
                       cert_uploaded = 1, 
                       cert_upload_date = NOW(),
-                      cert_content = :cert_content,
-                      cert_filename = :cert_filename";
+                      cert_content = :cert_content2,
+                      cert_filename = :cert_filename2";
         
         error_log("💾 Saving certificate to database...");
         $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
-            ':cert_content' => $certContent,
-            ':cert_filename' => $certFileName
+            ':cert_content1' => $certContent,
+            ':cert_filename1' => $certFileName,
+            ':cert_content2' => $certContent,
+            ':cert_filename2' => $certFileName
         ]);
         error_log("✅ Certificate saved successfully");
         
     } elseif ($uploadType === 'key_only') {
         $updateSql = "INSERT INTO ai_ssl_config (id, key_uploaded, key_upload_date, key_content, key_filename) 
-                      VALUES (1, 1, NOW(), :key_content, :key_filename)
+                      VALUES (1, 1, NOW(), :key_content1, :key_filename1)
                       ON DUPLICATE KEY UPDATE 
                       key_uploaded = 1, 
                       key_upload_date = NOW(),
-                      key_content = :key_content,
-                      key_filename = :key_filename";
+                      key_content = :key_content2,
+                      key_filename = :key_filename2";
         
         $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
-            ':key_content' => $keyContent,
-            ':key_filename' => $keyFileName
+            ':key_content1' => $keyContent,
+            ':key_filename1' => $keyFileName,
+            ':key_content2' => $keyContent,
+            ':key_filename2' => $keyFileName
         ]);
         
     } else {
         // Both files
         $updateSql = "INSERT INTO ai_ssl_config (id, cert_uploaded, key_uploaded, cert_upload_date, key_upload_date, cert_content, key_content, cert_filename, key_filename) 
-                      VALUES (1, 1, 1, NOW(), NOW(), :cert_content, :key_content, :cert_filename, :key_filename)
+                      VALUES (1, 1, 1, NOW(), NOW(), :cert_content1, :key_content1, :cert_filename1, :key_filename1)
                       ON DUPLICATE KEY UPDATE 
                       cert_uploaded = 1, 
                       key_uploaded = 1, 
                       cert_upload_date = NOW(), 
                       key_upload_date = NOW(),
-                      cert_content = :cert_content,
-                      key_content = :key_content,
-                      cert_filename = :cert_filename,
-                      key_filename = :key_filename";
+                      cert_content = :cert_content2,
+                      key_content = :key_content2,
+                      cert_filename = :cert_filename2,
+                      key_filename = :key_filename2";
         
         $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
-            ':cert_content' => $certContent,
-            ':key_content' => $keyContent,
-            ':cert_filename' => $certFileName,
-            ':key_filename' => $keyFileName
+            ':cert_content1' => $certContent,
+            ':key_content1' => $keyContent,
+            ':cert_filename1' => $certFileName,
+            ':key_filename1' => $keyFileName,
+            ':cert_content2' => $certContent,
+            ':key_content2' => $keyContent,
+            ':cert_filename2' => $certFileName,
+            ':key_filename2' => $keyFileName
         ]);
     }
     
