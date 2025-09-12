@@ -200,8 +200,8 @@
 
                     <div class="form-group">
                         <label for="bridgePortConfig">Bridge Port:</label>
-                        <input type="number" id="bridgePortConfig" value="8080" placeholder="8080">
-                        <small>Port number where your bridge service is running</small>
+                        <input type="number" id="bridgePortConfig" value="443" placeholder="443">
+                        <small>Port number where your bridge service is running (443 for HTTPS, 80 for HTTP)</small>
                     </div>
 
                     <div class="form-group">
@@ -214,7 +214,7 @@
                         <label for="bridgeTypeConfig">Connection Type:</label>
                         <select id="bridgeTypeConfig">
                             <option value="HTTP">HTTP</option>
-                            <option value="HTTPS">HTTPS</option>
+                            <option value="HTTPS" selected>HTTPS</option>
                             <option value="WebSocket">WebSocket</option>
                         </select>
                         <small>Communication protocol to use</small>

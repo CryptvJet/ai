@@ -29,4 +29,9 @@ launch/
 *.suo
 *.cache
 .vs/
+
+# Ai Bins
+data/
+
+# Random
 Zin-Ai-app/nul

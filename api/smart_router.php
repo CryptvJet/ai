@@ -47,9 +47,9 @@ class SmartAIRouter {
         // Default configuration
         $this->bridge_config = [
             'host' => 'localhost',
-            'port' => '3001',
+            'port' => '443',
             'api_key' => '',
-            'type' => 'HTTP',
+            'type' => 'HTTPS',
             'enabled' => true
         ];
     }
@@ -139,7 +139,8 @@ class SmartAIRouter {
             }
             
             // Try the configured bridge
-            $bridge_url = "http://{$this->bridge_config['host']}:{$this->bridge_config['port']}/ollama/status";
+            $protocol = strtolower($this->bridge_config['type']) === 'https' ? 'https' : 'http';
+            $bridge_url = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}/ollama/status";
             
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $bridge_url);
@@ -152,6 +153,13 @@ class SmartAIRouter {
                 curl_setopt($ch, CURLOPT_HTTPHEADER, [
                     'Authorization: Bearer ' . $this->bridge_config['api_key']
                 ]);
+            }
+            
+            // Configure SSL for HTTPS
+            if (strtolower($this->bridge_config['type']) === 'https') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+                curl_setopt($ch, CURLOPT_CAINFO, ''); // Use system CA bundle
             }
             
             $response = curl_exec($ch);
@@ -259,7 +267,8 @@ class SmartAIRouter {
     private function executeLocalAI($message, $session_id, $context) {
         try {
             // Try to communicate with PC Bridge
-            $bridgeUrl = "http://{$this->bridge_config['host']}:{$this->bridge_config['port']}";
+            $protocol = strtolower($this->bridge_config['type']) === 'https' ? 'https' : 'http';
+            $bridgeUrl = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}";
             
             $postData = [
                 'message' => $message,
@@ -285,6 +294,13 @@ class SmartAIRouter {
             }
             
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            
+            // Configure SSL for HTTPS
+            if (strtolower($this->bridge_config['type']) === 'https') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+                curl_setopt($ch, CURLOPT_CAINFO, ''); // Use system CA bundle
+            }
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

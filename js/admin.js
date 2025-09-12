@@ -119,21 +119,21 @@ class AIAdmin {
             
             if (result.success && result.config) {
                 document.getElementById('bridgeHostConfig').value = result.config.host || 'localhost';
-                document.getElementById('bridgePortConfig').value = result.config.port || '3001';
+                document.getElementById('bridgePortConfig').value = result.config.port || '443';
                 document.getElementById('bridgeApiKeyConfig').value = result.config.api_key || '';
-                document.getElementById('bridgeTypeConfig').value = result.config.type || 'HTTP';
+                document.getElementById('bridgeTypeConfig').value = result.config.type || 'HTTPS';
                 
                 // Also update localStorage for backward compatibility
                 localStorage.setItem('bridge_host', result.config.host || 'localhost');
-                localStorage.setItem('bridge_port', result.config.port || '3001');
+                localStorage.setItem('bridge_port', result.config.port || '443');
                 localStorage.setItem('bridge_apikey', result.config.api_key || '');
-                localStorage.setItem('bridge_type', result.config.type || 'HTTP');
+                localStorage.setItem('bridge_type', result.config.type || 'HTTPS');
             } else {
                 // Fallback to localStorage if server config unavailable
                 const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
-                const bridgePort = localStorage.getItem('bridge_port') || '3001';
+                const bridgePort = localStorage.getItem('bridge_port') || '443';
                 const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
-                const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
+                const bridgeType = localStorage.getItem('bridge_type') || 'HTTPS';
 
                 document.getElementById('bridgeHostConfig').value = bridgeHost;
                 document.getElementById('bridgePortConfig').value = bridgePort;
@@ -144,9 +144,9 @@ class AIAdmin {
             console.error('Error loading bridge configuration:', error);
             // Fallback to localStorage
             const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
-            const bridgePort = localStorage.getItem('bridge_port') || '3001';
+            const bridgePort = localStorage.getItem('bridge_port') || '443';
             const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
-            const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
+            const bridgeType = localStorage.getItem('bridge_type') || 'HTTPS';
 
             document.getElementById('bridgeHostConfig').value = bridgeHost;
             document.getElementById('bridgePortConfig').value = bridgePort;
@@ -588,9 +588,9 @@ class AIAdmin {
             // Load bridge configuration from localStorage or default values
             const bridgeConfig = {
                 host: localStorage.getItem('bridge_host') || 'localhost',
-                port: localStorage.getItem('bridge_port') || '3001',
+                port: localStorage.getItem('bridge_port') || '443',
                 apiKey: localStorage.getItem('bridge_apikey') || '',
-                type: localStorage.getItem('bridge_type') || 'HTTP'
+                type: localStorage.getItem('bridge_type') || 'HTTPS'
             };
 
             // Update bridge info in the UI
@@ -865,9 +865,9 @@ function testBridgeConnection() {
 async function saveBridgeConfiguration() {
     try {
         const host = document.getElementById('bridgeHostConfig').value || 'localhost';
-        const port = document.getElementById('bridgePortConfig').value || '3001';
+        const port = document.getElementById('bridgePortConfig').value || '443';
         const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
-        const type = document.getElementById('bridgeTypeConfig').value || 'HTTP';
+        const type = document.getElementById('bridgeTypeConfig').value || 'HTTPS';
 
         // Save to server configuration file
         const response = await fetch('../api/save_bridge_config.php', {
