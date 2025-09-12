@@ -519,14 +519,14 @@ class AIAdmin {
                         document.getElementById('systemUptime').textContent = `${uptimeHours}h uptime`;
                     }
                 } else {
-                    this.updateIntegrationStatus('pcaiStatus', false, 'PC Bridge Offline');
+                    this.updateIntegrationStatus('pcaiStatus', false, 'Ollama Offline');
                 }
             } else {
-                this.updateIntegrationStatus('pcaiStatus', false, 'PC AI offline');
+                this.updateIntegrationStatus('pcaiStatus', false, 'Ollama Offline');
             }
         } catch (error) {
-            // This is expected if PC Bridge isn't running
-            console.info('PC Bridge not available (this is normal):', error.message);
+            // This is expected if Ollama isn't running
+            console.info('Ollama not available:', error.message);
             this.updateIntegrationStatus('pcaiStatus', false, 'Ollama not running');
             if (document.getElementById('currentModel')) {
                 document.getElementById('currentModel').textContent = 'Ollama Disconnected';
@@ -716,15 +716,30 @@ async function deleteTemplate(templateId) {
 }
 
 function testPulseCoreConnection() {
-    window.aiAdmin.checkIntegrations();
+    showTestDialog('pulsecoreStatus', 'Testing PulseCore database connection...');
+    window.aiAdmin.checkIntegrations().then(() => {
+        hideTestDialog('pulsecoreStatus');
+    }).catch(() => {
+        hideTestDialog('pulsecoreStatus');
+    });
 }
 
 function testVariablesConnection() {
-    window.aiAdmin.checkIntegrations();
+    showTestDialog('variablesStatus', 'Testing Variables database connection...');
+    window.aiAdmin.checkIntegrations().then(() => {
+        hideTestDialog('variablesStatus');
+    }).catch(() => {
+        hideTestDialog('variablesStatus');
+    });
 }
 
 function testPCAIConnection() {
-    window.aiAdmin.checkIntegrations();
+    showTestDialog('pcaiStatus', 'Testing Ollama AI Server connection...');
+    window.aiAdmin.checkIntegrations().then(() => {
+        hideTestDialog('pcaiStatus');
+    }).catch(() => {
+        hideTestDialog('pcaiStatus');
+    });
 }
 
 async function analyzeConversations() {
@@ -2245,6 +2260,51 @@ function initializeCommandCopyEvents() {
             }
         }
     });
+}
+
+// Test dialog functions
+function showTestDialog(statusId, message) {
+    const statusElement = document.getElementById(statusId);
+    if (statusElement) {
+        // Create dialog element if it doesn't exist
+        let dialog = statusElement.querySelector('.test-dialog');
+        if (!dialog) {
+            dialog = document.createElement('div');
+            dialog.className = 'test-dialog';
+            statusElement.appendChild(dialog);
+        }
+        
+        dialog.innerHTML = `
+            <div class="test-message">
+                <span class="test-spinner">⏳</span>
+                <span class="test-text">${message}</span>
+            </div>
+        `;
+        dialog.style.display = 'block';
+        
+        // Auto-hide after 10 seconds as failsafe
+        setTimeout(() => hideTestDialog(statusId), 10000);
+    }
+}
+
+function hideTestDialog(statusId) {
+    const statusElement = document.getElementById(statusId);
+    if (statusElement) {
+        const dialog = statusElement.querySelector('.test-dialog');
+        if (dialog) {
+            dialog.innerHTML = `
+                <div class="test-message test-complete">
+                    <span class="test-spinner">✅</span>
+                    <span class="test-text">Test completed!</span>
+                </div>
+            `;
+            
+            // Hide after showing completion message
+            setTimeout(() => {
+                dialog.style.display = 'none';
+            }, 2000);
+        }
+    }
 }
 
 // Initialize browser console capture when page loads

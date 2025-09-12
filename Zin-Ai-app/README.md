@@ -1,5 +1,15 @@
 # Zin AI Management Hub (WPF)
 
+## Quick Start
+
+```bash
+# From project root
+cd ai/desktop-app
+
+# Run the management hub
+dotnet run
+```
+
 **Desktop management center for your web-based AI chat system**
 
 This is NOT a standalone chat app - it's a **management hub** that connects to and controls your existing web AI system.
@@ -37,16 +47,6 @@ This is NOT a standalone chat app - it's a **management hub** that connects to a
 - Running MySQL server with `vemite5_pulse-core` database
 - Your existing web AI chat system (in `/ai` directory)
 - Ollama server (for AI model testing)
-
-## Quick Start
-
-```bash
-# From project root
-cd ai/desktop-app
-
-# Run the management hub
-dotnet run
-```
 
 ## Database Connection
 
