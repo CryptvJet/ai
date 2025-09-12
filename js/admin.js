@@ -3070,17 +3070,28 @@ async function saveAIDatabaseConfiguration() {
 
 async function testAIDatabaseConnection() {
     try {
-        const response = await fetch('../api/load_database_config.php?type=ai');
+        const testButton = document.querySelector('button[onclick="testAIDatabaseConnection()"]');
+        const originalText = testButton.textContent;
+        testButton.textContent = '🔄 Testing...';
+        testButton.disabled = true;
+
+        const response = await fetch('../api/test_database_connection.php?type=ai');
         const result = await response.json();
-        
-        if (result.success && result.config) {
-            const config = result.config;
-            document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message success">✅ AI Database: ${config.test_result === 'success' ? 'Connected' : 'Configuration loaded'}</div>`;
+
+        testButton.textContent = originalText;
+        testButton.disabled = false;
+
+        if (result.success) {
+            document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message success">✅ AI Database connection successful! (${result.response_time_ms}ms)</div>`;
         } else {
-            document.getElementById('aiDbStatusMessage').innerHTML = '<div class="status-message error">❌ No AI database configuration found</div>';
+            document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message error">❌ AI Database connection failed: ${result.message}</div>`;
         }
-        
+
     } catch (error) {
+        const testButton = document.querySelector('button[onclick="testAIDatabaseConnection()"]');
+        testButton.textContent = '🧪 Test AI Database';
+        testButton.disabled = false;
+        
         document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message error">❌ Test failed: ${error.message}</div>`;
     }
 }

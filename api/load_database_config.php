@@ -14,8 +14,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 try {
-    require_once __DIR__ . '/db_config.php';
-    global $ai_pdo;
+    // For AI database configs, we need to connect to the AI database directly
+    // Use the ai_db_config.json to get AI database connection
+    $ai_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
+    if (!file_exists($ai_config_path)) {
+        throw new Exception('AI database configuration file not found');
+    }
+    
+    $ai_config = json_decode(file_get_contents($ai_config_path), true);
+    if (!$ai_config) {
+        throw new Exception('Invalid AI database configuration');
+    }
+    
+    // Connect to AI database using config file
+    $dsn = "mysql:host={$ai_config['Server']};port=3306;dbname={$ai_config['Database']};charset=utf8mb4";
+    $ai_pdo = new PDO($dsn, $ai_config['Username'], $ai_config['Password'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]);
     
     $config_type = $_GET['type'] ?? 'all'; // 'pulsecore', 'ai', or 'all'
     
