@@ -1053,7 +1053,12 @@ async function uploadSSLCertificate() {
         const formData = new FormData();
         formData.append('certificate', certFile);
         
-        const response = await fetch('../api/upload_ssl_cert.php', {
+        // Use existing API with dummy private key for individual cert upload
+        const dummyKeyFile = new File(['dummy'], 'dummy.key', { type: 'text/plain' });
+        formData.append('private_key', dummyKeyFile);
+        formData.append('upload_type', 'certificate_only');
+        
+        const response = await fetch('../api/upload_ssl_certs.php', {
             method: 'POST',
             body: formData
         });
@@ -1091,7 +1096,12 @@ async function uploadSSLKey() {
         const formData = new FormData();
         formData.append('private_key', keyFile);
         
-        const response = await fetch('../api/upload_ssl_key.php', {
+        // Use existing API with dummy certificate for individual key upload
+        const dummyCertFile = new File(['dummy'], 'dummy.crt', { type: 'text/plain' });
+        formData.append('certificate', dummyCertFile);
+        formData.append('upload_type', 'key_only');
+        
+        const response = await fetch('../api/upload_ssl_certs.php', {
             method: 'POST',
             body: formData
         });
