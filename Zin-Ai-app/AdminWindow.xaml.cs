@@ -304,6 +304,40 @@ public partial class AdminWindow : Window
         }
     }
 
+    private void SaveGeneralConfiguration(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var updateInterval = 5; // Default
+            if (int.TryParse(UpdateIntervalInput.Text, out var parsedInterval) && parsedInterval > 0)
+            {
+                updateInterval = parsedInterval;
+            }
+
+            var config = new GeneralConfiguration
+            {
+                UpdateIntervalSeconds = updateInterval,
+                AutoRefreshEnabled = AutoRefreshCheckBox.IsChecked ?? true
+            };
+
+            // Save to configuration file
+            var configJson = JsonConvert.SerializeObject(config, Formatting.Indented);
+            var configPath = GetConfigPath("general_config.json", false); // General config doesn't need password protection
+            File.WriteAllText(configPath, configJson);
+
+            GeneralConfigStatusText.Text = "✅ General configuration saved successfully!";
+            GeneralConfigStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+
+            // Apply settings immediately if needed
+            // Update any timers or auto-refresh functionality here
+        }
+        catch (Exception ex)
+        {
+            GeneralConfigStatusText.Text = $"❌ Error saving configuration: {ex.Message}";
+            GeneralConfigStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
     #endregion
 
     #region PulseCore Database Configuration
@@ -570,6 +604,233 @@ public partial class AdminWindow : Window
     }
 
     #endregion
+    
+    #region Tab Navigation
+
+    private void ShowActivityTab(object sender, RoutedEventArgs e)
+    {
+        SetActiveTab("Activity");
+    }
+
+    private void ShowConfigurationTab(object sender, RoutedEventArgs e)
+    {
+        SetActiveTab("Configuration");
+    }
+
+    private void ShowIdentityTab(object sender, RoutedEventArgs e)
+    {
+        SetActiveTab("Identity");
+    }
+
+    private void SetActiveTab(string tabName)
+    {
+        // Hide all tab contents
+        ActivityTabContent.Visibility = Visibility.Collapsed;
+        ConfigurationTabContent.Visibility = Visibility.Collapsed;
+        IdentityTabContent.Visibility = Visibility.Collapsed;
+
+        // Reset all tab button styles
+        ActivityTabBtn.Style = (Style)FindResource("AdminTabButtonStyle");
+        ConfigurationTabBtn.Style = (Style)FindResource("AdminTabButtonStyle");
+        IdentityTabBtn.Style = (Style)FindResource("AdminTabButtonStyle");
+
+        // Show selected tab and set active style
+        switch (tabName)
+        {
+            case "Activity":
+                ActivityTabContent.Visibility = Visibility.Visible;
+                ActivityTabBtn.Style = (Style)FindResource("AdminTabButtonActiveStyle");
+                break;
+            case "Configuration":
+                ConfigurationTabContent.Visibility = Visibility.Visible;
+                ConfigurationTabBtn.Style = (Style)FindResource("AdminTabButtonActiveStyle");
+                break;
+            case "Identity":
+                IdentityTabContent.Visibility = Visibility.Visible;
+                IdentityTabBtn.Style = (Style)FindResource("AdminTabButtonActiveStyle");
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Activity Tab Functions
+
+    private void RefreshActivityStats(object sender, RoutedEventArgs e)
+    {
+        LoadActivityStatistics();
+    }
+
+    private void TestAllConnections(object sender, RoutedEventArgs e)
+    {
+        TestActivityConnections();
+    }
+
+    private async void LoadActivityStatistics()
+    {
+        try
+        {
+            // Test connections without await since these are void methods
+            TestPulseDatabaseConnection(null!, null!);
+            
+            // Test AI database connection  
+            TestAiDatabaseConnection(null!, null!);
+            
+            // Get statistics for activity display
+            var pulseConfigPath = GetConfigPath("pulse_db_config.json", true);
+            if (File.Exists(pulseConfigPath))
+            {
+                var pulseConfigJson = File.ReadAllText(pulseConfigPath);
+                var pulseConfig = JsonConvert.DeserializeObject<DatabaseConfiguration>(pulseConfigJson);
+                if (pulseConfig != null)
+                {
+                    var connectionString = $"Server={pulseConfig.Server};Database={pulseConfig.Database};Uid={pulseConfig.Username};Pwd={pulseConfig.Password};";
+                    
+                    using var connection = new MySqlConnection(connectionString);
+                    await connection.OpenAsync();
+                    
+                    // Get total novas
+                    using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM nova_events", connection))
+                    {
+                        var result = await cmd.ExecuteScalarAsync();
+                        ActivityTotalNovas.Text = result?.ToString() ?? "0";
+                    }
+                    
+                    // Get total climaxes
+                    using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM climax_groups", connection))
+                    {
+                        var result = await cmd.ExecuteScalarAsync();
+                        ActivityTotalClimaxes.Text = result?.ToString() ?? "0";
+                    }
+                    
+                    // Get average complexity
+                    using (var cmd = new MySqlCommand("SELECT AVG(complexity) FROM nova_events WHERE complexity IS NOT NULL", connection))
+                    {
+                        var result = await cmd.ExecuteScalarAsync();
+                        if (result != DBNull.Value && result != null)
+                        {
+                            ActivityAvgComplexity.Text = $"{Convert.ToDouble(result):F2}";
+                        }
+                        else
+                        {
+                            ActivityAvgComplexity.Text = "0.00";
+                        }
+                    }
+                    
+                    ActivityConnectionStatus.Text = "Connected";
+                    ActivityConnectionStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                    ActivityLastUpdate.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+            }
+        }
+        catch (Exception)
+        {
+            ActivityConnectionStatus.Text = "Error";
+            ActivityConnectionStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            ActivityTotalNovas.Text = "Error";
+            ActivityTotalClimaxes.Text = "Error";
+            ActivityAvgComplexity.Text = "Error";
+        }
+    }
+
+    private async void TestActivityConnections()
+    {
+        // Test PulseCore Database
+        try
+        {
+            var pulseConfigPath = GetConfigPath("pulse_db_config.json", true);
+            if (File.Exists(pulseConfigPath))
+            {
+                var pulseConfigJson = File.ReadAllText(pulseConfigPath);
+                var pulseConfig = JsonConvert.DeserializeObject<DatabaseConfiguration>(pulseConfigJson);
+                if (pulseConfig != null)
+                {
+                    var connectionString = $"Server={pulseConfig.Server};Database={pulseConfig.Database};Uid={pulseConfig.Username};Pwd={pulseConfig.Password};";
+                    
+                    using var connection = new MySqlConnection(connectionString);
+                    await connection.OpenAsync();
+                    
+                    ActivityPulseDbStatus.Text = "● Connected";
+                    ActivityPulseDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                }
+            }
+            else
+            {
+                ActivityPulseDbStatus.Text = "● Not Configured";
+                ActivityPulseDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            }
+        }
+        catch (Exception)
+        {
+            ActivityPulseDbStatus.Text = "● Connection Failed";
+            ActivityPulseDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+
+        // Test AI Database
+        try
+        {
+            var aiConfigPath = GetConfigPath("ai_db_config.json", true);
+            if (File.Exists(aiConfigPath))
+            {
+                var aiConfigJson = File.ReadAllText(aiConfigPath);
+                var aiConfig = JsonConvert.DeserializeObject<DatabaseConfiguration>(aiConfigJson);
+                if (aiConfig != null)
+                {
+                    var connectionString = $"Server={aiConfig.Server};Database={aiConfig.Database};Uid={aiConfig.Username};Pwd={aiConfig.Password};";
+                    
+                    using var connection = new MySqlConnection(connectionString);
+                    await connection.OpenAsync();
+                    
+                    ActivityAiDbStatus.Text = "● Connected";
+                    ActivityAiDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                }
+            }
+            else
+            {
+                ActivityAiDbStatus.Text = "● Not Configured";
+                ActivityAiDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            }
+        }
+        catch (Exception)
+        {
+            ActivityAiDbStatus.Text = "● Connection Failed";
+            ActivityAiDbStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+
+        // Test Ollama AI
+        try
+        {
+            var testRequest = new
+            {
+                model = "llama3.2:3b-instruct-q4_K_M",
+                prompt = "Test",
+                stream = false
+            };
+
+            var jsonRequest = JsonConvert.SerializeObject(testRequest);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            var response = await httpClient.PostAsync("http://localhost:11434/api/generate", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                ActivityOllamaStatus.Text = "● Connected";
+                ActivityOllamaStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+            }
+            else
+            {
+                ActivityOllamaStatus.Text = "● Server Error";
+                ActivityOllamaStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            }
+        }
+        catch (Exception)
+        {
+            ActivityOllamaStatus.Text = "● Not Available";
+            ActivityOllamaStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    #endregion
 
     #region Cleanup
 
@@ -625,5 +886,11 @@ public class AppConfiguration
     public int StatsUpdateIntervalMinutes { get; set; } = 5;
     public bool AutoStartVoice { get; set; } = false;
     public bool MinimizeToTray { get; set; } = false;
+}
+
+public class GeneralConfiguration
+{
+    public int UpdateIntervalSeconds { get; set; } = 5;
+    public bool AutoRefreshEnabled { get; set; } = true;
 }
 
