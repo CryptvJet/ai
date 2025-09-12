@@ -88,8 +88,17 @@ try {
             throw new Exception('Failed to read certificate file');
         }
         
-        if (strpos($certContent, '-----BEGIN CERTIFICATE-----') === false) {
-            throw new Exception('Invalid certificate format - must contain BEGIN CERTIFICATE');
+        // Log certificate content for debugging
+        error_log("📄 Certificate content preview: " . substr($certContent, 0, 200) . "...");
+        
+        // Basic validation - just check it's not empty and looks like a certificate
+        if (empty(trim($certContent))) {
+            throw new Exception('Certificate file is empty');
+        }
+        
+        // Very loose validation - just check for some common certificate indicators
+        if (strpos($certContent, '-----BEGIN') === false || strpos($certContent, '-----END') === false) {
+            throw new Exception('File does not appear to be a valid certificate format');
         }
         
         $certFileName = $certFile['name'];
@@ -110,9 +119,17 @@ try {
             throw new Exception('Failed to read private key file');
         }
         
-        if (strpos($keyContent, '-----BEGIN PRIVATE KEY-----') === false && 
-            strpos($keyContent, '-----BEGIN RSA PRIVATE KEY-----') === false) {
-            throw new Exception('Invalid private key format - must contain BEGIN PRIVATE KEY');
+        // Log private key content for debugging (first 100 chars only for security)
+        error_log("🔑 Private key content preview: " . substr($keyContent, 0, 100) . "...");
+        
+        // Basic validation - just check it's not empty and looks like a key
+        if (empty(trim($keyContent))) {
+            throw new Exception('Private key file is empty');
+        }
+        
+        // Very loose validation - just check for some common key indicators
+        if (strpos($keyContent, '-----BEGIN') === false || strpos($keyContent, '-----END') === false) {
+            throw new Exception('File does not appear to be a valid private key format');
         }
         
         $keyFileName = $keyFile['name'];

@@ -1098,14 +1098,18 @@ async function uploadSSLCertificate() {
 
 async function uploadSSLKey() {
     try {
+        console.log('🔑 Starting SSL private key upload...');
         const keyFile = document.getElementById('sslKeyFile').files[0];
         
         if (!keyFile) {
+            console.log('❌ No private key file selected');
             if (window.aiAdmin) {
                 window.aiAdmin.showNotification('Please select a private key file first', 'error');
             }
             return;
         }
+        
+        console.log('📄 Private key file:', keyFile.name, keyFile.size, 'bytes');
         
         const formData = new FormData();
         formData.append('private_key', keyFile);
@@ -1115,12 +1119,22 @@ async function uploadSSLKey() {
         formData.append('certificate', dummyCertFile);
         formData.append('upload_type', 'key_only');
         
+        console.log('📡 Sending private key to API...');
         const response = await fetch('../api/upload_ssl_certs.php', {
             method: 'POST',
             body: formData
         });
         
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API Error Response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
         const result = await response.json();
+        console.log('✅ Private key upload result:', result);
         
         if (result.success) {
             document.getElementById('sslKeyStatus').textContent = 'Uploaded ✅';
