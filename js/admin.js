@@ -1027,8 +1027,9 @@ async function uploadSSLCertificates() {
 
 async function saveSSLConfiguration() {
     try {
-        const enabled = document.getElementById('sslEnabledConfig').checked;
-        const port = parseInt(document.getElementById('sslPortConfig').value) || 8443;
+        const connectionType = document.getElementById('bridgeTypeConfig').value;
+        const enabled = connectionType === 'HTTPS';
+        const port = parseInt(document.getElementById('bridgePortConfig').value) || (enabled ? 8443 : 8080);
         
         showStatusMessage('sslStatusMessage', 'Saving SSL configuration...', 'info');
         
@@ -1157,16 +1158,20 @@ async function updateSSLStatus() {
             }
             
             // Update the form fields to match the database configuration
-            const enabledCheckbox = document.getElementById('sslEnabledConfig');
-            const portInput = document.getElementById('sslPortConfig');
-            if (enabledCheckbox) enabledCheckbox.checked = result.ssl_enabled;
+            const connectionTypeSelect = document.getElementById('bridgeTypeConfig');
+            const portInput = document.getElementById('bridgePortConfig');
+            if (connectionTypeSelect) {
+                connectionTypeSelect.value = result.ssl_enabled ? 'HTTPS' : 'HTTP';
+                toggleConnectionSettings(); // Update UI accordingly
+            }
             if (portInput) portInput.value = result.ssl_port;
             
             console.log('SSL status loaded from database:', result.config);
             
         } else {
             // Fallback to basic status if API call fails
-            const enabled = document.getElementById('sslEnabledConfig').checked;
+            const connectionType = document.getElementById('bridgeTypeConfig').value;
+            const enabled = connectionType === 'HTTPS';
             document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
             document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
             document.getElementById('sslCertStatus').textContent = 'Check failed';
@@ -1176,7 +1181,8 @@ async function updateSSLStatus() {
     } catch (error) {
         console.error('Error checking SSL status:', error);
         // Fallback to basic status check
-        const enabled = document.getElementById('sslEnabledConfig').checked;
+        const connectionType = document.getElementById('bridgeTypeConfig').value;
+        const enabled = connectionType === 'HTTPS';
         document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
         document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
         document.getElementById('sslCertStatus').textContent = 'Check failed';
