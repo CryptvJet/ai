@@ -3111,7 +3111,11 @@ async function loadDatabaseConfigurations() {
             
             // Show that password is saved without showing actual password
             const aiPasswordField = document.getElementById('aiDbPassword');
-            aiPasswordField.placeholder = '••••••••••••• (Password saved)';
+            if (aiConfig.has_password) {
+                aiPasswordField.placeholder = '••••••••••••• (Password saved)';
+            } else {
+                aiPasswordField.placeholder = 'Enter AI database password';
+            }
         }
         
         // Load PulseCore database config
@@ -3127,7 +3131,11 @@ async function loadDatabaseConfigurations() {
             
             // Show that password is saved without showing actual password
             const pulsePasswordField = document.getElementById('pulsecoreDbPassword');
-            pulsePasswordField.placeholder = '••••••••••••• (Password saved)';
+            if (pulseConfig.has_password) {
+                pulsePasswordField.placeholder = '••••••••••••• (Password saved)';
+            } else {
+                pulsePasswordField.placeholder = 'Enter database password';
+            }
         }
         
     } catch (error) {

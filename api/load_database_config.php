@@ -58,6 +58,7 @@ try {
         }
         
         $sql = "SELECT config_name, config_type, server_host, server_port, database_name, username, 
+                       CASE WHEN password IS NOT NULL AND password != '' THEN 1 ELSE 0 END as has_password,
                        enabled, last_tested, test_result, test_error, updated_at
                 FROM ai_database_configs 
                 WHERE config_type = :config_type
