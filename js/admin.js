@@ -1237,7 +1237,10 @@ async function updateSSLStatus() {
             const connectionTypeSelect = document.getElementById('bridgeTypeConfig');
             const portInput = document.getElementById('bridgePortConfig');
             if (connectionTypeSelect) {
-                connectionTypeSelect.value = result.ssl_enabled ? 'HTTPS' : 'HTTP';
+                // Set connection type to HTTPS if certificates are uploaded, regardless of enabled flag
+                const shouldShowHTTPS = result.certificate_exists && result.key_exists;
+                connectionTypeSelect.value = shouldShowHTTPS ? 'HTTPS' : 'HTTP';
+                console.log('🔧 Setting connection type based on certificates:', shouldShowHTTPS ? 'HTTPS' : 'HTTP');
                 toggleConnectionSettings(); // Update UI accordingly
             }
             if (portInput) portInput.value = result.ssl_port;
