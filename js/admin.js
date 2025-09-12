@@ -944,17 +944,26 @@ function toggleConnectionSettings() {
     const portInput = document.getElementById('bridgePortConfig');
     const portHelpText = document.getElementById('portHelpText');
     
+    console.log('🔧 toggleConnectionSettings called - Connection Type:', connectionType);
+    console.log('🔧 SSL Section element:', sslSection ? 'FOUND' : 'NOT FOUND');
+    
     if (connectionType === 'HTTPS') {
+        console.log('✅ Showing SSL section');
         // Show SSL section
-        sslSection.style.display = 'block';
+        if (sslSection) {
+            sslSection.style.display = 'block';
+        }
         // Update port to HTTPS default
         if (portInput.value === '8080' || portInput.value === '80') {
             portInput.value = '8443';
         }
         portHelpText.textContent = 'Port for HTTPS bridge server (typically 8443)';
     } else if (connectionType === 'HTTP') {
+        console.log('❌ Hiding SSL section');
         // Hide SSL section
-        sslSection.style.display = 'none';
+        if (sslSection) {
+            sslSection.style.display = 'none';
+        }
         // Update port to HTTP default
         if (portInput.value === '8443' || portInput.value === '443') {
             portInput.value = '8080';
