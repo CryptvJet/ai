@@ -2877,6 +2877,124 @@ function hideTestDialog(statusId) {
 }
 
 // Initialize browser console capture when page loads
+// Ollama Configuration Functions
+async function testOllamaConnection() {
+    try {
+        console.log('🤖 Starting Ollama connection test...');
+        
+        const testButton = document.querySelector('button[onclick="testOllamaConnection()"]');
+        const originalText = testButton.textContent;
+        testButton.textContent = '🔄 Testing...';
+        testButton.disabled = true;
+        
+        document.getElementById('ollamaConnectionStatus').textContent = 'Testing...';
+        document.getElementById('ollamaModelsCount').textContent = '-';
+        document.getElementById('ollamaResponseTime').textContent = '-';
+        
+        const response = await fetch('../api/ollama-status.php');
+        const result = await response.json();
+        
+        testButton.textContent = originalText;
+        testButton.disabled = false;
+        
+        if (result.success && result.status === 'online') {
+            document.getElementById('ollamaConnectionStatus').textContent = 'Connected ✅';
+            document.getElementById('ollamaModelsCount').textContent = result.model_count || 0;
+            document.getElementById('ollamaResponseTime').textContent = result.response_time_ms + 'ms';
+            
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Ollama connection test successful!', 'success');
+            }
+        } else {
+            document.getElementById('ollamaConnectionStatus').textContent = 'Offline ❌';
+            document.getElementById('ollamaModelsCount').textContent = '-';
+            document.getElementById('ollamaResponseTime').textContent = '-';
+            
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Ollama connection failed: ' + (result.error || 'Unknown error'), 'error');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Ollama test failed:', error);
+        const testButton = document.querySelector('button[onclick="testOllamaConnection()"]');
+        testButton.textContent = '🧪 Test Ollama';
+        testButton.disabled = false;
+        
+        document.getElementById('ollamaConnectionStatus').textContent = 'Error ❌';
+        
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Ollama connection test failed: ' + error.message, 'error');
+        }
+    }
+}
+
+async function saveOllamaConfiguration() {
+    try {
+        const host = document.getElementById('ollamaHost').value || 'localhost';
+        const port = document.getElementById('ollamaPort').value || '11434';
+        const protocol = document.getElementById('ollamaProtocol').value || 'http';
+        const model = document.getElementById('ollamaModel').value || 'llama3.2';
+        
+        const response = await fetch('../api/save_ollama_config.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                host: host,
+                port: parseInt(port),
+                protocol: protocol,
+                default_model: model
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Ollama configuration saved successfully!', 'success');
+            }
+            
+            // Auto-test after saving
+            setTimeout(() => {
+                testOllamaConnection();
+            }, 500);
+            
+        } else {
+            throw new Error(result.message || 'Failed to save Ollama configuration');
+        }
+        
+    } catch (error) {
+        console.error('Error saving Ollama configuration:', error);
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error saving Ollama configuration: ' + error.message, 'error');
+        }
+    }
+}
+
+async function loadOllamaConfiguration() {
+    try {
+        const response = await fetch('../api/load_ollama_config.php');
+        const result = await response.json();
+        
+        if (result.success && result.config) {
+            document.getElementById('ollamaHost').value = result.config.host || 'localhost';
+            document.getElementById('ollamaPort').value = result.config.port || '11434';
+            document.getElementById('ollamaProtocol').value = result.config.protocol || 'http';
+            document.getElementById('ollamaModel').value = result.config.default_model || 'llama3.2';
+            
+            // Test connection with loaded config
+            testOllamaConnection();
+        }
+        
+    } catch (error) {
+        console.error('Error loading Ollama configuration:', error);
+        // Use defaults if loading fails
+        testOllamaConnection();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
     initializeCommandCopyEvents();
@@ -2885,6 +3003,14 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         window.aiAdmin = new AIAdmin();
         console.log('AIAdmin class instantiated and available globally');
+        
+        // Load Ollama configuration on page load
+        setTimeout(() => {
+            if (document.getElementById('ollamaHost')) {
+                loadOllamaConfiguration();
+            }
+        }, 1000);
+        
     } catch (error) {
         console.error('Failed to instantiate AIAdmin:', error);
     }
