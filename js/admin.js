@@ -127,13 +127,13 @@ class AIAdmin {
                 localStorage.setItem('bridge_host', result.config.host || 'localhost');
                 localStorage.setItem('bridge_port', result.config.port || '443');
                 localStorage.setItem('bridge_apikey', result.config.api_key || '');
-                localStorage.setItem('bridge_type', result.config.type || 'HTTPS');
+                localStorage.setItem('bridge_type', result.config.type || 'HTTP');
             } else {
                 // Fallback to localStorage if server config unavailable
                 const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
                 const bridgePort = localStorage.getItem('bridge_port') || '443';
                 const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
-                const bridgeType = localStorage.getItem('bridge_type') || 'HTTPS';
+                const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
 
                 document.getElementById('bridgeHostConfig').value = bridgeHost;
                 document.getElementById('bridgePortConfig').value = bridgePort;
@@ -146,13 +146,20 @@ class AIAdmin {
             const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
             const bridgePort = localStorage.getItem('bridge_port') || '443';
             const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
-            const bridgeType = localStorage.getItem('bridge_type') || 'HTTPS';
+            const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
 
             document.getElementById('bridgeHostConfig').value = bridgeHost;
             document.getElementById('bridgePortConfig').value = bridgePort;
             document.getElementById('bridgeApiKeyConfig').value = bridgeApiKey;
             document.getElementById('bridgeTypeConfig').value = bridgeType;
         }
+        
+        // Update UI based on connection type after loading settings
+        setTimeout(() => {
+            if (typeof toggleConnectionSettings === 'function') {
+                toggleConnectionSettings();
+            }
+        }, 100);
     }
 
     async saveAllSettings() {
@@ -924,6 +931,46 @@ async function saveBridgeConfiguration() {
         }
     }
 }
+
+// Connection Settings Toggle Function
+function toggleConnectionSettings() {
+    const connectionType = document.getElementById('bridgeTypeConfig').value;
+    const sslSection = document.getElementById('sslConfigSection');
+    const portInput = document.getElementById('bridgePortConfig');
+    const portHelpText = document.getElementById('portHelpText');
+    
+    if (connectionType === 'HTTPS') {
+        // Show SSL section
+        sslSection.style.display = 'block';
+        // Update port to HTTPS default
+        if (portInput.value === '8080' || portInput.value === '80') {
+            portInput.value = '8443';
+        }
+        portHelpText.textContent = 'Port for HTTPS bridge server (typically 8443)';
+    } else if (connectionType === 'HTTP') {
+        // Hide SSL section
+        sslSection.style.display = 'none';
+        // Update port to HTTP default
+        if (portInput.value === '8443' || portInput.value === '443') {
+            portInput.value = '8080';
+        }
+        portHelpText.textContent = 'Port for HTTP bridge server (typically 8080)';
+    } else if (connectionType === 'WebSocket') {
+        // Hide SSL section
+        sslSection.style.display = 'none';
+        // Update port to WebSocket default
+        if (portInput.value === '8443' || portInput.value === '443') {
+            portInput.value = '9001';
+        }
+        portHelpText.textContent = 'Port for WebSocket bridge server (typically 9001)';
+    }
+}
+
+// Initialize connection settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial state based on current selection
+    toggleConnectionSettings();
+});
 
 // SSL Certificate Management Functions
 async function uploadSSLCertificates() {

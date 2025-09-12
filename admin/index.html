@@ -199,9 +199,19 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="bridgeTypeConfig">Connection Type:</label>
+                        <select id="bridgeTypeConfig" onchange="toggleConnectionSettings()">
+                            <option value="HTTP" selected>HTTP</option>
+                            <option value="HTTPS">HTTPS</option>
+                            <option value="WebSocket">WebSocket</option>
+                        </select>
+                        <small>Communication protocol to use</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="bridgePortConfig">Bridge Port:</label>
-                        <input type="number" id="bridgePortConfig" value="443" placeholder="443">
-                        <small>Port number where your bridge service is running (443 for HTTPS, 80 for HTTP)</small>
+                        <input type="number" id="bridgePortConfig" value="8080" placeholder="8080">
+                        <small id="portHelpText">Port number where your bridge service is running</small>
                     </div>
 
                     <div class="form-group">
@@ -210,18 +220,8 @@
                         <small>Leave empty if no authentication is required</small>
                     </div>
 
-                    <div class="form-group">
-                        <label for="bridgeTypeConfig">Connection Type:</label>
-                        <select id="bridgeTypeConfig">
-                            <option value="HTTP">HTTP</option>
-                            <option value="HTTPS" selected>HTTPS</option>
-                            <option value="WebSocket">WebSocket</option>
-                        </select>
-                        <small>Communication protocol to use</small>
-                    </div>
-
-                    <!-- SSL Certificate Configuration (Integrated) -->
-                    <div class="ssl-config-section">
+                    <!-- SSL Certificate Configuration (Only for HTTPS) -->
+                    <div id="sslConfigSection" class="ssl-config-section" style="display: none;">
                         <h3>🔒 SSL Certificate Configuration</h3>
                         
                         <div class="form-row">
