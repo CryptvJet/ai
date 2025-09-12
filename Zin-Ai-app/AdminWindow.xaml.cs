@@ -30,7 +30,9 @@ public partial class AdminWindow : Window
         EnsureDataDirectories();
         
         LoadCurrentConfiguration();
+        LoadCurrentSSLConfiguration();
         UpdateSystemInfo();
+        UpdateBridgeActivityStatus();
     }
     
     private void EnsureDataDirectories()
@@ -480,6 +482,110 @@ public partial class AdminWindow : Window
 
     #region SSL Certificate Configuration
 
+    private void LoadCurrentSSLConfiguration()
+    {
+        try
+        {
+            // Load SSL configuration from file
+            var configPath = GetConfigPath("ssl_config.json", true);
+            if (File.Exists(configPath))
+            {
+                var configJson = File.ReadAllText(configPath);
+                var sslConfig = JsonConvert.DeserializeObject<dynamic>(configJson);
+                
+                // Update UI elements with loaded configuration
+                if (sslConfig != null)
+                {
+                    SSLEnabledCheckBox.IsChecked = sslConfig.enabled ?? false;
+                    SSLPortInput.Text = sslConfig.port?.ToString() ?? "8443";
+                    
+                    // Update status display
+                    UpdateSSLStatus(sslConfig);
+                    
+                    SSLStatusText.Text = "✅ SSL configuration loaded";
+                    SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                }
+            }
+            else
+            {
+                // No SSL config found, show default status
+                SSLStatusText.Text = "No SSL configuration found";
+                SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextMuted");
+            }
+            
+            // Check if certificate files exist
+            CheckSSLCertificateFiles();
+        }
+        catch (Exception ex)
+        {
+            SSLStatusText.Text = $"⚠️ Error loading SSL configuration: {ex.Message}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentOrange");
+        }
+    }
+
+    private void UpdateSSLStatus(dynamic sslConfig)
+    {
+        // Update status based on configuration
+        bool enabled = sslConfig?.enabled ?? false;
+        SSLEnabledCheckBox.IsChecked = enabled;
+        
+        if (enabled)
+        {
+            SSLStatusText.Text = $"✅ HTTPS enabled on port {sslConfig?.port ?? 8443}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+        }
+        else
+        {
+            SSLStatusText.Text = "HTTPS disabled";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextMuted");
+        }
+    }
+
+    private void CheckSSLCertificateFiles()
+    {
+        try
+        {
+            var certsDir = GetConfigPath("certs", true);
+            var certFile = Path.Combine(certsDir, "server.crt");
+            var keyFile = Path.Combine(certsDir, "server.key");
+            
+            bool certExists = File.Exists(certFile);
+            bool keyExists = File.Exists(keyFile);
+            
+            if (certExists && keyExists)
+            {
+                // Show certificate file information in the path inputs (read-only)
+                SSLCertPathInput.Text = "server.crt (uploaded)";
+                SSLKeyPathInput.Text = "server.key (uploaded)";
+                
+                // Update status to show certificates are available
+                if (SSLStatusText.Text.Contains("configuration loaded"))
+                {
+                    SSLStatusText.Text = "✅ SSL configured with certificates uploaded";
+                }
+            }
+            else if (certExists || keyExists)
+            {
+                SSLCertPathInput.Text = certExists ? "server.crt (uploaded)" : "";
+                SSLKeyPathInput.Text = keyExists ? "server.key (uploaded)" : "";
+                
+                SSLStatusText.Text = "⚠️ Incomplete certificate setup - missing " + 
+                                   (certExists ? "private key" : "certificate");
+                SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentOrange");
+            }
+            else
+            {
+                SSLCertPathInput.Text = "";
+                SSLKeyPathInput.Text = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            SSLStatusText.Text = $"⚠️ Error checking certificate files: {ex.Message}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentOrange");
+        }
+    }
+
     private void BrowseSSLCert(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new Microsoft.Win32.OpenFileDialog
@@ -510,7 +616,7 @@ public partial class AdminWindow : Window
         }
     }
 
-    private async void UploadSSLCertificates(object sender, RoutedEventArgs e)
+    private void UploadSSLCertificates(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -1111,8 +1217,140 @@ public partial class AdminWindow : Window
             ActivityOllamaStatus.Text = "● Not Available";
             ActivityOllamaStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
         }
+
+        // Test Bridge connections
+        UpdateBridgeActivityStatus();
     }
 
+    #endregion
+
+    #region Bridge Activity Status
+    
+    private async void UpdateBridgeActivityStatus()
+    {
+        // Test Bridge SSL connection status
+        try
+        {
+            var sslConfigPath = GetConfigPath("ssl_config.json", true);
+            if (File.Exists(sslConfigPath))
+            {
+                var sslConfigJson = File.ReadAllText(sslConfigPath);
+                var sslConfig = JsonConvert.DeserializeObject<dynamic>(sslConfigJson);
+                
+                bool sslEnabled = sslConfig?.enabled ?? false;
+                
+                if (sslEnabled)
+                {
+                    // Try to connect to bridge HTTPS endpoint
+                    try
+                    {
+                        string port = sslConfig?.port?.ToString() ?? "8443";
+                        var httpsUrl = $"https://localhost:{port}/api/status";
+                        
+                        var handler = new HttpClientHandler()
+                        {
+                            ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+                        };
+                        
+                        using var httpsClient = new HttpClient(handler);
+                        httpsClient.Timeout = TimeSpan.FromSeconds(5);
+                        var response = await httpsClient.GetAsync(httpsUrl);
+                        
+                        if (response.IsSuccessStatusCode)
+                        {
+                            ActivityBridgeSSLStatus.Text = "● Connected";
+                            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                        }
+                        else
+                        {
+                            ActivityBridgeSSLStatus.Text = "● Server Error";
+                            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                        }
+                    }
+                    catch
+                    {
+                        ActivityBridgeSSLStatus.Text = "● Not Available";
+                        ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                    }
+                }
+                else
+                {
+                    ActivityBridgeSSLStatus.Text = "● Disabled";
+                    ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+                }
+            }
+            else
+            {
+                ActivityBridgeSSLStatus.Text = "● Not Configured";
+                ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            }
+        }
+        catch
+        {
+            ActivityBridgeSSLStatus.Text = "● Error";
+            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+        
+        // Test Bridge API connection status  
+        try
+        {
+            var bridgeConfigPath = GetConfigPath("bridge_config.json", true);
+            if (File.Exists(bridgeConfigPath))
+            {
+                var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
+                var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
+                
+                if (bridgeConfig != null)
+                {
+                    var apiUrl = $"http://{bridgeConfig.Host}:{bridgeConfig.Port}/api/status";
+                    
+                    try
+                    {
+                        using var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+                        if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
+                        {
+                            request.Headers.Add("X-API-Key", bridgeConfig.ApiKey);
+                        }
+                        
+                        httpClient.Timeout = TimeSpan.FromSeconds(5);
+                        using var response = await httpClient.SendAsync(request);
+                        
+                        if (response.IsSuccessStatusCode)
+                        {
+                            ActivityBridgeAPIStatus.Text = "● Connected";
+                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+                        }
+                        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        {
+                            ActivityBridgeAPIStatus.Text = "● Auth Error";
+                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentOrange");
+                        }
+                        else
+                        {
+                            ActivityBridgeAPIStatus.Text = "● Server Error";
+                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                        }
+                    }
+                    catch
+                    {
+                        ActivityBridgeAPIStatus.Text = "● Not Available";
+                        ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                    }
+                }
+            }
+            else
+            {
+                ActivityBridgeAPIStatus.Text = "● Not Configured";
+                ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            }
+        }
+        catch
+        {
+            ActivityBridgeAPIStatus.Text = "● Error";
+            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+    
     #endregion
 
     #region Cleanup

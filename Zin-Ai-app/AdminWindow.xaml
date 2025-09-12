@@ -389,9 +389,10 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 
-                                <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                <StackPanel Grid.Column="0" Margin="0,0,15,0">
                                     <TextBlock Text="PulseCore Database" 
                                               Foreground="{StaticResource TextSecondary}" 
                                               FontSize="14" 
@@ -414,7 +415,7 @@
                                               FontWeight="Bold"/>
                                 </StackPanel>
                                 
-                                <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                                <StackPanel Grid.Column="1" Margin="15,0,15,0">
                                     <TextBlock Text="Ollama AI Server" 
                                               Foreground="{StaticResource TextSecondary}" 
                                               FontSize="14" 
@@ -431,6 +432,29 @@
                                             Background="{StaticResource AccentGreen}"
                                             Click="TestAllConnections"
                                             HorizontalAlignment="Left"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Margin="15,0,0,0">
+                                    <TextBlock Text="Bridge SSL Connection" 
+                                              Foreground="{StaticResource TextSecondary}" 
+                                              FontSize="14" 
+                                              Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="ActivityBridgeSSLStatus" 
+                                              Text="● Not Configured" 
+                                              Foreground="{StaticResource TextMuted}" 
+                                              FontSize="16" 
+                                              FontWeight="Bold"
+                                              Margin="0,0,0,15"/>
+                                    
+                                    <TextBlock Text="Bridge API Status" 
+                                              Foreground="{StaticResource TextSecondary}" 
+                                              FontSize="14" 
+                                              Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="ActivityBridgeAPIStatus" 
+                                              Text="● Disconnected" 
+                                              Foreground="{StaticResource AccentPink}" 
+                                              FontSize="16" 
+                                              FontWeight="Bold"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
