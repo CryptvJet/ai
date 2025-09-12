@@ -26,9 +26,6 @@ try {
         exit;
     }
     
-    require_once __DIR__ . '/db_config.php';
-    global $ai_pdo;
-    
     // Validate required fields
     $config_type = $input['config_type'] ?? null; // 'pulsecore' or 'ai'
     $server_host = $input['server_host'] ?? '';
@@ -49,6 +46,22 @@ try {
     
     $config_name = $config_type . '_main';
     
+    // For AI config: use the provided credentials to connect to that database
+    // For PulseCore config: use AI database connection (which should be configured first)
+    if ($config_type === 'ai') {
+        // Create new connection using the provided AI database credentials
+        $dsn = "mysql:host={$server_host};port={$server_port};dbname={$database_name};charset=utf8mb4";
+        $pdo = new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+    } else {
+        // For PulseCore config, save to the AI database (which should already be configured)
+        require_once __DIR__ . '/db_config.php';
+        global $ai_pdo;
+        $pdo = $ai_pdo;
+    }
+    
     // Save configuration to database
     $sql = "INSERT INTO ai_database_configs 
             (config_name, config_type, server_host, server_port, database_name, username, password, updated_at) 
@@ -62,7 +75,7 @@ try {
             updated_at = NOW(),
             test_result = 'pending'";
     
-    $stmt = $ai_pdo->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':config_name' => $config_name,
         ':config_type' => $config_type,
