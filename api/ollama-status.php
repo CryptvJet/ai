@@ -26,9 +26,21 @@ function checkOllamaStatus() {
         
         if ($config) {
             $protocol = $config['protocol'] ?: 'http';
-            $host = $config['host'] ?: 'localhost';
+            $host = trim($config['host'] ?: 'localhost');
             $port = $config['port'] ?: 11434;
+            
+            // Validate host - only default to localhost if truly empty
+            if (empty($host)) {
+                $host = 'localhost';
+            }
+            
+            // Remove any protocol prefix from host if accidentally included
+            $host = preg_replace('/^https?:\/\//', '', $host);
+            
             $ollama_url = $protocol . '://' . $host . ':' . $port;
+            
+            // Log the constructed URL for debugging
+            error_log("Ollama URL constructed: " . $ollama_url);
         } else {
             $ollama_url = 'http://localhost:11434'; // Fallback if no config
         }
