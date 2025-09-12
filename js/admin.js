@@ -686,6 +686,13 @@ class AIAdmin {
             }
         }, 5000);
     }
+    
+    // Load SSL certificate status
+    try {
+        updateSSLStatus();
+    } catch (error) {
+        console.error('Error loading SSL status:', error);
+    }
 }
 
 // Global functions - use the one defined in index.html
@@ -1041,16 +1048,72 @@ async function testHTTPSConnection() {
     }
 }
 
-function updateSSLStatus() {
-    // Check if certificate files exist and update status accordingly
-    const enabled = document.getElementById('sslEnabledConfig').checked;
-    
-    document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
-    document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
-    
-    // Update certificate status (would need API call to check actual files)
-    document.getElementById('sslCertStatus').textContent = 'Check required';
-    document.getElementById('sslKeyStatus').textContent = 'Check required';
+async function updateSSLStatus() {
+    try {
+        // Check if certificate files exist via API call
+        const response = await fetch('../api/check_ssl_certs.php');
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update certificate status
+            const certStatus = document.getElementById('sslCertStatus');
+            const keyStatus = document.getElementById('sslKeyStatus');
+            const httpsStatus = document.getElementById('httpsStatus');
+            
+            // Update certificate file status
+            if (result.certificate_exists) {
+                certStatus.textContent = 'Uploaded ✓';
+                certStatus.className = 'status-value status-success';
+            } else {
+                certStatus.textContent = 'Not uploaded';
+                certStatus.className = 'status-value status-error';
+            }
+            
+            // Update key file status
+            if (result.key_exists) {
+                keyStatus.textContent = 'Uploaded ✓';
+                keyStatus.className = 'status-value status-success';
+            } else {
+                keyStatus.textContent = 'Not uploaded';
+                keyStatus.className = 'status-value status-error';
+            }
+            
+            // Update HTTPS status based on configuration and file availability
+            if (result.ssl_enabled && result.both_uploaded) {
+                httpsStatus.textContent = `Enabled (Port ${result.ssl_port})`;
+                httpsStatus.className = 'status-value status-success';
+            } else if (result.ssl_enabled && !result.both_uploaded) {
+                httpsStatus.textContent = 'Enabled (No Certificates)';
+                httpsStatus.className = 'status-value status-warning';
+            } else {
+                httpsStatus.textContent = 'Disabled';
+                httpsStatus.className = 'status-value status-error';
+            }
+            
+            // Update the checkbox to match the actual configuration
+            const enabledCheckbox = document.getElementById('sslEnabledConfig');
+            const portInput = document.getElementById('sslPortConfig');
+            if (enabledCheckbox) enabledCheckbox.checked = result.ssl_enabled;
+            if (portInput) portInput.value = result.ssl_port;
+            
+        } else {
+            // Fallback to basic status if API call fails
+            const enabled = document.getElementById('sslEnabledConfig').checked;
+            document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
+            document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
+            document.getElementById('sslCertStatus').textContent = 'Check failed';
+            document.getElementById('sslKeyStatus').textContent = 'Check failed';
+        }
+        
+    } catch (error) {
+        console.error('Error checking SSL status:', error);
+        // Fallback to basic status check
+        const enabled = document.getElementById('sslEnabledConfig').checked;
+        document.getElementById('httpsStatus').textContent = enabled ? 'Enabled' : 'Disabled';
+        document.getElementById('httpsStatus').className = enabled ? 'status-value status-success' : 'status-value status-error';
+        document.getElementById('sslCertStatus').textContent = 'Check failed';
+        document.getElementById('sslKeyStatus').textContent = 'Check failed';
+    }
 }
 
 function showStatusMessage(elementId, message, type) {
