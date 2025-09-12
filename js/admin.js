@@ -2895,7 +2895,10 @@ async function testOllamaConnection() {
         const response = await fetch('../api/ollama-status.php');
         console.log('📡 Response status:', response.status);
         
-        const result = await response.json();
+        const responseText = await response.text();
+        console.log('📄 Raw response:', responseText);
+        
+        const result = JSON.parse(responseText);
         console.log('📊 Ollama API response:', result);
         
         testButton.textContent = originalText;
