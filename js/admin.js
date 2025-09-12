@@ -616,7 +616,7 @@ class AIAdmin {
             
             // Use protocol from bridge configuration
             const protocol = bridgeConfig.type.toLowerCase() === 'https' ? 'https' : 'http';
-            const bridgeUrl = `${protocol}://${bridgeConfig.host}:${bridgeConfig.port}/api/status`;
+            const bridgeUrl = `${protocol}://${bridgeConfig.host}:${bridgeConfig.port}/ai/api/pc-bridge-status.php`;
             const startTime = Date.now();
             
             const headers = {
