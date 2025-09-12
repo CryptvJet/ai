@@ -33,5 +33,14 @@ launch/
 # Ai Bins
 data/
 
+# Node.js (from pc-bridge)
+node_modules/
+*.npm
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
 # Random
 Zin-Ai-app/nul
