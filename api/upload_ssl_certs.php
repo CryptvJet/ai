@@ -122,7 +122,7 @@ try {
                       cert_content = :cert_content,
                       cert_filename = :cert_filename";
         
-        $stmt = $pulse_pdo->prepare($updateSql);
+        $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
             ':cert_content' => $certContent,
             ':cert_filename' => $certFileName
@@ -137,7 +137,7 @@ try {
                       key_content = :key_content,
                       key_filename = :key_filename";
         
-        $stmt = $pulse_pdo->prepare($updateSql);
+        $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
             ':key_content' => $keyContent,
             ':key_filename' => $keyFileName
@@ -157,7 +157,7 @@ try {
                       cert_filename = :cert_filename,
                       key_filename = :key_filename";
         
-        $stmt = $pulse_pdo->prepare($updateSql);
+        $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
             ':cert_content' => $certContent,
             ':key_content' => $keyContent,

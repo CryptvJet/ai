@@ -15,7 +15,7 @@ require_once __DIR__ . '/db_config.php';
 try {
     // Get SSL configuration from database
     $sql = "SELECT * FROM ai_ssl_config WHERE id = 1";
-    $stmt = $pulse_pdo->prepare($sql);
+    $stmt = $ai_pdo->prepare($sql);
     $stmt->execute();
     $config = $stmt->fetch();
     
@@ -38,13 +38,13 @@ try {
     // If database says files are uploaded but content is missing, update database
     if ($config['cert_uploaded'] && !$certContentExists) {
         $updateSql = "UPDATE ai_ssl_config SET cert_uploaded = 0, cert_upload_date = NULL WHERE id = 1";
-        $pulse_pdo->prepare($updateSql)->execute();
+        $ai_pdo->prepare($updateSql)->execute();
         $config['cert_uploaded'] = false;
     }
     
     if ($config['key_uploaded'] && !$keyContentExists) {
         $updateSql = "UPDATE ai_ssl_config SET key_uploaded = 0, key_upload_date = NULL WHERE id = 1";
-        $pulse_pdo->prepare($updateSql)->execute();
+        $ai_pdo->prepare($updateSql)->execute();
         $config['key_uploaded'] = false;
     }
     
