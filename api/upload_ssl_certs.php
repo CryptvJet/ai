@@ -29,7 +29,9 @@ try {
     $currentDb = $dbQuery->fetch()['current_db'];
     error_log("🗃️ AI PDO connected to database: " . $currentDb);
     
-    // Database should now be correctly configured via ai_db_config.json
+    // Force switch to the correct database where the table exists
+    $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
+    error_log("🔄 Switched to vemite5_pulse-core-ai database where table exists");
     
     $uploadType = $_POST['upload_type'] ?? 'both';
     error_log("📋 Upload type: " . $uploadType);
