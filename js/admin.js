@@ -870,11 +870,38 @@ function testPCAIConnection() {
 }
 
 function testBridgeConnection() {
+    console.log('🧪 Starting bridge connection test...');
+    
+    // Show visual feedback
+    const testButton = document.querySelector('button[onclick="testBridgeConnection()"]');
+    const originalText = testButton.textContent;
+    testButton.textContent = '🔄 Testing...';
+    testButton.disabled = true;
+    
+    if (window.aiAdmin) {
+        window.aiAdmin.showNotification('Testing bridge connection...', 'info');
+    }
+    
     showTestDialog('bridgeStatus', 'Testing Bridge connection...');
+    
     window.aiAdmin.checkIntegrations().then(() => {
+        console.log('✅ Bridge test completed successfully');
+        testButton.textContent = originalText;
+        testButton.disabled = false;
         hideTestDialog('bridgeStatus');
-    }).catch(() => {
+        
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Bridge connection test completed!', 'success');
+        }
+    }).catch((error) => {
+        console.error('❌ Bridge test failed:', error);
+        testButton.textContent = originalText;
+        testButton.disabled = false;
         hideTestDialog('bridgeStatus');
+        
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Bridge connection test failed: ' + error.message, 'error');
+        }
     });
 }
 
