@@ -1041,14 +1041,18 @@ async function uploadSSLCertificates() {
 // Individual SSL upload functions
 async function uploadSSLCertificate() {
     try {
+        console.log('🔐 Starting SSL certificate upload...');
         const certFile = document.getElementById('sslCertFile').files[0];
         
         if (!certFile) {
+            console.log('❌ No certificate file selected');
             if (window.aiAdmin) {
                 window.aiAdmin.showNotification('Please select a certificate file first', 'error');
             }
             return;
         }
+        
+        console.log('📄 Certificate file:', certFile.name, certFile.size, 'bytes');
         
         const formData = new FormData();
         formData.append('certificate', certFile);
@@ -1058,12 +1062,22 @@ async function uploadSSLCertificate() {
         formData.append('private_key', dummyKeyFile);
         formData.append('upload_type', 'certificate_only');
         
+        console.log('📡 Sending certificate to API...');
         const response = await fetch('../api/upload_ssl_certs.php', {
             method: 'POST',
             body: formData
         });
         
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API Error Response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
         const result = await response.json();
+        console.log('✅ Certificate upload result:', result);
         
         if (result.success) {
             document.getElementById('sslCertStatus').textContent = 'Uploaded ✅';

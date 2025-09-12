@@ -22,7 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/db_config.php';
 
 try {
+    error_log("🔐 SSL Upload API Called - Method: " . $_SERVER['REQUEST_METHOD']);
+    
     $uploadType = $_POST['upload_type'] ?? 'both';
+    error_log("📋 Upload type: " . $uploadType);
     
     // Check if files were uploaded based on upload type
     if ($uploadType === 'certificate_only') {
@@ -31,7 +34,10 @@ try {
             exit;
         }
         $certFile = $_FILES['certificate'];
+        error_log("📄 Certificate file info: " . $certFile['name'] . " (" . $certFile['size'] . " bytes)");
+        
         if ($certFile['error'] !== UPLOAD_ERR_OK) {
+            error_log("❌ Certificate upload error: " . $certFile['error']);
             echo json_encode(['success' => false, 'error' => 'Certificate file upload failed']);
             exit;
         }
@@ -122,11 +128,13 @@ try {
                       cert_content = :cert_content,
                       cert_filename = :cert_filename";
         
+        error_log("💾 Saving certificate to database...");
         $stmt = $ai_pdo->prepare($updateSql);
         $stmt->execute([
             ':cert_content' => $certContent,
             ':cert_filename' => $certFileName
         ]);
+        error_log("✅ Certificate saved successfully");
         
     } elseif ($uploadType === 'key_only') {
         $updateSql = "INSERT INTO ai_ssl_config (id, key_uploaded, key_upload_date, key_content, key_filename) 
@@ -193,10 +201,16 @@ try {
     ]);
     
 } catch (Exception $e) {
+    error_log("❌ SSL Upload Exception: " . $e->getMessage());
+    error_log("❌ Stack trace: " . $e->getTraceAsString());
     echo json_encode([
         'success' => false,
         'error' => 'Failed to upload SSL certificates',
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'debug' => [
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]
     ]);
 }
 ?>
