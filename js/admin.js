@@ -585,12 +585,12 @@ class AIAdmin {
         try {
             debugLog('Checking Bridge connection...');
             
-            // Load bridge configuration from localStorage or default values
+            // Load bridge configuration from form inputs (which were loaded from server)
             const bridgeConfig = {
-                host: localStorage.getItem('bridge_host') || 'localhost',
-                port: localStorage.getItem('bridge_port') || '443',
-                apiKey: localStorage.getItem('bridge_apikey') || '',
-                type: localStorage.getItem('bridge_type') || 'HTTPS'
+                host: document.getElementById('bridgeHostConfig')?.value || 'localhost',
+                port: document.getElementById('bridgePortConfig')?.value || '8080',
+                apiKey: document.getElementById('bridgeApiKeyConfig')?.value || '',
+                type: document.getElementById('bridgeTypeConfig')?.value || 'HTTP'
             };
 
             // Update bridge info in the UI
