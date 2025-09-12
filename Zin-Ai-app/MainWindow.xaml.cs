@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using Microsoft.Win32;
 using System.IO;
+using System.Diagnostics;
 
 namespace ZinAI;
 
@@ -35,6 +36,10 @@ public partial class MainWindow : Window
     private HttpClient httpClient = null!;
     private string connectionString = "";
     
+    // Ollama Process Management
+    private Process? ollamaProcess = null;
+    private bool ollamaStartedByApp = false;
+    
     // Journal and Chat State
     private List<ChatMessage> chatHistory = new List<ChatMessage>();
     private Timer statsUpdateTimer = null!;
@@ -44,6 +49,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         InitializeComponents();
         LoadConfiguration();
+        StartOllama();
         StartStatsUpdates();
     }
 
@@ -736,10 +742,106 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Ollama Process Management
+
+    private async void StartOllama()
+    {
+        try
+        {
+            // Check if Ollama is already running
+            var existingProcesses = Process.GetProcessesByName("ollama");
+            if (existingProcesses.Length > 0)
+            {
+                Debug.WriteLine("Ollama is already running");
+                return;
+            }
+
+            // Start Ollama with external host binding
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "ollama",
+                Arguments = "serve",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            // Set environment variable to allow external connections
+            startInfo.EnvironmentVariables["OLLAMA_HOST"] = "0.0.0.0";
+
+            ollamaProcess = Process.Start(startInfo);
+            if (ollamaProcess != null)
+            {
+                ollamaStartedByApp = true;
+                Debug.WriteLine("Started Ollama with external access enabled");
+                
+                // Wait a moment for Ollama to start up
+                await Task.Delay(3000);
+                
+                // Verify Ollama is responding
+                await VerifyOllamaConnection();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to start Ollama: {ex.Message}");
+        }
+    }
+
+    private async Task VerifyOllamaConnection()
+    {
+        try
+        {
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            
+            var response = await client.GetAsync("http://localhost:11434/api/tags");
+            if (response.IsSuccessStatusCode)
+            {
+                Debug.WriteLine("Ollama is responding successfully");
+            }
+            else
+            {
+                Debug.WriteLine($"Ollama responded with status: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to verify Ollama connection: {ex.Message}");
+        }
+    }
+
+    private void StopOllama()
+    {
+        try
+        {
+            if (ollamaProcess != null && !ollamaProcess.HasExited && ollamaStartedByApp)
+            {
+                Debug.WriteLine("Stopping Ollama...");
+                ollamaProcess.Kill();
+                ollamaProcess.WaitForExit(5000);
+                ollamaProcess.Dispose();
+                ollamaProcess = null;
+                ollamaStartedByApp = false;
+                Debug.WriteLine("Ollama stopped successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error stopping Ollama: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     #region Cleanup
 
     protected override void OnClosed(EventArgs e)
     {
+        // Stop Ollama if we started it
+        StopOllama();
+        
         // Cleanup resources
         speechSynthesizer?.Dispose();
         speechRecognizer?.Dispose();

@@ -75,10 +75,16 @@ try {
     ]);
     
 } catch (Exception $e) {
+    error_log("Ollama config save error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
         'error' => 'Failed to save Ollama configuration',
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'debug_info' => [
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'trace' => $e->getTraceAsString()
+        ]
     ]);
 }
 ?>
