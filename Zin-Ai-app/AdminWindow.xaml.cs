@@ -1037,3 +1037,9 @@ public class BridgeConfiguration
     public string ConnectionType { get; set; } = "HTTP";
 }
 
+public class OllamaResponse
+{
+    public string Response { get; set; } = string.Empty;
+    public bool Done { get; set; }
+}
+

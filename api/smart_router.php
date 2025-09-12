@@ -10,10 +10,48 @@ class SmartAIRouter {
     private $ai_pdo;
     private $circuit_breaker_threshold = 3;
     private $fallback_timeout = 5; // seconds
+    private $bridge_config;
     
     public function __construct() {
         global $ai_pdo;
         $this->ai_pdo = $ai_pdo;
+        $this->loadBridgeConfiguration();
+    }
+    
+    /**
+     * Load bridge configuration from config file
+     */
+    private function loadBridgeConfiguration() {
+        try {
+            $configPath = __DIR__ . '/../../data/pws/bridge_config.json';
+            
+            if (file_exists($configPath)) {
+                $configData = file_get_contents($configPath);
+                $config = json_decode($configData, true);
+                
+                if ($config) {
+                    $this->bridge_config = [
+                        'host' => $config['host'] ?? 'localhost',
+                        'port' => $config['port'] ?? '3001',
+                        'api_key' => $config['api_key'] ?? '',
+                        'type' => $config['type'] ?? 'HTTP',
+                        'enabled' => $config['enabled'] ?? true
+                    ];
+                    return;
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Failed to load bridge configuration: " . $e->getMessage());
+        }
+        
+        // Default configuration
+        $this->bridge_config = [
+            'host' => 'localhost',
+            'port' => '3001',
+            'api_key' => '',
+            'type' => 'HTTP',
+            'enabled' => true
+        ];
     }
     
     /**
@@ -95,12 +133,26 @@ class SmartAIRouter {
      */
     private function checkOllamaStatus() {
         try {
-            // First try the Node.js bridge at 3001
+            // Check if bridge is enabled
+            if (!$this->bridge_config['enabled']) {
+                return $this->checkOllamaDirectly();
+            }
+            
+            // Try the configured bridge
+            $bridge_url = "http://{$this->bridge_config['host']}:{$this->bridge_config['port']}/ollama/status";
+            
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'http://localhost:3001/ollama/status');
+            curl_setopt($ch, CURLOPT_URL, $bridge_url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Quick 3 second timeout for status check
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+            
+            // Add API key if configured
+            if (!empty($this->bridge_config['api_key'])) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Authorization: Bearer ' . $this->bridge_config['api_key']
+                ]);
+            }
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -207,7 +259,7 @@ class SmartAIRouter {
     private function executeLocalAI($message, $session_id, $context) {
         try {
             // Try to communicate with PC Bridge
-            $bridgeUrl = 'http://localhost:3001'; // PC Bridge URL
+            $bridgeUrl = "http://{$this->bridge_config['host']}:{$this->bridge_config['port']}";
             
             $postData = [
                 'message' => $message,
@@ -222,10 +274,17 @@ class SmartAIRouter {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30 second timeout
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            $headers = [
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen(json_encode($postData))
-            ]);
+            ];
+            
+            // Add API key if configured
+            if (!empty($this->bridge_config['api_key'])) {
+                $headers[] = 'Authorization: Bearer ' . $this->bridge_config['api_key'];
+            }
+            
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

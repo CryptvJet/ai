@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'db_config.php';
-require_once 'simple_ollama_router.php';
+require_once 'smart_router.php';
 
 class AIChat {
     private $ai_pdo;
@@ -25,7 +25,7 @@ class AIChat {
         $this->ai_pdo = $ai_pdo;
         $this->pulse_pdo = $pulse_pdo;
         $this->vars_pdo = $vars_pdo;
-        $this->router = new SimpleOllamaRouter();
+        $this->router = new SmartAIRouter();
     }
     
     public function processMessage($message, $session_id, $mode = 'chill', $journal_context = null) {

@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyTitle>Zin AI - Binary Pulse Theory Intelligence</AssemblyTitle>
+    <AssemblyDescription>Advanced AI chat and journal system with voice recognition and PulseCore integration</AssemblyDescription>
+    <AssemblyProduct>Zin AI</AssemblyProduct>
+    <AssemblyCompany>PulseCore Technologies</AssemblyCompany>
+    <AssemblyCopyright>Copyright © 2024 PulseCore Technologies</AssemblyCopyright>
   </PropertyGroup>
 
   <ItemGroup>

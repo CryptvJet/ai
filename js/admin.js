@@ -112,10 +112,39 @@ class AIAdmin {
             console.error('Error loading settings:', error);
         }
 
-        // Load bridge configuration from localStorage
+        // Load bridge configuration from server
         try {
+            const response = await fetch('../api/load_bridge_config.php');
+            const result = await response.json();
+            
+            if (result.success && result.config) {
+                document.getElementById('bridgeHostConfig').value = result.config.host || 'localhost';
+                document.getElementById('bridgePortConfig').value = result.config.port || '3001';
+                document.getElementById('bridgeApiKeyConfig').value = result.config.api_key || '';
+                document.getElementById('bridgeTypeConfig').value = result.config.type || 'HTTP';
+                
+                // Also update localStorage for backward compatibility
+                localStorage.setItem('bridge_host', result.config.host || 'localhost');
+                localStorage.setItem('bridge_port', result.config.port || '3001');
+                localStorage.setItem('bridge_apikey', result.config.api_key || '');
+                localStorage.setItem('bridge_type', result.config.type || 'HTTP');
+            } else {
+                // Fallback to localStorage if server config unavailable
+                const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
+                const bridgePort = localStorage.getItem('bridge_port') || '3001';
+                const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
+                const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
+
+                document.getElementById('bridgeHostConfig').value = bridgeHost;
+                document.getElementById('bridgePortConfig').value = bridgePort;
+                document.getElementById('bridgeApiKeyConfig').value = bridgeApiKey;
+                document.getElementById('bridgeTypeConfig').value = bridgeType;
+            }
+        } catch (error) {
+            console.error('Error loading bridge configuration:', error);
+            // Fallback to localStorage
             const bridgeHost = localStorage.getItem('bridge_host') || 'localhost';
-            const bridgePort = localStorage.getItem('bridge_port') || '8080';
+            const bridgePort = localStorage.getItem('bridge_port') || '3001';
             const bridgeApiKey = localStorage.getItem('bridge_apikey') || '';
             const bridgeType = localStorage.getItem('bridge_type') || 'HTTP';
 
@@ -123,8 +152,6 @@ class AIAdmin {
             document.getElementById('bridgePortConfig').value = bridgePort;
             document.getElementById('bridgeApiKeyConfig').value = bridgeApiKey;
             document.getElementById('bridgeTypeConfig').value = bridgeType;
-        } catch (error) {
-            console.error('Error loading bridge configuration:', error);
         }
     }
 
@@ -561,7 +588,7 @@ class AIAdmin {
             // Load bridge configuration from localStorage or default values
             const bridgeConfig = {
                 host: localStorage.getItem('bridge_host') || 'localhost',
-                port: localStorage.getItem('bridge_port') || '8080',
+                port: localStorage.getItem('bridge_port') || '3001',
                 apiKey: localStorage.getItem('bridge_apikey') || '',
                 type: localStorage.getItem('bridge_type') || 'HTTP'
             };
@@ -835,30 +862,51 @@ function testBridgeConnection() {
     });
 }
 
-function saveBridgeConfiguration() {
+async function saveBridgeConfiguration() {
     try {
         const host = document.getElementById('bridgeHostConfig').value || 'localhost';
-        const port = document.getElementById('bridgePortConfig').value || '8080';
+        const port = document.getElementById('bridgePortConfig').value || '3001';
         const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
         const type = document.getElementById('bridgeTypeConfig').value || 'HTTP';
 
-        // Save to localStorage
-        localStorage.setItem('bridge_host', host);
-        localStorage.setItem('bridge_port', port);
-        localStorage.setItem('bridge_apikey', apiKey);
-        localStorage.setItem('bridge_type', type);
+        // Save to server configuration file
+        const response = await fetch('../api/save_bridge_config.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                host: host,
+                port: port,
+                api_key: apiKey,
+                type: type,
+                enabled: true
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Also save to localStorage for backward compatibility
+            localStorage.setItem('bridge_host', host);
+            localStorage.setItem('bridge_port', port);
+            localStorage.setItem('bridge_apikey', apiKey);
+            localStorage.setItem('bridge_type', type);
 
-        // Show success notification
-        if (window.aiAdmin) {
-            window.aiAdmin.showNotification('Bridge configuration saved successfully!', 'success');
-        }
-
-        // Refresh integrations to update the connection status
-        setTimeout(() => {
+            // Show success notification
             if (window.aiAdmin) {
-                window.aiAdmin.checkIntegrations();
+                window.aiAdmin.showNotification('Bridge configuration saved successfully!', 'success');
             }
-        }, 500);
+
+            // Refresh integrations to update the connection status
+            setTimeout(() => {
+                if (window.aiAdmin) {
+                    window.aiAdmin.checkIntegrations();
+                }
+            }, 500);
+        } else {
+            throw new Error(result.message || 'Failed to save bridge configuration');
+        }
 
     } catch (error) {
         console.error('Error saving bridge configuration:', error);

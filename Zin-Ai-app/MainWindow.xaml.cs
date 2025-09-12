@@ -33,7 +33,6 @@ public partial class MainWindow : Window
     
     // AI and Database Components
     private HttpClient httpClient = null!;
-    private string ollamaApiUrl = "http://localhost:11434/api/generate";
     private string connectionString = "";
     
     // Journal and Chat State
@@ -292,34 +291,41 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Check if Ollama is available
-            var ollamaRequest = new
+            // Use web API with bridge support
+            var chatRequest = new
             {
-                model = "llama3.2:3b-instruct-q4_K_M",
-                prompt = $"You are Zin AI, a specialized assistant for Binary Pulse Theory (BPT). You have direct access to PulseCore database and understand BPT concepts deeply. Respond to: {userMessage}",
-                stream = false
+                message = userMessage,
+                session_id = "desktop_chat_" + Environment.MachineName,
+                mode = "chill"
             };
 
-            var jsonRequest = JsonConvert.SerializeObject(ollamaRequest);
+            var jsonRequest = JsonConvert.SerializeObject(chatRequest);
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync(ollamaApiUrl, content);
+            var response = await httpClient.PostAsync("http://localhost/ai/api/chat.php", content);
             
             if (response.IsSuccessStatusCode)
             {
                 var jsonResponse = await response.Content.ReadAsStringAsync();
-                var ollamaResponse = JsonConvert.DeserializeObject<OllamaResponse>(jsonResponse);
+                var chatResponse = JsonConvert.DeserializeObject<ChatApiResponse>(jsonResponse);
                 
-                AddChatMessage(ollamaResponse?.Response ?? "No response from AI", isUser: false);
+                if (chatResponse?.Success == true)
+                {
+                    AddChatMessage(chatResponse.Response ?? "No response from AI", isUser: false);
+                }
+                else
+                {
+                    AddChatMessage("I'm having trouble processing your request. Please try again.", isUser: false);
+                }
             }
             else
             {
-                AddChatMessage("I'm having trouble connecting to Ollama. Please check that Ollama is running and the model is loaded.", isUser: false);
+                AddChatMessage("I'm having trouble connecting to the AI service. Please check your connection.", isUser: false);
             }
         }
         catch (Exception)
         {
-            AddChatMessage("Connection error. Please check that Ollama is running and try again.", isUser: false);
+            AddChatMessage("Connection error. Please check your network connection and try again.", isUser: false);
         }
     }
 
@@ -418,28 +424,37 @@ public partial class MainWindow : Window
     {
         try
         {
-            var ollamaRequest = new
+            // Use web API with bridge support for journal mode
+            var chatRequest = new
             {
-                model = "llama3.2:3b-instruct-q4_K_M",
-                prompt = $"You are Zin, an AI writing companion specialized in helping with journal writing and creative expression. Be supportive, insightful, and encouraging. Respond to: {userMessage}",
-                stream = false
+                message = userMessage,
+                session_id = "desktop_journal_" + Environment.MachineName,
+                mode = "journal",
+                journal_context = JournalTextBox.Text.StartsWith("Begin speaking") ? "" : JournalTextBox.Text
             };
 
-            var jsonRequest = JsonConvert.SerializeObject(ollamaRequest);
+            var jsonRequest = JsonConvert.SerializeObject(chatRequest);
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync(ollamaApiUrl, content);
+            var response = await httpClient.PostAsync("http://localhost/ai/api/chat.php", content);
             
             if (response.IsSuccessStatusCode)
             {
                 var jsonResponse = await response.Content.ReadAsStringAsync();
-                var ollamaResponse = JsonConvert.DeserializeObject<OllamaResponse>(jsonResponse);
+                var chatResponse = JsonConvert.DeserializeObject<ChatApiResponse>(jsonResponse);
                 
-                AddZinResponse(ollamaResponse?.Response ?? "I'm here to help with your writing!");
+                if (chatResponse?.Success == true)
+                {
+                    AddZinResponse(chatResponse.Response ?? "I'm here to help with your writing!");
+                }
+                else
+                {
+                    AddZinResponse("I'm here to help with your writing! Try asking me to analyze your thoughts, suggest improvements, or help you continue your ideas.");
+                }
             }
             else
             {
-                AddZinResponse("I'm here to help with your writing! Try asking me to analyze your thoughts, suggest improvements, or help you continue your ideas.");
+                AddZinResponse("I'm having trouble connecting to the writing assistant service. Please check your connection.");
             }
         }
         catch (Exception)
@@ -745,9 +760,14 @@ public class ChatMessage
     public DateTime Timestamp { get; set; }
 }
 
-public class OllamaResponse
+public class ChatApiResponse
 {
+    public bool Success { get; set; }
     public string Response { get; set; } = string.Empty;
-    public bool Done { get; set; }
+    public string Mode { get; set; } = string.Empty;
+    public int ProcessingTimeMs { get; set; }
+    public bool Speak { get; set; }
+    public string Error { get; set; } = string.Empty;
 }
+
 
