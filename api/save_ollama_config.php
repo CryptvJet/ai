@@ -26,40 +26,49 @@ try {
         exit;
     }
     
+    // Include database configuration
+    require_once __DIR__ . '/db_config.php';
+    
     // Validate and sanitize inputs
-    $config = [
-        'host' => $input['host'] ?? 'localhost',
-        'port' => (int)($input['port'] ?? 11434),
-        'protocol' => $input['protocol'] ?? 'http',
-        'default_model' => $input['default_model'] ?? 'llama3.2',
-        'updated_at' => date('c'),
-        'updated_by' => 'admin_panel'
-    ];
+    $host = $input['host'] ?? 'localhost';
+    $port = (int)($input['port'] ?? 11434);
+    $protocol = $input['protocol'] ?? 'http';
+    $default_model = $input['default_model'] ?? 'llama3.2';
     
-    // Ensure data directory exists
-    $dataDir = __DIR__ . '/../../data';
-    $pwsDir = $dataDir . '/pws';
+    // Force switch to the correct database
+    $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
     
-    if (!is_dir($dataDir)) {
-        mkdir($dataDir, 0755, true);
-    }
+    // Save configuration to database
+    $sql = "INSERT INTO ollama_config (id, host, port, protocol, default_model, updated_at) 
+            VALUES (1, :host1, :port1, :protocol1, :model1, NOW())
+            ON DUPLICATE KEY UPDATE 
+            host = :host2,
+            port = :port2, 
+            protocol = :protocol2,
+            default_model = :model2,
+            updated_at = NOW()";
     
-    if (!is_dir($pwsDir)) {
-        mkdir($pwsDir, 0755, true);
-    }
-    
-    // Save configuration to file
-    $configPath = $pwsDir . '/ollama_config.json';
-    $configJson = json_encode($config, JSON_PRETTY_PRINT);
-    
-    if (file_put_contents($configPath, $configJson) === false) {
-        throw new Exception('Failed to write configuration file');
-    }
+    $stmt = $ai_pdo->prepare($sql);
+    $stmt->execute([
+        ':host1' => $host,
+        ':port1' => $port,
+        ':protocol1' => $protocol,
+        ':model1' => $default_model,
+        ':host2' => $host,
+        ':port2' => $port,
+        ':protocol2' => $protocol,
+        ':model2' => $default_model
+    ]);
     
     echo json_encode([
         'success' => true,
         'message' => 'Ollama configuration saved successfully',
-        'config' => $config
+        'config' => [
+            'host' => $host,
+            'port' => $port,
+            'protocol' => $protocol,
+            'default_model' => $default_model
+        ]
     ]);
     
 } catch (Exception $e) {
