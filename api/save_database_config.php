@@ -89,8 +89,10 @@ try {
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
-        'error' => 'Failed to save database configuration',
-        'message' => $e->getMessage()
+        'error' => 'Failed to save database configuration: ' . $e->getMessage(),
+        'sql_error' => $e->getMessage(),
+        'line' => $e->getLine(),
+        'file' => $e->getFile()
     ]);
 }
 ?>
