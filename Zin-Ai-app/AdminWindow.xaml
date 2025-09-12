@@ -608,9 +608,10 @@
                                      Background="{StaticResource SecondaryBackground}"
                                      Foreground="{StaticResource TextPrimary}"
                                      BorderBrush="{StaticResource BorderColor}"
+                                     SelectionChanged="BridgeTypeChanged"
                                      Margin="10,0,0,15">
-                                <ComboBoxItem Content="HTTP"/>
-                                <ComboBoxItem Content="HTTPS" IsSelected="True"/>
+                                <ComboBoxItem Content="HTTP" IsSelected="True"/>
+                                <ComboBoxItem Content="HTTPS"/>
                                 <ComboBoxItem Content="WebSocket"/>
                                 <ComboBoxItem Content="TCP"/>
                             </ComboBox>
@@ -634,19 +635,37 @@
                                         Click="SaveBridgeConfiguration"/>
                             </StackPanel>
 
-                            <!-- SSL Certificate Configuration (Integrated) -->
-                            <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" 
-                                      Text="🔒 SSL Certificate Configuration" 
-                                      FontSize="16" 
-                                      FontWeight="Bold" 
-                                      Foreground="{StaticResource AccentPurple}" 
-                                      Margin="0,20,0,10"/>
+                            <!-- SSL Certificate Configuration (HTTPS Only) -->
+                            <StackPanel x:Name="SSLConfigPanel" 
+                                       Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Visibility="Collapsed">
+                                <TextBlock Text="🔒 SSL Certificate Configuration" 
+                                          FontSize="16" 
+                                          FontWeight="Bold" 
+                                          Foreground="{StaticResource AccentPurple}" 
+                                          Margin="0,20,0,10"/>
+                                
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" 
-                                      Text="SSL Certificate (.crt/.pem):" 
-                                      Foreground="{StaticResource TextSecondary}" 
-                                      Margin="0,0,0,5"/>
-                            <StackPanel Grid.Row="7" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,15">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" 
+                                              Text="SSL Certificate (.crt/.pem):" 
+                                              Foreground="{StaticResource TextSecondary}" 
+                                              Margin="0,0,0,5"/>
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,15">
                                 <TextBox x:Name="SSLCertPathInput" 
                                         Style="{StaticResource AdminInputStyle}"
                                         Text=""
@@ -660,11 +679,11 @@
                                         Click="BrowseSSLCert"/>
                             </StackPanel>
 
-                            <TextBlock Grid.Row="6" Grid.Column="1" 
+                                    <TextBlock Grid.Row="0" Grid.Column="1" 
                                       Text="Private Key (.key):" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,15">
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,15">
                                 <TextBox x:Name="SSLKeyPathInput" 
                                         Style="{StaticResource AdminInputStyle}"
                                         Text=""
@@ -678,24 +697,24 @@
                                         Click="BrowseSSLKey"/>
                             </StackPanel>
 
-                            <TextBlock Grid.Row="8" Grid.Column="0" 
+                                    <TextBlock Grid.Row="2" Grid.Column="0" 
                                       Text="HTTPS Port:" 
                                       Foreground="{StaticResource TextSecondary}" 
                                       Margin="0,0,0,5"/>
-                            <TextBox x:Name="SSLPortInput" 
-                                    Grid.Row="9" Grid.Column="0"
+                                    <TextBox x:Name="SSLPortInput" 
+                                            Grid.Row="3" Grid.Column="0"
                                     Style="{StaticResource AdminInputStyle}"
                                     Text="8443"
                                     Margin="0,0,10,15"/>
 
-                            <CheckBox x:Name="SSLEnabledCheckBox" 
-                                     Grid.Row="9" Grid.Column="1"
+                                    <CheckBox x:Name="SSLEnabledCheckBox" 
+                                             Grid.Row="3" Grid.Column="1"
                                      Content="Enable HTTPS"
                                      Foreground="{StaticResource TextPrimary}"
                                      FontSize="14"
                                      Margin="10,5,0,15"/>
 
-                            <StackPanel Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" 
+                                    <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
                                        Orientation="Horizontal" 
                                        Margin="0,10,0,15">
                                 <Button Content="📤 Upload SSL Certificates" 
@@ -720,8 +739,8 @@
                                       Foreground="{StaticResource TextMuted}"
                                       Margin="0,10,0,5"/>
 
-                            <TextBlock x:Name="SSLStatusText" 
-                                      Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="2"
+                                    <TextBlock x:Name="SSLStatusText" 
+                                              Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
                                       Text="SSL configuration status will appear here"
                                       Foreground="{StaticResource TextMuted}"
                                       Margin="0,5,0,0"/>
