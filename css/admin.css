@@ -273,6 +273,36 @@ body {
     box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
 }
 
+.btn-upload {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-upload:hover:not(:disabled) { 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+}
+
+.btn-upload:disabled {
+    background: rgba(100, 116, 139, 0.5);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Response Templates */
 .responses-controls {
     margin-bottom: 2rem;

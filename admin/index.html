@@ -229,13 +229,15 @@
                             <div class="form-group">
                                 <label for="sslCertFile">SSL Certificate (.crt/.pem):</label>
                                 <input type="file" id="sslCertFile" accept=".crt,.pem,.cert" class="file-input">
-                                <small>Upload your SSL certificate file from cPanel</small>
+                                <button onclick="uploadSSLCertificate()" class="btn-upload" disabled>📤 Upload Certificate</button>
+                                <small>Select certificate file first, then click upload</small>
                             </div>
                             
                             <div class="form-group">
                                 <label for="sslKeyFile">Private Key (.key):</label>
                                 <input type="file" id="sslKeyFile" accept=".key,.pem" class="file-input">
-                                <small>Upload your private key file from cPanel</small>
+                                <button onclick="uploadSSLKey()" class="btn-upload" disabled>📤 Upload Private Key</button>
+                                <small>Select private key file first, then click upload</small>
                             </div>
                         </div>
 

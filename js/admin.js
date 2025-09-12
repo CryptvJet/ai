@@ -880,20 +880,15 @@ function testBridgeConnection() {
 
 async function saveBridgeConfiguration() {
     try {
+        // Validate SSL upload first if HTTPS is selected
+        if (!(await validateSSLUpload())) {
+            return;
+        }
+        
         const host = document.getElementById('bridgeHostConfig').value || 'localhost';
         const port = document.getElementById('bridgePortConfig').value || '443';
         const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
         const type = document.getElementById('bridgeTypeConfig').value || 'HTTPS';
-
-        // If HTTPS is selected, first upload SSL certificates if both files exist
-        if (type === 'HTTPS') {
-            const certFile = document.getElementById('sslCertFile').files[0];
-            const keyFile = document.getElementById('sslKeyFile').files[0];
-            
-            if (certFile && keyFile) {
-                await uploadSSLCertificates();
-            }
-        }
 
         // Save to server configuration file
         const response = await fetch('../api/save_bridge_config.php', {
@@ -980,6 +975,24 @@ function toggleConnectionSettings() {
 document.addEventListener('DOMContentLoaded', function() {
     // Set initial state based on current selection
     toggleConnectionSettings();
+    
+    // Add event listeners for file inputs to enable/disable upload buttons
+    const sslCertFile = document.getElementById('sslCertFile');
+    const sslKeyFile = document.getElementById('sslKeyFile');
+    const certUploadBtn = document.querySelector('button[onclick="uploadSSLCertificate()"]');
+    const keyUploadBtn = document.querySelector('button[onclick="uploadSSLKey()"]');
+    
+    if (sslCertFile && certUploadBtn) {
+        sslCertFile.addEventListener('change', function() {
+            certUploadBtn.disabled = !this.files[0];
+        });
+    }
+    
+    if (sslKeyFile && keyUploadBtn) {
+        sslKeyFile.addEventListener('change', function() {
+            keyUploadBtn.disabled = !this.files[0];
+        });
+    }
 });
 
 // SSL Certificate Management Functions
@@ -1023,6 +1036,101 @@ async function uploadSSLCertificates() {
             window.aiAdmin.showNotification('Error uploading SSL certificates: ' + error.message, 'error');
         }
     }
+}
+
+// Individual SSL upload functions
+async function uploadSSLCertificate() {
+    try {
+        const certFile = document.getElementById('sslCertFile').files[0];
+        
+        if (!certFile) {
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Please select a certificate file first', 'error');
+            }
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('certificate', certFile);
+        
+        const response = await fetch('../api/upload_ssl_cert.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('sslCertStatus').textContent = 'Uploaded ✅';
+            document.getElementById('sslCertStatus').className = 'status-value success';
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('SSL certificate uploaded successfully!', 'success');
+            }
+        } else {
+            throw new Error(result.error || 'Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading SSL certificate:', error);
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error uploading certificate: ' + error.message, 'error');
+        }
+    }
+}
+
+async function uploadSSLKey() {
+    try {
+        const keyFile = document.getElementById('sslKeyFile').files[0];
+        
+        if (!keyFile) {
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Please select a private key file first', 'error');
+            }
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('private_key', keyFile);
+        
+        const response = await fetch('../api/upload_ssl_key.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('sslKeyStatus').textContent = 'Uploaded ✅';
+            document.getElementById('sslKeyStatus').className = 'status-value success';
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('SSL private key uploaded successfully!', 'success');
+            }
+        } else {
+            throw new Error(result.error || 'Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading SSL key:', error);
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification('Error uploading private key: ' + error.message, 'error');
+        }
+    }
+}
+
+// Check if SSL files are uploaded before allowing save
+async function validateSSLUpload() {
+    const connectionType = document.getElementById('bridgeType').value;
+    
+    if (connectionType === 'HTTPS') {
+        const certStatus = document.getElementById('sslCertStatus').textContent;
+        const keyStatus = document.getElementById('sslKeyStatus').textContent;
+        
+        if (!certStatus.includes('✅') || !keyStatus.includes('✅')) {
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Please upload SSL certificate and private key before saving HTTPS configuration', 'error');
+            }
+            return false;
+        }
+    }
+    return true;
 }
 
 // saveSSLConfiguration function removed - functionality merged into saveBridgeConfiguration
