@@ -57,27 +57,51 @@ try {
             exit;
         }
         
-        $sql = "SELECT config_name, config_type, server_host, server_port, database_name, username, 
-                       CASE WHEN password IS NOT NULL AND password != '' THEN 1 ELSE 0 END as has_password,
-                       enabled, last_tested, test_result, test_error, updated_at
-                FROM ai_database_configs 
-                WHERE config_type = :config_type
-                ORDER BY config_name";
-        $stmt = $ai_pdo->prepare($sql);
-        $stmt->execute([':config_type' => $config_type]);
-        $config = $stmt->fetch();
-        
-        if ($config) {
-            echo json_encode([
-                'success' => true,
-                'config' => $config
-            ]);
+        if ($config_type === 'ai') {
+            // Load AI config from JSON file
+            $ai_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
+            if (file_exists($ai_config_path)) {
+                $ai_config = json_decode(file_get_contents($ai_config_path), true);
+                if ($ai_config) {
+                    echo json_encode([
+                        'success' => true,
+                        'config' => [
+                            'server_host' => $ai_config['Server'] ?? '',
+                            'server_port' => $ai_config['Port'] ?? 3306,
+                            'database_name' => $ai_config['Database'] ?? '',
+                            'username' => $ai_config['Username'] ?? '',
+                            'has_password' => !empty($ai_config['Password']) ? 1 : 0
+                        ]
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'Invalid AI configuration file']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'AI configuration not found']);
+            }
         } else {
-            echo json_encode([
-                'success' => false,
-                'error' => 'Configuration not found',
-                'config_type' => $config_type
-            ]);
+            // Load PulseCore config from database
+            $sql = "SELECT config_name, config_type, server_host, server_port, database_name, username, 
+                           CASE WHEN password IS NOT NULL AND password != '' THEN 1 ELSE 0 END as has_password,
+                           enabled, last_tested, test_result, test_error, updated_at
+                    FROM ai_database_configs 
+                    WHERE config_type = :config_type
+                    ORDER BY config_name";
+            $stmt = $ai_pdo->prepare($sql);
+            $stmt->execute([':config_type' => $config_type]);
+            $config = $stmt->fetch();
+            
+            if ($config) {
+                echo json_encode([
+                    'success' => true,
+                    'config' => $config
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'PulseCore configuration not found'
+                ]);
+            }
         }
     }
     

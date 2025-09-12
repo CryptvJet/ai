@@ -46,14 +46,40 @@ try {
     
     $config_name = $config_type . '_main';
     
-    // Always save configs to the AI database where the ai_database_configs table exists
     if ($config_type === 'ai') {
-        // Create new connection using the provided AI database credentials
-        $dsn = "mysql:host={$server_host};port={$server_port};dbname={$database_name};charset=utf8mb4";
-        $pdo = new PDO($dsn, $username, $password, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        // For AI config, save to ai_db_config.json file (bootstrap connection)
+        $ai_config = [
+            'Server' => $server_host,
+            'Database' => $database_name,
+            'Username' => $username,
+            'Password' => $password,
+            'Port' => $server_port
+        ];
+        
+        $config_path = __DIR__ . '/../data/pws/ai_db_config.json';
+        $config_dir = dirname($config_path);
+        
+        // Ensure directory exists
+        if (!is_dir($config_dir)) {
+            mkdir($config_dir, 0755, true);
+        }
+        
+        if (file_put_contents($config_path, json_encode($ai_config, JSON_PRETTY_PRINT)) === false) {
+            throw new Exception('Failed to save AI database configuration file');
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'AI database configuration saved successfully',
+            'config' => [
+                'server_host' => $server_host,
+                'server_port' => $server_port,
+                'database_name' => $database_name,
+                'username' => $username
+            ]
         ]);
+        exit;
+        
     } else {
         // For PulseCore config, connect to the AI database using saved AI config
         $ai_config_path = __DIR__ . '/../data/pws/ai_db_config.json';

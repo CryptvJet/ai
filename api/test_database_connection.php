@@ -21,23 +21,9 @@ try {
         exit;
     }
     
-    // Load the saved configuration first
-    $ai_config_path = __DIR__ . '/../data/pws/ai_db_config.json';
-    if (!file_exists($ai_config_path)) {
-        throw new Exception('AI database configuration file not found');
-    }
-    
-    $ai_config = json_decode(file_get_contents($ai_config_path), true);
-    if (!$ai_config) {
-        throw new Exception('Invalid AI database configuration');
-    }
-    
-    // Connect to AI database to get the saved config
-    $dsn = "mysql:host={$ai_config['Server']};port=3306;dbname={$ai_config['Database']};charset=utf8mb4";
-    $ai_pdo = new PDO($dsn, $ai_config['Username'], $ai_config['Password'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
+    // Use existing db_config.php for AI database connection
+    require_once __DIR__ . '/db_config.php';
+    global $ai_pdo;
     
     // Get the saved database configuration
     $sql = "SELECT * FROM ai_database_configs WHERE config_type = :config_type";
