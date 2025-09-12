@@ -14,22 +14,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function checkOllamaStatus() {
-    // Load bridge configuration to connect to PC where Ollama is running
-    $configPath = __DIR__ . '/../data/pws/bridge_config.json';
-    
-    if (file_exists($configPath)) {
-        $configData = file_get_contents($configPath);
-        $bridgeConfig = json_decode($configData, true);
+    // Load Ollama configuration from database
+    try {
+        require_once __DIR__ . '/db_config.php';
+        $ai_pdo->exec("USE `vemite5_pulse-core-ai`");
         
-        if ($bridgeConfig && isset($bridgeConfig['Host'])) {
-            $protocol = strtolower($bridgeConfig['ConnectionType']) === 'https' ? 'https' : 'http';
-            $bridge_url = $protocol . '://' . $bridgeConfig['Host'] . ':' . $bridgeConfig['Port'];
-            $ollama_url = $bridge_url . '/ollama'; // Bridge should proxy Ollama requests
+        $sql = "SELECT * FROM ollama_config WHERE id = 1";
+        $stmt = $ai_pdo->prepare($sql);
+        $stmt->execute();
+        $config = $stmt->fetch();
+        
+        if ($config) {
+            $protocol = $config['protocol'] ?: 'http';
+            $host = $config['host'] ?: 'localhost';
+            $port = $config['port'] ?: 11434;
+            $ollama_url = $protocol . '://' . $host . ':' . $port;
         } else {
-            $ollama_url = 'http://localhost:11434'; // Fallback
+            $ollama_url = 'http://localhost:11434'; // Fallback if no config
         }
-    } else {
-        $ollama_url = 'http://localhost:11434'; // Fallback
+        
+    } catch (Exception $e) {
+        error_log("Failed to load Ollama config from database: " . $e->getMessage());
+        $ollama_url = 'http://localhost:11434'; // Fallback on error
     }
     
     // Check if Ollama is running

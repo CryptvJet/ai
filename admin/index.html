@@ -264,64 +264,64 @@
 
                     <div id="sslStatusMessage" class="status-message"></div>
                 </div>
-            </section>
 
-            <!-- Ollama Configuration Section -->
-            <section class="bridge-config-section">
-                <div class="bridge-config-header">
-                    <h3>🤖 Ollama AI Server Configuration</h3>
-                    <p>Configure connection to your Ollama AI server</p>
-                </div>
-
-                <div class="bridge-config-content">
-                    <div class="bridge-form-grid">
-                        <div class="form-group">
-                            <label for="ollamaHost">Server Host</label>
-                            <input type="text" id="ollamaHost" class="form-control" placeholder="localhost" value="localhost">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ollamaPort">Server Port</label>
-                            <input type="number" id="ollamaPort" class="form-control" placeholder="11434" value="11434">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ollamaProtocol">Protocol</label>
-                            <select id="ollamaProtocol" class="form-control">
-                                <option value="http">HTTP</option>
-                                <option value="https">HTTPS</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ollamaModel">Default Model</label>
-                            <input type="text" id="ollamaModel" class="form-control" placeholder="llama3.2" value="llama3.2">
-                        </div>
+                <!-- Ollama Configuration Section -->
+                <div class="bridge-config-section">
+                    <div class="bridge-config-header">
+                        <h3>🤖 Ollama AI Server Configuration</h3>
+                        <p>Configure connection to your Ollama AI server</p>
                     </div>
 
-                    <div class="bridge-status">
-                        <div class="status-grid">
-                            <div class="status-item">
-                                <span class="status-label">Connection:</span>
-                                <span id="ollamaConnectionStatus" class="status-value">Testing...</span>
+                    <div class="bridge-config-content">
+                        <div class="bridge-form-grid">
+                            <div class="form-group">
+                                <label for="ollamaHost">Server Host</label>
+                                <input type="text" id="ollamaHost" class="form-control" placeholder="localhost" value="localhost">
                             </div>
-                            <div class="status-item">
-                                <span class="status-label">Models Available:</span>
-                                <span id="ollamaModelsCount" class="status-value">-</span>
+
+                            <div class="form-group">
+                                <label for="ollamaPort">Server Port</label>
+                                <input type="number" id="ollamaPort" class="form-control" placeholder="11434" value="11434">
                             </div>
-                            <div class="status-item">
-                                <span class="status-label">Response Time:</span>
-                                <span id="ollamaResponseTime" class="status-value">-</span>
+
+                            <div class="form-group">
+                                <label for="ollamaProtocol">Protocol</label>
+                                <select id="ollamaProtocol" class="form-control">
+                                    <option value="http">HTTP</option>
+                                    <option value="https">HTTPS</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ollamaModel">Default Model</label>
+                                <input type="text" id="ollamaModel" class="form-control" placeholder="llama3.2" value="llama3.2">
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bridge-config-actions">
-                        <button onclick="testOllamaConnection()" class="btn-secondary">🧪 Test Ollama</button>
-                        <button onclick="saveOllamaConfiguration()" class="btn-primary">💾 Save Settings</button>
-                    </div>
+                        <div class="bridge-status">
+                            <div class="status-grid">
+                                <div class="status-item">
+                                    <span class="status-label">Connection:</span>
+                                    <span id="ollamaConnectionStatus" class="status-value">Testing...</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Models Available:</span>
+                                    <span id="ollamaModelsCount" class="status-value">-</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Response Time:</span>
+                                    <span id="ollamaResponseTime" class="status-value">-</span>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div id="ollamaStatusMessage" class="status-message"></div>
+                        <div class="bridge-config-actions">
+                            <button onclick="testOllamaConnection()" class="btn-secondary">🧪 Test Ollama</button>
+                            <button onclick="saveOllamaConfiguration()" class="btn-primary">💾 Save Settings</button>
+                        </div>
+
+                        <div id="ollamaStatusMessage" class="status-message"></div>
+                    </div>
                 </div>
             </section>
 
