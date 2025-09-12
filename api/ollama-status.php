@@ -14,7 +14,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function checkOllamaStatus() {
-    $ollama_url = 'http://localhost:11434';
+    // Load bridge configuration to connect to PC where Ollama is running
+    $configPath = __DIR__ . '/../data/pws/bridge_config.json';
+    
+    if (file_exists($configPath)) {
+        $configData = file_get_contents($configPath);
+        $bridgeConfig = json_decode($configData, true);
+        
+        if ($bridgeConfig && isset($bridgeConfig['Host'])) {
+            $protocol = strtolower($bridgeConfig['ConnectionType']) === 'https' ? 'https' : 'http';
+            $bridge_url = $protocol . '://' . $bridgeConfig['Host'] . ':' . $bridgeConfig['Port'];
+            $ollama_url = $bridge_url . '/ollama'; // Bridge should proxy Ollama requests
+        } else {
+            $ollama_url = 'http://localhost:11434'; // Fallback
+        }
+    } else {
+        $ollama_url = 'http://localhost:11434'; // Fallback
+    }
     
     // Check if Ollama is running
     $ch = curl_init();

@@ -723,7 +723,7 @@ public partial class AdminWindow : Window
             SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
 
             var port = int.TryParse(SSLPortInput.Text, out int sslPort) ? sslPort : 8443;
-            var httpsUrl = $"https://localhost:{port}/status";
+            var httpsUrl = $"https://pulsecore.one:{port}/ai/api/pc-bridge-status.php";
 
             using var request = new HttpRequestMessage(HttpMethod.Get, httpsUrl);
             
@@ -1273,7 +1273,7 @@ public partial class AdminWindow : Window
                     try
                     {
                         string port = sslConfig?.port?.ToString() ?? "8443";
-                        var httpsUrl = $"https://localhost:{port}/api/status";
+                        var httpsUrl = $"https://pulsecore.one:{port}/ai/api/pc-bridge-status.php";
                         
                         var handler = new HttpClientHandler()
                         {
@@ -1330,7 +1330,8 @@ public partial class AdminWindow : Window
                 
                 if (bridgeConfig != null)
                 {
-                    var apiUrl = $"http://{bridgeConfig.Host}:{bridgeConfig.Port}/api/status";
+                    var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
+                    var apiUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/ai/api/pc-bridge-status.php";
                     
                     try
                     {
