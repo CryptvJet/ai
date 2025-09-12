@@ -376,7 +376,9 @@ public partial class AdminWindow : Window
             BridgeStatusText.Text = "Testing bridge connection...";
             BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
             
-            var bridgeUrl = $"http://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/status";
+            var connectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
+            var protocol = connectionType.ToLower() == "https" ? "https" : "http";
+            var bridgeUrl = $"{protocol}://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/status";
             
             using var request = new HttpRequestMessage(HttpMethod.Get, bridgeUrl);
             if (!string.IsNullOrEmpty(BridgeApiKeyInput.Password))
@@ -412,8 +414,9 @@ public partial class AdminWindow : Window
             BridgeStatusText.Text = "Connecting to bridge...";
             BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
             
-            var bridgeUrl = $"http://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/connect";
             var connectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
+            var protocol = connectionType.ToLower() == "https" ? "https" : "http";
+            var bridgeUrl = $"{protocol}://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/connect";
             
             var requestData = new
             {
