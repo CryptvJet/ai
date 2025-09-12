@@ -3000,6 +3000,91 @@ async function loadOllamaConfiguration() {
 }
 
 
+async function savePulseCoreConfig() {
+    try {
+        const server_host = document.getElementById('pulsecoreDbServer').value || 'localhost';
+        const database_name = document.getElementById('pulsecoreDbName').value || 'pulsecore';
+        const username = document.getElementById('pulsecoreDbUsername').value || 'root';
+        const password = document.getElementById('pulsecoreDbPassword').value;
+        const server_port = document.getElementById('pulsecoreDbPort').value || 3306;
+        
+        const response = await fetch('../api/save_database_config.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                config_type: 'pulsecore',
+                server_host, 
+                database_name, 
+                username, 
+                password, 
+                server_port: parseInt(server_port)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('pulsecoreDbStatusMessage').innerHTML = '<div class="status-message success">✅ PulseCore configuration saved successfully!</div>';
+        } else {
+            document.getElementById('pulsecoreDbStatusMessage').innerHTML = `<div class="status-message error">❌ Failed to save: ${result.error}</div>`;
+        }
+        
+    } catch (error) {
+        document.getElementById('pulsecoreDbStatusMessage').innerHTML = `<div class="status-message error">❌ Save failed: ${error.message}</div>`;
+    }
+}
+
+async function saveAIDatabaseConfiguration() {
+    try {
+        const server_host = document.getElementById('aiDbServer').value || 'pulsecore.one';
+        const database_name = document.getElementById('aiDbName').value || 'vemite5_pulse-core-ai';
+        const username = document.getElementById('aiDbUsername').value || 'vemite5_p-core';
+        const password = document.getElementById('aiDbPassword').value;
+        const server_port = document.getElementById('aiDbPort').value || 3306;
+        
+        const response = await fetch('../api/save_database_config.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                config_type: 'ai',
+                server_host, 
+                database_name, 
+                username, 
+                password, 
+                server_port: parseInt(server_port)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('aiDbStatusMessage').innerHTML = '<div class="status-message success">✅ AI database configuration saved successfully!</div>';
+        } else {
+            document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message error">❌ Failed to save: ${result.error}</div>`;
+        }
+        
+    } catch (error) {
+        document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message error">❌ Save failed: ${error.message}</div>`;
+    }
+}
+
+async function testAIDatabaseConnection() {
+    try {
+        const response = await fetch('../api/load_database_config.php?type=ai');
+        const result = await response.json();
+        
+        if (result.success && result.config) {
+            const config = result.config;
+            document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message success">✅ AI Database: ${config.test_result === 'success' ? 'Connected' : 'Configuration loaded'}</div>`;
+        } else {
+            document.getElementById('aiDbStatusMessage').innerHTML = '<div class="status-message error">❌ No AI database configuration found</div>';
+        }
+        
+    } catch (error) {
+        document.getElementById('aiDbStatusMessage').innerHTML = `<div class="status-message error">❌ Test failed: ${error.message}</div>`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeBrowserConsoleCapture();
     initializeCommandCopyEvents();

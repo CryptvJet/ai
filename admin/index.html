@@ -322,50 +322,93 @@
 
                         <div id="ollamaStatusMessage" class="status-message"></div>
                     </div>
-                </div>
 
-                <div class="section-divider"></div>
+                    <div class="section-divider"></div>
 
-                <!-- Database Configuration Section -->
+                    <!-- PulseCore Database Configuration Section -->
                 <h3>💾 PulseCore Database Configuration</h3>
                 
                 <div class="database-config-form">
                     <div class="form-group">
-                        <label for="dbServer">Database Server:</label>
-                        <input type="text" id="dbServer" value="localhost" placeholder="localhost">
+                        <label for="pulsecoreDbServer">Database Server:</label>
+                        <input type="text" id="pulsecoreDbServer" value="localhost" placeholder="localhost">
                         <small>Server hostname or IP address</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="dbName">Database Name:</label>
-                        <input type="text" id="dbName" value="pulsecore" placeholder="pulsecore">
+                        <label for="pulsecoreDbName">Database Name:</label>
+                        <input type="text" id="pulsecoreDbName" value="pulsecore" placeholder="pulsecore">
                         <small>Name of the PulseCore database</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="dbUsername">Username:</label>
-                        <input type="text" id="dbUsername" value="root" placeholder="root">
+                        <label for="pulsecoreDbUsername">Username:</label>
+                        <input type="text" id="pulsecoreDbUsername" value="root" placeholder="root">
                         <small>Database username</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="dbPassword">Password:</label>
-                        <input type="password" id="dbPassword" placeholder="Enter database password">
+                        <label for="pulsecoreDbPassword">Password:</label>
+                        <input type="password" id="pulsecoreDbPassword" placeholder="Enter database password">
                         <small>Database password (will be encrypted)</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="dbPort">Port:</label>
-                        <input type="number" id="dbPort" value="3306" placeholder="3306">
+                        <label for="pulsecoreDbPort">Port:</label>
+                        <input type="number" id="pulsecoreDbPort" value="3306" placeholder="3306">
                         <small>Database port (default: 3306)</small>
                     </div>
 
                     <div class="database-config-actions">
-                        <button onclick="testPulseCoreConnection()" class="btn-secondary">🧪 Test Connection</button>
-                        <button onclick="testVariablesConnection()" class="btn-secondary">🧪 Test Variables</button>
+                        <button onclick="testPulseCoreConnection()" class="btn-secondary">🧪 Test PulseCore & Variables</button>
+                        <button onclick="savePulseCoreConfig()" class="btn-primary">💾 Save PulseCore</button>
                     </div>
 
-                    <div id="dbStatusMessage" class="status-message"></div>
+                    <div id="pulsecoreDbStatusMessage" class="status-message"></div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- AI Database Configuration Section -->
+                <h3>🤖 AI Database Configuration</h3>
+                
+                <div class="database-config-form">
+                    <div class="form-group">
+                        <label for="aiDbServer">AI Database Server:</label>
+                        <input type="text" id="aiDbServer" value="pulsecore.one" placeholder="pulsecore.one">
+                        <small>Server hostname or IP address for AI database</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiDbName">AI Database Name:</label>
+                        <input type="text" id="aiDbName" value="vemite5_pulse-core-ai" placeholder="vemite5_pulse-core-ai">
+                        <small>Name of the AI database</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiDbUsername">AI Username:</label>
+                        <input type="text" id="aiDbUsername" value="vemite5_p-core" placeholder="vemite5_p-core">
+                        <small>AI database username</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiDbPassword">AI Password:</label>
+                        <input type="password" id="aiDbPassword" placeholder="Enter AI database password">
+                        <small>AI database password (will be encrypted)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiDbPort">AI Port:</label>
+                        <input type="number" id="aiDbPort" value="3306" placeholder="3306">
+                        <small>AI database port (default: 3306)</small>
+                    </div>
+
+                    <div class="database-config-actions">
+                        <button onclick="testAIDatabaseConnection()" class="btn-secondary">🧪 Test AI Database</button>
+                        <button onclick="saveAIDatabaseConfiguration()" class="btn-primary">💾 Save AI Settings</button>
+                    </div>
+
+                    <div id="aiDbStatusMessage" class="status-message"></div>
                 </div>
             </section>
 
