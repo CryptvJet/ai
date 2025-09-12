@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS ai_database_configs (
     INDEX idx_last_tested (last_tested)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Insert default database configurations
-INSERT IGNORE INTO ai_database_configs (config_name, config_type, server_host, database_name, username, password) VALUES
-('pulsecore_main', 'pulsecore', 'pulsecore.one', 'vemite5_pulse-core', 'vemite5_p-core', 'l%tN!^6^u4=2'),
-('ai_main', 'ai', 'pulsecore.one', 'vemite5_pulse-core-ai', 'vemite5_p-core', 'l%tN!^6^u4=2');
+-- Insert empty default database configurations (to be filled via admin panel)
+INSERT IGNORE INTO ai_database_configs (config_name, config_type, server_host, database_name, username, password, enabled) VALUES
+('pulsecore_main', 'pulsecore', 'localhost', 'pulsecore_db', 'username', 'password', false),
+('ai_main', 'ai', 'localhost', 'ai_db', 'username', 'password', false);
