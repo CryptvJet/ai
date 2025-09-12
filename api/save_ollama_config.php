@@ -49,7 +49,7 @@ try {
         throw new Exception('Invalid database configuration');
     }
     
-    $database_name = $db_config['database'];
+    $database_name = $db_config['Database'];
     $ai_pdo->exec("USE `$database_name`");
     
     // Save configuration to database

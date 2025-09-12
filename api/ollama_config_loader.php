@@ -27,7 +27,7 @@ class OllamaConfigLoader {
                 throw new Exception('Invalid database configuration');
             }
             
-            $database_name = $db_config['database'];
+            $database_name = $db_config['Database'];
             $ai_pdo->exec("USE `$database_name`");
             
             // Get Ollama configuration from the configured table
@@ -86,7 +86,7 @@ class OllamaConfigLoader {
                 throw new Exception('Invalid database configuration');
             }
             
-            $database_name = $db_config['database'];
+            $database_name = $db_config['Database'];
             $ai_pdo->exec("USE `$database_name`");
             
             $sql = "SELECT * FROM ollama_config WHERE id = 1";
