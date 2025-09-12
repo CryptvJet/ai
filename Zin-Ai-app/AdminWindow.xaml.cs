@@ -478,6 +478,151 @@ public partial class AdminWindow : Window
 
     #endregion
 
+    #region SSL Certificate Configuration
+
+    private void BrowseSSLCert(object sender, RoutedEventArgs e)
+    {
+        var openFileDialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select SSL Certificate File",
+            Filter = "Certificate files (*.crt;*.pem;*.cert)|*.crt;*.pem;*.cert|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        if (openFileDialog.ShowDialog() == true)
+        {
+            SSLCertPathInput.Text = openFileDialog.FileName;
+        }
+    }
+
+    private void BrowseSSLKey(object sender, RoutedEventArgs e)
+    {
+        var openFileDialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select SSL Private Key File",
+            Filter = "Key files (*.key;*.pem)|*.key;*.pem|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        if (openFileDialog.ShowDialog() == true)
+        {
+            SSLKeyPathInput.Text = openFileDialog.FileName;
+        }
+    }
+
+    private async void UploadSSLCertificates(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(SSLCertPathInput.Text) || string.IsNullOrEmpty(SSLKeyPathInput.Text))
+            {
+                SSLStatusText.Text = "❌ Please select both certificate and key files";
+                SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                return;
+            }
+
+            SSLStatusText.Text = "Uploading SSL certificates...";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+
+            // Create target directory
+            var certsDir = GetConfigPath("certs", true);
+            if (!Directory.Exists(certsDir))
+            {
+                Directory.CreateDirectory(certsDir);
+            }
+
+            // Copy certificate files
+            var certDestination = Path.Combine(certsDir, "server.crt");
+            var keyDestination = Path.Combine(certsDir, "server.key");
+
+            File.Copy(SSLCertPathInput.Text, certDestination, true);
+            File.Copy(SSLKeyPathInput.Text, keyDestination, true);
+
+            SSLStatusText.Text = "✅ SSL certificates uploaded successfully!";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+
+        }
+        catch (Exception ex)
+        {
+            SSLStatusText.Text = $"❌ Failed to upload certificates: {ex.Message}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    private void SaveSSLConfiguration(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var sslConfig = new
+            {
+                enabled = SSLEnabledCheckBox.IsChecked == true,
+                port = int.TryParse(SSLPortInput.Text, out int port) ? port : 8443,
+                cert = "server.crt",
+                key = "server.key",
+                updated_at = DateTime.Now.ToString("o"),
+                updated_by = "desktop_admin"
+            };
+
+            var configPath = GetConfigPath("ssl_config.json", true);
+            var configJson = JsonConvert.SerializeObject(sslConfig, Formatting.Indented);
+            File.WriteAllText(configPath, configJson);
+
+            SSLStatusText.Text = "✅ SSL configuration saved successfully!";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+
+            MessageBox.Show("SSL configuration saved! Restart the bridge server to apply changes.",
+                          "Configuration Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+
+        }
+        catch (Exception ex)
+        {
+            SSLStatusText.Text = $"❌ Failed to save SSL configuration: {ex.Message}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    private async void TestHTTPSConnection(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SSLStatusText.Text = "Testing HTTPS connection...";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+
+            var port = int.TryParse(SSLPortInput.Text, out int sslPort) ? sslPort : 8443;
+            var httpsUrl = $"https://localhost:{port}/status";
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, httpsUrl);
+            
+            // For self-signed certificates, we might need to bypass SSL validation
+            var handler = new HttpClientHandler()
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+            };
+            
+            using var httpsClient = new HttpClient(handler);
+            var response = await httpsClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                SSLStatusText.Text = "✅ HTTPS connection successful!";
+                SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
+            }
+            else
+            {
+                SSLStatusText.Text = $"❌ HTTPS connection failed: HTTP {response.StatusCode}";
+                SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            SSLStatusText.Text = $"❌ HTTPS test failed: {ex.Message}";
+            SSLStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+        }
+    }
+
+    #endregion
+
     #region PulseCore Database Configuration
 
     private async void TestPulseDatabaseConnection(object sender, RoutedEventArgs e)
