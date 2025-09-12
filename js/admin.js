@@ -885,6 +885,16 @@ async function saveBridgeConfiguration() {
         const apiKey = document.getElementById('bridgeApiKeyConfig').value || '';
         const type = document.getElementById('bridgeTypeConfig').value || 'HTTPS';
 
+        // If HTTPS is selected, first upload SSL certificates if they exist
+        if (type === 'HTTPS') {
+            const certFile = document.getElementById('sslCertFile').files[0];
+            const keyFile = document.getElementById('sslKeyFile').files[0];
+            
+            if (certFile || keyFile) {
+                await uploadSSLCertificates();
+            }
+        }
+
         // Save to server configuration file
         const response = await fetch('../api/save_bridge_config.php', {
             method: 'POST',

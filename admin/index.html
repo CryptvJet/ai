@@ -241,12 +241,6 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="sslPortConfig">HTTPS Port:</label>
-                                <input type="number" id="sslPortConfig" value="8443" placeholder="8443">
-                                <small>Port for HTTPS bridge server (typically 8443)</small>
-                            </div>
-                            
-                            <div class="form-group">
                                 <label class="checkbox-label">
                                     <input type="checkbox" id="sslEnabledConfig">
                                     <span class="checkmark"></span>
@@ -273,11 +267,8 @@
                     </div>
 
                     <div class="bridge-config-actions">
-                        <button onclick="testBridgeConnection()" class="btn-secondary">🧪 Test Bridge Connection</button>
-                        <button onclick="saveBridgeConfiguration()" class="btn-primary">💾 Save Bridge Settings</button>
-                        <button onclick="uploadSSLCertificates()" class="btn-secondary">📤 Upload SSL Certificates</button>
-                        <button onclick="testHTTPSConnection()" class="btn-secondary">🔍 Test HTTPS</button>
-                        <button onclick="saveSSLConfiguration()" class="btn-primary">💾 Save SSL Config</button>
+                        <button onclick="testBridgeConnection()" class="btn-secondary">🧪 Test Connection</button>
+                        <button onclick="saveBridgeConfiguration()" class="btn-primary">💾 Save Settings</button>
                     </div>
 
                     <div id="sslStatusMessage" class="status-message"></div>
