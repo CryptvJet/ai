@@ -1032,12 +1032,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     $chat = new AIChat($ai_pdo, $pulse_pdo, $vars_pdo);
-    $result = $chat->processMessage(
-        $input['message'], 
-        $input['session_id'], 
-        $input['mode'] ?? 'chill',
-        $input['journal_context'] ?? null
-    );
+    
+    // Handle status check requests with lightweight test
+    if (isset($input['status_check']) && $input['status_check'] === true) {
+        // Use a lightweight test message for status checking
+        $result = $chat->processMessage(
+            'Hi', // Simple test message
+            $input['session_id'], 
+            $input['mode'] ?? 'auto',
+            null
+        );
+    } else {
+        // Normal message processing
+        $result = $chat->processMessage(
+            $input['message'], 
+            $input['session_id'], 
+            $input['mode'] ?? 'chill',
+            $input['journal_context'] ?? null
+        );
+    }
     
     echo json_encode($result);
 } else {

@@ -397,20 +397,39 @@ class AIChat {
 
     async checkLocalLlamaStatus() {
         try {
-            const response = await fetch('api/llama-local.php?action=status');
-            const status = await response.json();
-            console.log('Local Llama status:', status);
+            // Use a test message to verify SmartAIRouter connectivity
+            const response = await fetch('api/chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: 'test',
+                    session_id: this.sessionId,
+                    mode: 'auto',
+                    status_check: true  // Flag to indicate this is just a status check
+                })
+            });
             
-            if (status.status === 'online' && status.selected_model) {
-                console.log('🧠 Local Llama AI is online with model:', status.selected_model);
+            const result = await response.json();
+            console.log('AI connection status via SmartAIRouter:', result);
+            
+            if (result.success && result.ai_source === 'local_ollama') {
+                console.log('🧠 Local AI is online via SmartAIRouter with model:', result.model);
                 this.currentMode = 'full-power';
-                this.updateAIMode(true, status.selected_model);
+                this.updateAIMode(true, result.model);
+                return true;
+            } else if (result.success && result.ai_source === 'web_ai') {
+                // SmartAIRouter is working but using web AI fallback
+                console.log('🌐 AI available via web fallback mode');
+                this.currentMode = 'full-power'; // Still use full-power since AI is working
+                this.updateAIMode(true, 'Web AI');
                 return true;
             } else {
-                throw new Error('Local Llama not available');
+                throw new Error('AI connection test failed');
             }
         } catch (error) {
-            console.log('Local Llama not available:', error.message);
+            console.log('AI not available:', error.message);
             this.currentMode = 'chill';
             this.updateAIMode(false);
             return false;

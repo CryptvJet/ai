@@ -387,12 +387,20 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Use web API with bridge support
+            // Try direct Ollama connection first (Active Mode)
+            var directResponse = await TryDirectOllamaChat(userMessage);
+            if (directResponse.success)
+            {
+                AddChatMessage(directResponse.response, isUser: false);
+                return;
+            }
+            
+            // Fallback to web API with enhanced Chill Mode
             var chatRequest = new
             {
                 message = userMessage,
                 session_id = "desktop_chat_" + Environment.MachineName,
-                mode = "chill"
+                mode = "auto" // Let SmartAIRouter decide between local and chill
             };
 
             var jsonRequest = JsonConvert.SerializeObject(chatRequest);
@@ -411,18 +419,95 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    AddChatMessage("I'm having trouble processing your request. Please try again.", isUser: false);
+                    AddChatMessage("I'm here to help! While my advanced AI is temporarily unavailable, I can still assist with questions about your PulseCore data and simulations. What would you like to explore?", isUser: false);
                 }
             }
             else
             {
-                AddChatMessage("I'm having trouble connecting to the AI service. Please check your connection.", isUser: false);
+                AddChatMessage("I'm still here to help even though there's a connection hiccup! I can provide insights about PulseCore simulations and answer questions about your data. What can I help you with?", isUser: false);
             }
         }
         catch (Exception)
         {
-            AddChatMessage("Connection error. Please check your network connection and try again.", isUser: false);
+            AddChatMessage("While I'm having some connection issues, I'm still ready to help! I can discuss your PulseCore simulations, analyze patterns, and provide insights. What interests you?", isUser: false);
         }
+    }
+    
+    private async Task<(bool success, string response)> TryDirectOllamaChat(string userMessage)
+    {
+        try
+        {
+            // Load AI configuration for direct connection
+            var (ollamaUrl, model, temperature, maxTokens) = LoadAIConfiguration();
+            
+            var generateUrl = $"{ollamaUrl}/api/generate";
+            var requestData = new
+            {
+                model = model,
+                prompt = userMessage,
+                stream = false,
+                options = new
+                {
+                    temperature = temperature,
+                    num_predict = maxTokens
+                }
+            };
+            
+            var jsonRequest = JsonConvert.SerializeObject(requestData);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            using (var client = new HttpClient())
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                var response = await client.PostAsync(generateUrl, content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    var ollamaResponse = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+                    
+                    if (ollamaResponse?.response != null)
+                    {
+                        return (true, ollamaResponse.response.ToString());
+                    }
+                }
+            }
+            
+            return (false, "Direct connection failed");
+        }
+        catch (Exception ex)
+        {
+            // Log for debugging but don't expose to user
+            System.Diagnostics.Debug.WriteLine($"Direct Ollama connection failed: {ex.Message}");
+            return (false, ex.Message);
+        }
+    }
+    
+    private (string ollamaUrl, string model, double temperature, int maxTokens) LoadAIConfiguration()
+    {
+        try
+        {
+            var configPath = AdminWindow.GetConfigPathStatic("ai_model_config.json", true);
+            if (File.Exists(configPath))
+            {
+                var jsonContent = File.ReadAllText(configPath);
+                var config = JsonConvert.DeserializeObject<dynamic>(jsonContent);
+                
+                return (
+                    config?.OllamaUrl?.ToString() ?? "http://127.0.0.1:11434",
+                    config?.ModelName?.ToString() ?? "llama3.2:3b-instruct-q4_K_M",
+                    config?.Temperature != null ? (double)config.Temperature : 0.7,
+                    config?.MaxTokens != null ? (int)config.MaxTokens : 1000
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load AI config: {ex.Message}");
+        }
+        
+        // Return defaults if config loading fails
+        return ("http://127.0.0.1:11434", "llama3.2:3b-instruct-q4_K_M", 0.7, 1000);
     }
 
     #endregion
@@ -520,13 +605,22 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Use web API with bridge support for journal mode
+            // Try direct Ollama connection first for journal assistance
+            var journalContext = JournalTextBox.Text.StartsWith("Begin speaking") ? "" : JournalTextBox.Text;
+            var directResponse = await TryDirectOllamaJournal(userMessage, journalContext);
+            if (directResponse.success)
+            {
+                AddZinResponse(directResponse.response);
+                return;
+            }
+            
+            // Fallback to web API with enhanced Chill Mode
             var chatRequest = new
             {
                 message = userMessage,
                 session_id = "desktop_journal_" + Environment.MachineName,
-                mode = "journal",
-                journal_context = JournalTextBox.Text.StartsWith("Begin speaking") ? "" : JournalTextBox.Text
+                mode = "auto", // Let SmartAIRouter decide
+                journal_context = journalContext
             };
 
             var jsonRequest = JsonConvert.SerializeObject(chatRequest);
@@ -545,17 +639,71 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    AddZinResponse("I'm here to help with your writing! Try asking me to analyze your thoughts, suggest improvements, or help you continue your ideas.");
+                    AddZinResponse("I'm here to help with your writing journey! I can analyze your thoughts, suggest improvements, help you explore ideas, or discuss writing techniques. What aspect of your writing interests you?");
                 }
             }
             else
             {
-                AddZinResponse("I'm having trouble connecting to the writing assistant service. Please check your connection.");
+                AddZinResponse("I'm still here to support your writing! I can help you explore themes, analyze your writing patterns, suggest improvements, or discuss creative techniques. What would you like to work on?");
             }
         }
         catch (Exception)
         {
-            AddZinResponse("I'm having trouble connecting right now, but I'm here to support your writing journey. Keep exploring your thoughts!");
+            AddZinResponse("Even with connection issues, I'm committed to supporting your writing journey! I can help analyze your thoughts, provide writing insights, and encourage your creative process. Keep exploring!");
+        }
+    }
+    
+    private async Task<(bool success, string response)> TryDirectOllamaJournal(string userMessage, string journalContext)
+    {
+        try
+        {
+            // Load AI configuration for direct connection
+            var (ollamaUrl, model, temperature, maxTokens) = LoadAIConfiguration();
+            
+            // Create journal-focused prompt
+            var contextPrompt = string.IsNullOrWhiteSpace(journalContext) 
+                ? $"User writing question: {userMessage}\n\nProvide helpful, encouraging writing assistance."
+                : $"User's journal context: {journalContext.Substring(0, Math.Min(journalContext.Length, 1000))}...\n\nUser question: {userMessage}\n\nProvide supportive writing guidance based on their journal content.";
+            
+            var generateUrl = $"{ollamaUrl}/api/generate";
+            var requestData = new
+            {
+                model = model,
+                prompt = contextPrompt,
+                stream = false,
+                options = new
+                {
+                    temperature = Math.Min(temperature + 0.1, 1.0), // Slightly more creative for writing
+                    num_predict = maxTokens
+                }
+            };
+            
+            var jsonRequest = JsonConvert.SerializeObject(requestData);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            using (var client = new HttpClient())
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                var response = await client.PostAsync(generateUrl, content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    var ollamaResponse = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+                    
+                    if (ollamaResponse?.response != null)
+                    {
+                        return (true, ollamaResponse.response.ToString());
+                    }
+                }
+            }
+            
+            return (false, "Direct journal connection failed");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Direct Ollama journal connection failed: {ex.Message}");
+            return (false, ex.Message);
         }
     }
 

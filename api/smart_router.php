@@ -440,19 +440,96 @@ class SmartAIRouter {
     }
     
     /**
-     * Handle general conversational queries
+     * Handle general conversational queries using database templates (Chill Mode)
      */
     private function handleConversationalQuery($message, $session_id, $context) {
-        // Basic conversational AI response
+        try {
+            // Try to find matching template from database
+            $templateResponse = $this->getTemplateResponse($message);
+            
+            if ($templateResponse) {
+                // Update template usage count
+                $this->updateTemplateUsage($templateResponse['id']);
+                
+                return [
+                    'success' => true,
+                    'response' => $templateResponse['response_text'],
+                    'mode' => 'chill_template',
+                    'template_id' => $templateResponse['id'],
+                    'template_category' => $templateResponse['category'],
+                    'ai_source' => 'database_template'
+                ];
+            }
+            
+            // Fallback to basic conversational response if no template matches
+            return $this->getBasicConversationalResponse($message);
+            
+        } catch (Exception $e) {
+            error_log("Template query failed: " . $e->getMessage());
+            return $this->getBasicConversationalResponse($message);
+        }
+    }
+    
+    /**
+     * Get matching response template from database
+     */
+    private function getTemplateResponse($message) {
+        try {
+            // Get all active templates ordered by priority
+            $stmt = $this->ai_pdo->prepare("
+                SELECT id, trigger_pattern, response_text, category, priority
+                FROM ai_response_templates 
+                WHERE active = 1 
+                ORDER BY priority DESC, usage_count ASC
+            ");
+            $stmt->execute();
+            $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Find best matching template
+            foreach ($templates as $template) {
+                if (preg_match('/' . $template['trigger_pattern'] . '/i', $message)) {
+                    return $template;
+                }
+            }
+            
+            return null;
+            
+        } catch (Exception $e) {
+            error_log("Template matching failed: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Update template usage statistics
+     */
+    private function updateTemplateUsage($templateId) {
+        try {
+            $stmt = $this->ai_pdo->prepare("
+                UPDATE ai_response_templates 
+                SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ");
+            $stmt->execute([$templateId]);
+        } catch (Exception $e) {
+            error_log("Template usage update failed: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get basic conversational response (final fallback)
+     */
+    private function getBasicConversationalResponse($message) {
+        // Enhanced basic responses
         $responses = [
-            'greeting' => "Hello! I'm your AI assistant. I'm running in standard mode right now. For enhanced capabilities, make sure your PC with Ollama is connected.",
-            'help' => "I can help you with various tasks. I have basic conversational abilities and can access your PulseCore data. When your PC is connected, I gain enhanced AI capabilities through Ollama.",
-            'default' => "I understand you're asking about: " . substr($message, 0, 50) . "... I'm currently running in web mode with basic capabilities. Connect your PC for enhanced AI responses."
+            'greeting' => "Hello! I'm Zin, your AI assistant. I'm currently in Chill Mode with basic conversational abilities. I can still help analyze your PulseCore data and answer questions about your simulations.",
+            'help' => "I can help you with various tasks even in Chill Mode! I can analyze your PulseCore simulations, discuss nova patterns, help with variables calculations, and provide insights about your data. What would you like to explore?",
+            'default' => "I understand you're asking about something interesting! While I'm in Chill Mode right now, I can still help with PulseCore analysis, simulation insights, and answering questions about your data. What specific topic would you like to discuss?"
         ];
         
-        if (preg_match('/\b(hi|hello|hey)\b/i', $message)) {
+        if (preg_match('/\b(hi|hello|hey|greet)\b/i', $message)) {
             $response = $responses['greeting'];
-        } elseif (preg_match('/\b(help|what can you)\b/i', $message)) {
+        } elseif (preg_match('/\b(help|what.*can.*do|assist|support)\b/i', $message)) {
             $response = $responses['help'];
         } else {
             $response = $responses['default'];
@@ -461,7 +538,8 @@ class SmartAIRouter {
         return [
             'success' => true,
             'response' => $response,
-            'mode' => 'conversational',
+            'mode' => 'chill_basic',
+            'ai_source' => 'basic_fallback',
             'suggestion' => 'Connect your PC with Ollama for enhanced AI capabilities'
         ];
     }
@@ -484,11 +562,22 @@ class SmartAIRouter {
      * Create fallback response when all AI services fail
      */
     private function createFallbackResponse($message, $session_id) {
+        // Try to use Chill Mode templates even in fallback
+        $chillResponse = $this->handleConversationalQuery($message, $session_id, null);
+        
+        if ($chillResponse && $chillResponse['success']) {
+            // Mark as fallback but use Chill Mode response
+            $chillResponse['mode'] = 'fallback_chill';
+            $chillResponse['note'] = 'Using Chill Mode templates as fallback';
+            return $chillResponse;
+        }
+        
+        // Final emergency fallback
         return [
             'success' => true,
-            'response' => "I'm experiencing some technical difficulties right now. Please try again in a moment, or check if your PC with Ollama is connected for enhanced capabilities.",
-            'mode' => 'fallback',
-            'ai_source' => 'fallback'
+            'response' => "I'm experiencing some technical difficulties right now, but I'm still here to help! While my advanced AI capabilities are temporarily unavailable, I can still assist with basic questions about your PulseCore data and simulations. What would you like to know?",
+            'mode' => 'emergency_fallback',
+            'ai_source' => 'emergency'
         ];
     }
     
