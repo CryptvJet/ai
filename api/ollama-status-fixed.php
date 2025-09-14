@@ -8,12 +8,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+function getOllamaUrl() {
+    try {
+        $DB_HOST = 'localhost';
+        $DB_NAME = 'vemite5_pulse-core-ai';
+        $DB_USER = 'vemite5_p-core';
+        $DB_PASS = 'l%tN!^6^u4=2';
+        
+        $pdo = new PDO(
+            "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",
+            $DB_USER,
+            $DB_PASS,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        
+        $stmt = $pdo->query("SELECT * FROM ollama_config WHERE id = 1");
+        $config = $stmt->fetch();
+        
+        if ($config) {
+            $protocol = $config['protocol'] ?: 'http';
+            $host = trim($config['host'] ?: 'localhost');
+            $port = $config['port'] ?: 11434;
+            
+            $host = preg_replace('/^https?:\/\//', '', $host);
+            return $protocol . '://' . $host . ':' . $port;
+        }
+    } catch (Exception $e) {
+        error_log("Database config failed: " . $e->getMessage());
+    }
+    
+    // Fallback to direct tunnel
+    return 'http://localhost:11434';
+}
+
 function checkOllamaStatus() {
-    // Use direct SSH tunnel connection instead of database config
-    $ollama_url = 'http://localhost:11434';
-
+    $ollama_url = getOllamaUrl();
+    
     error_log("Attempting to connect to Ollama at: " . $ollama_url . '/api/tags');
-
+    
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $ollama_url . '/api/tags');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -21,14 +53,14 @@ function checkOllamaStatus() {
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
+    
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-
+    
     error_log("Ollama connection result - HTTP Code: $httpCode, Error: " . ($error ?: 'none'));
-
+    
     if ($error || $httpCode !== 200) {
         return [
             'success' => false,
@@ -37,10 +69,10 @@ function checkOllamaStatus() {
             'models' => []
         ];
     }
-
+    
     $data = json_decode($response, true);
     $models = $data['models'] ?? [];
-
+    
     $primaryModel = null;
     if (!empty($models)) {
         $primaryModel = $models[0]['name'];
@@ -51,7 +83,7 @@ function checkOllamaStatus() {
             }
         }
     }
-
+    
     return [
         'success' => true,
         'status' => 'online',
