@@ -613,22 +613,6 @@ class AIChat {
         }
     }
     
-    private function isPulseCoreQuery($message) {
-        $patterns = [
-            'nova', 'complexity', 'energy', 'pulse', 'pattern', 'analysis',
-            'data', 'stats', 'pulsecore', 'simulation'
-        ];
-        
-        $message_lower = strtolower($message);
-        foreach ($patterns as $pattern) {
-            if (strpos($message_lower, $pattern) !== false) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
     private function isPCStatusQuery($message) {
         $pc_keywords = [
             'pc', 'computer', 'system', 'performance', 'memory', 'ram', 'cpu',
