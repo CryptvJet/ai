@@ -105,6 +105,8 @@ class SmartAIRouter {
      */
     private function checkPCStatus() {
         try {
+            $this->debugLog('DEBUG', 'Starting PC status check');
+            
             // Get latest PC status from database
             $stmt = $this->ai_pdo->prepare("
                 SELECT 
@@ -118,20 +120,53 @@ class SmartAIRouter {
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
+            $this->debugLog('DEBUG', 'Database PC status query result', [
+                'has_result' => !empty($result),
+                'seconds_since_ping' => $result['seconds_since_ping'] ?? 'N/A',
+                'last_ping' => $result['last_ping'] ?? 'N/A'
+            ]);
+            
+            // CRITICAL FIX: Always check Ollama directly, regardless of PC ping status
+            $this->debugLog('INFO', 'Checking Ollama availability directly');
+            $ollamaStatus = $this->checkOllamaStatus();
+            
             if (!$result || $result['seconds_since_ping'] > 60) {
+                $this->debugLog('WARN', 'PC status check failed - no recent database ping', [
+                    'has_result' => !empty($result),
+                    'seconds_since_ping' => $result['seconds_since_ping'] ?? 'N/A',
+                    'threshold' => 60
+                ]);
+                
+                // IMPORTANT: If Ollama is online, mark PC as available even without recent ping
+                if ($ollamaStatus['status'] === 'online') {
+                    $this->debugLog('SUCCESS', 'Ollama is online despite PC ping failure - marking PC as available');
+                    return [
+                        'available' => true,
+                        'reason' => 'Ollama online (PC ping outdated)',
+                        'load' => 50, // Default moderate load
+                        'ollama_status' => $ollamaStatus['status'],
+                        'ollama_models' => $ollamaStatus['models'] ?? [],
+                        'connection_type' => 'direct_ollama_only'
+                    ];
+                }
+                
+                $this->debugLog('ERROR', 'Both PC ping and Ollama are unavailable');
                 return [
                     'available' => false,
-                    'reason' => 'PC offline or not responding',
+                    'reason' => 'PC offline and Ollama unreachable',
                     'load' => 100,
-                    'ollama_status' => 'unknown'
+                    'ollama_status' => $ollamaStatus['status'] ?? 'unknown'
                 ];
             }
             
             $systemInfo = json_decode($result['system_info'], true);
             $memoryUsage = (($systemInfo['total_memory'] - $systemInfo['free_memory']) / $systemInfo['total_memory']) * 100;
             
-            // Check Ollama availability via PC bridge
-            $ollamaStatus = $this->checkOllamaStatus();
+            $this->debugLog('SUCCESS', 'PC status from database looks good', [
+                'memory_usage_percent' => round($memoryUsage),
+                'last_ping' => $result['last_ping'],
+                'ollama_status' => $ollamaStatus['status']
+            ]);
             
             return [
                 'available' => true,
@@ -140,10 +175,12 @@ class SmartAIRouter {
                 'ollama_status' => $ollamaStatus['status'],
                 'ollama_models' => $ollamaStatus['models'] ?? [],
                 'last_ping' => $result['last_ping'],
-                'system_info' => $systemInfo
+                'system_info' => $systemInfo,
+                'connection_type' => 'full_pc_and_ollama'
             ];
             
         } catch (Exception $e) {
+            $this->debugLog('ERROR', 'PC status check exception', ['error' => $e->getMessage()]);
             error_log("PC status check failed: " . $e->getMessage());
             return [
                 'available' => false,
@@ -155,29 +192,51 @@ class SmartAIRouter {
     }
     
     /**
-     * Check Ollama server status via direct tunnel connection
+     * Check Ollama server status via direct connection
      */
     private function checkOllamaStatus() {
         try {
-            // Connect directly to SSH tunnel endpoint (bypasses bridge proxy)
-            $ollama_url = 'http://localhost:11434/api/tags';
+            // Use configurable Ollama URL like the working admin panel
+            require_once __DIR__ . '/ollama_config_loader.php';
+            $ollama_base_url = OllamaConfigLoader::getOllamaUrl();
+            $ollama_url = $ollama_base_url . '/api/tags';
+            
+            $this->debugLog('DEBUG', 'Attempting Ollama connection', [
+                'url' => $ollama_url,
+                'method' => 'direct_connection'
+            ]);
             
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $ollama_url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Quick 3 second timeout for status check
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 8); // Match admin panel timeout
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // More reasonable timeout
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
             
+            $this->debugLog('DEBUG', 'Ollama connection result', [
+                'http_code' => $httpCode,
+                'has_error' => !empty($error),
+                'error' => $error ?: 'none',
+                'response_length' => strlen($response ?: '')
+            ]);
+            
             if ($error || $httpCode !== 200) {
+                $this->debugLog('WARN', 'Ollama connection failed', [
+                    'url' => $ollama_url,
+                    'http_code' => $httpCode,
+                    'curl_error' => $error ?: 'none'
+                ]);
+                
                 return [
                     'status' => 'offline',
                     'models' => [],
-                    'error' => $error ?: 'Ollama server not responding via tunnel'
+                    'error' => $error ?: "HTTP $httpCode"
                 ];
             }
             
@@ -190,14 +249,25 @@ class SmartAIRouter {
                 }
             }
             
+            $this->debugLog('SUCCESS', 'Ollama is online and responsive', [
+                'model_count' => count($models),
+                'models' => $models,
+                'url' => $ollama_base_url
+            ]);
+            
             return [
                 'status' => 'online',
                 'models' => $models,
                 'preferred_model' => !empty($models) ? $models[0] : null,
-                'connection_type' => 'direct_tunnel'
+                'connection_type' => 'direct_configurable',
+                'server_url' => $ollama_base_url
             ];
             
         } catch (Exception $e) {
+            $this->debugLog('ERROR', 'Ollama status check exception', [
+                'error' => $e->getMessage()
+            ]);
+            
             return [
                 'status' => 'error',
                 'models' => [],
@@ -283,13 +353,15 @@ class SmartAIRouter {
      */
     private function executeLocalAI($message, $session_id, $context) {
         try {
-            $this->debugLog('INFO', 'Attempting direct Ollama connection', [
-                'url' => 'localhost:11434/api/generate',
-                'method' => 'direct_tunnel'
-            ]);
+            // Use configurable Ollama URL like the working admin panel
+            require_once __DIR__ . '/ollama_config_loader.php';
+            $ollama_base_url = OllamaConfigLoader::getOllamaUrl();
+            $ollama_url = $ollama_base_url . '/api/generate';
             
-            // Connect directly to SSH tunnel endpoint (bypasses bridge proxy)
-            $ollama_url = 'http://localhost:11434/api/generate';
+            $this->debugLog('INFO', 'Attempting direct Ollama connection', [
+                'url' => $ollama_url,
+                'method' => 'direct_configurable'
+            ]);
             
             // Load AI model configuration for preferred model
             $aiConfigPath = __DIR__ . '/../../data/pws/ai_model_config.json';
