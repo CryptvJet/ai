@@ -1264,27 +1264,39 @@ public partial class AdminWindow : Window
         return Path.Combine(configDir, filename);
     }
 
-    // Unified Ollama operations through bridge proxy
+    // Direct Ollama connection using configurable settings
     public static async Task<(bool success, string message)> TestOllamaConnection(string model, double temperature, int maxTokens)
     {
         try
         {
-            var bridgeConfigPath = GetConfigPathStatic("bridge_config.json", true);
-            if (!File.Exists(bridgeConfigPath))
+            // Read Ollama configuration from AI model config (user configurable)
+            var aiConfigPath = GetConfigPathStatic("ai_model_config.json", true);
+            string ollamaUrl = "http://127.0.0.1:11434"; // Default fallback
+            
+            if (File.Exists(aiConfigPath))
             {
-                return (false, "Bridge configuration not found");
+                try
+                {
+                    var aiConfigJson = File.ReadAllText(aiConfigPath);
+                    var aiConfig = JsonConvert.DeserializeObject<AIModelConfiguration>(aiConfigJson);
+                    if (aiConfig != null && !string.IsNullOrEmpty(aiConfig.OllamaUrl))
+                    {
+                        ollamaUrl = aiConfig.OllamaUrl;
+                    }
+                }
+                catch
+                {
+                    // Use default if config parsing fails
+                }
             }
 
-            var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
-            var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
-
-            if (bridgeConfig == null)
+            // Ensure URL format is correct
+            if (!ollamaUrl.StartsWith("http://") && !ollamaUrl.StartsWith("https://"))
             {
-                return (false, "Invalid bridge configuration");
+                ollamaUrl = "http://" + ollamaUrl;
             }
-
-            var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
-            var generateUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/api/generate";
+            
+            var generateUrl = $"{ollamaUrl}/api/generate";
 
             var testRequest = new
             {
@@ -1302,11 +1314,6 @@ public partial class AdminWindow : Window
             var jsonRequest = JsonConvert.SerializeObject(testRequest);
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
             
-            if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
-            {
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bridgeConfig.ApiKey);
-            }
-
             httpClient.Timeout = TimeSpan.FromSeconds(30);
             var response = await httpClient.PostAsync(generateUrl, content);
 
@@ -1332,30 +1339,36 @@ public partial class AdminWindow : Window
     {
         try
         {
-            var bridgeConfigPath = GetConfigPathStatic("bridge_config.json", true);
-            if (!File.Exists(bridgeConfigPath))
+            // Read Ollama configuration from AI model config (user configurable)
+            var aiConfigPath = GetConfigPathStatic("ai_model_config.json", true);
+            string ollamaUrl = "http://127.0.0.1:11434"; // Default fallback
+            
+            if (File.Exists(aiConfigPath))
             {
-                return (false, "Bridge configuration not found");
+                try
+                {
+                    var aiConfigJson = File.ReadAllText(aiConfigPath);
+                    var aiConfig = JsonConvert.DeserializeObject<AIModelConfiguration>(aiConfigJson);
+                    if (aiConfig != null && !string.IsNullOrEmpty(aiConfig.OllamaUrl))
+                    {
+                        ollamaUrl = aiConfig.OllamaUrl;
+                    }
+                }
+                catch
+                {
+                    // Use default if config parsing fails
+                }
             }
 
-            var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
-            var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
-
-            if (bridgeConfig == null)
+            // Ensure URL format is correct
+            if (!ollamaUrl.StartsWith("http://") && !ollamaUrl.StartsWith("https://"))
             {
-                return (false, "Invalid bridge configuration");
+                ollamaUrl = "http://" + ollamaUrl;
             }
-
-            var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
-            var tagsUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/api/tags";
+            
+            var tagsUrl = $"{ollamaUrl}/api/tags";
 
             using var httpClient = new HttpClient();
-            
-            if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
-            {
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bridgeConfig.ApiKey);
-            }
-
             httpClient.Timeout = TimeSpan.FromSeconds(10);
             var response = await httpClient.GetAsync(tagsUrl);
 

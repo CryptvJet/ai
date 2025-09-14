@@ -31,10 +31,10 @@ class SmartAIRouter {
                 
                 if ($config) {
                     $this->bridge_config = [
-                        'host' => $config['host'] ?? 'localhost',
-                        'port' => $config['port'] ?? '3001',
-                        'api_key' => $config['api_key'] ?? '',
-                        'type' => $config['type'] ?? 'HTTP',
+                        'host' => $config['Host'] ?? 'localhost',
+                        'port' => $config['Port'] ?? 8081,
+                        'api_key' => $config['ApiKey'] ?? '',
+                        'type' => $config['ConnectionType'] ?? 'HTTP',
                         'enabled' => $config['enabled'] ?? true
                     ];
                     return;
@@ -47,9 +47,9 @@ class SmartAIRouter {
         // Default configuration
         $this->bridge_config = [
             'host' => 'localhost',
-            'port' => '443',
+            'port' => 8081,
             'api_key' => '',
-            'type' => 'HTTPS',
+            'type' => 'HTTP',
             'enabled' => true
         ];
     }
@@ -140,7 +140,7 @@ class SmartAIRouter {
             
             // Try the configured bridge
             $protocol = strtolower($this->bridge_config['type']) === 'https' ? 'https' : 'http';
-            $bridge_url = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}/ollama/status";
+            $bridge_url = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}/api/tags";
             
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $bridge_url);
@@ -278,7 +278,7 @@ class SmartAIRouter {
             ];
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $bridgeUrl . '/ollama/chat');
+            curl_setopt($ch, CURLOPT_URL, $bridgeUrl . '/api/generate');
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
