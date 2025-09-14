@@ -425,6 +425,18 @@ class AIChat {
                 this.currentMode = 'full-power'; // Still use full-power since AI is working
                 this.updateAIMode(true, 'Web AI');
                 return true;
+            } else if (result.success && (result.ai_source === 'database_template' || result.ai_source === 'basic_fallback')) {
+                // SmartAIRouter is working with enhanced Chill Mode templates
+                console.log('✨ AI available via enhanced Chill Mode templates');
+                this.currentMode = 'full-power'; // Treat enhanced Chill Mode as functional AI
+                this.updateAIMode(true, 'Enhanced Chill Mode');
+                return true;
+            } else if (result.success) {
+                // Any other successful response from SmartAIRouter should be considered available
+                console.log('🤖 AI available via SmartAIRouter:', result.ai_source);
+                this.currentMode = 'full-power';
+                this.updateAIMode(true, result.ai_source || 'AI Assistant');
+                return true;
             } else {
                 throw new Error('AI connection test failed');
             }
