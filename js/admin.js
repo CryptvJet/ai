@@ -537,7 +537,7 @@ class AIAdmin {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
             
-            const response = await fetch('../api/ollama-status.php', {
+            const response = await fetch('../api/ollama-status-fixed.php', {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -2892,7 +2892,7 @@ async function testOllamaConnection() {
         document.getElementById('ollamaResponseTime').textContent = '-';
         
         console.log('🌐 Fetching Ollama status from ../api/ollama-status.php');
-        const response = await fetch('../api/ollama-status.php');
+        const response = await fetch('../api/ollama-status-fixed.php');
         console.log('📡 Response status:', response.status);
         
         const responseText = await response.text();
