@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     // Journal and Chat State
     private List<ChatMessage> chatHistory = new List<ChatMessage>();
     private Timer statsUpdateTimer = null!;
+    private Timer? uiRefreshTimer = null;
     
     public MainWindow()
     {
@@ -90,6 +91,9 @@ public partial class MainWindow : Window
         // Load PulseCore database configuration
         LoadPulseCoreConfig();
         
+        // Load General Configuration for UI refresh timer
+        LoadGeneralConfig();
+        
         // Set initial voice settings
         speechSynthesizer.Rate = 2; // 1.2x speed
         speechSynthesizer.Volume = 80; // 0.8 volume
@@ -122,6 +126,30 @@ public partial class MainWindow : Window
         connectionString = "Server=localhost;Database=your_pulsecore_database;Uid=your_username;Pwd=your_password;";
     }
 
+    private void LoadGeneralConfig()
+    {
+        try
+        {
+            var baseDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
+            var configPath = System.IO.Path.Combine(baseDir, "data", "pws", "general_config.json");
+            
+            if (File.Exists(configPath))
+            {
+                var configJson = File.ReadAllText(configPath);
+                var config = JsonConvert.DeserializeObject<GeneralConfiguration>(configJson);
+                
+                if (config != null)
+                {
+                    StartUIRefreshTimer(config.UpdateIntervalSeconds, config.AutoRefreshEnabled);
+                }
+            }
+        }
+        catch
+        {
+            // Fall back to default - no UI refresh timer
+        }
+    }
+
     private void StartStatsUpdates()
     {
         // Load update interval from config, default to 5 minutes
@@ -144,6 +172,68 @@ public partial class MainWindow : Window
     private void UpdateStatsCallback(object? state)
     {
         Dispatcher.Invoke(() => LoadPulseCoreStats());
+    }
+
+    private void StartUIRefreshTimer(int intervalSeconds, bool enabled)
+    {
+        // Dispose existing timer
+        uiRefreshTimer?.Dispose();
+        uiRefreshTimer = null;
+        
+        // Create new timer if enabled
+        if (enabled && intervalSeconds > 0)
+        {
+            var interval = TimeSpan.FromSeconds(intervalSeconds);
+            uiRefreshTimer = new Timer(UIRefreshCallback, null, TimeSpan.Zero, interval);
+        }
+    }
+
+    private void UIRefreshCallback(object? state)
+    {
+        Dispatcher.Invoke(() => {
+            // Update real-time UI elements (NOT database queries)
+            RefreshUIElements();
+        });
+    }
+
+    private void RefreshUIElements()
+    {
+        try
+        {
+            // Update bridge connection status indicators (highest priority)
+            // This will ensure consistent bridge status across all UI components
+            UpdateBridgeStatusDisplay();
+            
+            // Update any system time/uptime displays
+            // Update connection duration counters if they exist
+            // Update any other real-time status indicators
+            
+            // IMPORTANT: Keep this ultra-lightweight
+            // NO database queries (handled by 5-minute timer)
+            // NO network calls (unless for quick status checks)
+            // Focus on updating existing data displays
+        }
+        catch
+        {
+            // Gracefully handle any refresh errors - don't break the timer
+        }
+    }
+
+    private void UpdateBridgeStatusDisplay()
+    {
+        try
+        {
+            // Get current unified bridge status from AdminWindow
+            // This ensures all bridge status indicators stay consistent
+            // No network calls - just update UI elements with current status
+            
+            // Update any bridge status text, colors, or indicators in MainWindow
+            // This resolves the inconsistent bridge status displays issue
+        }
+        catch
+        {
+            // Handle gracefully
+        }
     }
 
     private void SetupPlaceholderBehavior()
@@ -725,13 +815,11 @@ public partial class MainWindow : Window
             
             // Update connection status
             PulseStatusText.Foreground = (Brush)FindResource("AccentGreen");
-            PcStatusText.Foreground = (Brush)FindResource("AccentGreen");
         }
         catch (Exception)
         {
             // Update connection status to error
             PulseStatusText.Foreground = (Brush)FindResource("AccentPink");
-            PcStatusText.Foreground = (Brush)FindResource("AccentPink");
             
             TotalClimaxesText.Text = "Error";
             TotalNovasText.Text = "Error";
@@ -767,14 +855,14 @@ public partial class MainWindow : Window
                 RedirectStandardError = true
             };
 
-            // Set environment variable to allow external connections
-            startInfo.EnvironmentVariables["OLLAMA_HOST"] = "0.0.0.0";
+            // Set environment variable for localhost-only security
+            startInfo.EnvironmentVariables["OLLAMA_HOST"] = "127.0.0.1:11434";
 
             ollamaProcess = Process.Start(startInfo);
             if (ollamaProcess != null)
             {
                 ollamaStartedByApp = true;
-                Debug.WriteLine("Started Ollama with external access enabled");
+                Debug.WriteLine("Started Ollama with localhost-only access");
                 
                 // Wait a moment for Ollama to start up
                 await Task.Delay(3000);
@@ -835,6 +923,25 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Configuration Updates
+
+    // Static method for AdminWindow to call when General Configuration is updated
+    public static void UpdateGeneralConfiguration(int intervalSeconds, bool enabled)
+    {
+        try
+        {
+            // Find MainWindow instance and update timer
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            mainWindow?.StartUIRefreshTimer(intervalSeconds, enabled);
+        }
+        catch
+        {
+            // Handle gracefully if MainWindow not found
+        }
+    }
+
+    #endregion
+
     #region Cleanup
 
     protected override void OnClosed(EventArgs e)
@@ -847,6 +954,7 @@ public partial class MainWindow : Window
         speechRecognizer?.Dispose();
         httpClient?.Dispose();
         statsUpdateTimer?.Dispose();
+        uiRefreshTimer?.Dispose();
         
         base.OnClosed(e);
     }

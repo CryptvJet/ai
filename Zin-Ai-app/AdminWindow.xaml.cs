@@ -33,7 +33,9 @@ public partial class AdminWindow : Window
         LoadCurrentConfiguration();
         LoadCurrentSSLConfiguration();
         UpdateSystemInfo();
-        UpdateBridgeActivityStatus();
+        
+        // Initialize bridge status displays
+        InitializeBridgeStatusDisplays();
     }
     
     private void EnsureDataDirectories()
@@ -50,6 +52,28 @@ public partial class AdminWindow : Window
         var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
         var configDir = isPasswordFile ? Path.Combine(baseDir, "data", "pws") : Path.Combine(baseDir, "data");
         return Path.Combine(configDir, filename);
+    }
+
+    private void InitializeBridgeStatusDisplays()
+    {
+        // Initialize all bridge status displays with current centralized status
+        if (BridgeStatusText != null)
+        {
+            BridgeStatusText.Text = BridgeStatus;
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+        }
+
+        if (ActivityBridgeSSLStatus != null)
+        {
+            ActivityBridgeSSLStatus.Text = BridgeStatus;
+            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+        }
+
+        if (ActivityBridgeAPIStatus != null)
+        {
+            ActivityBridgeAPIStatus.Text = BridgeStatus;
+            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+        }
     }
 
     private void LoadCurrentConfiguration()
@@ -358,8 +382,8 @@ public partial class AdminWindow : Window
             GeneralConfigStatusText.Text = "✅ General configuration saved successfully!";
             GeneralConfigStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
 
-            // Apply settings immediately if needed
-            // Update any timers or auto-refresh functionality here
+            // Apply settings immediately - update MainWindow UI refresh timer
+            MainWindow.UpdateGeneralConfiguration(config.UpdateIntervalSeconds, config.AutoRefreshEnabled);
         }
         catch (Exception ex)
         {
@@ -374,81 +398,48 @@ public partial class AdminWindow : Window
 
     private async void TestBridgeConnection(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            BridgeStatusText.Text = "Testing bridge connection...";
-            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
-            
-            var connectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
-            var protocol = connectionType.ToLower() == "https" ? "https" : "http";
-            var bridgeUrl = $"{protocol}://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/status";
-            
-            using var request = new HttpRequestMessage(HttpMethod.Get, bridgeUrl);
-            if (!string.IsNullOrEmpty(BridgeApiKeyInput.Password))
-            {
-                request.Headers.Add("Authorization", $"Bearer {BridgeApiKeyInput.Password}");
-            }
-            
-            var response = await httpClient.SendAsync(request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                BridgeStatusText.Text = $"✅ Bridge connection successful! Response: {response.StatusCode}";
-                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-            }
-            else
-            {
-                BridgeStatusText.Text = $"❌ Bridge connection failed: HTTP {response.StatusCode}";
-                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-            }
-        }
-        catch (Exception ex)
-        {
-            BridgeStatusText.Text = $"❌ Bridge connection failed: {ex.Message}";
-            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-        }
+        await TestBridgeConnection();
+        
+        // Update local display from centralized status
+        BridgeStatusText.Text = BridgeStatus;
+        BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
     }
 
     private async void ConnectBridge(object sender, RoutedEventArgs e)
     {
         try
         {
-            BridgeStatusText.Text = "Connecting to bridge...";
-            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+            var button = (Button)sender;
+            var currentContent = button.Content?.ToString();
             
-            var connectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
-            var protocol = connectionType.ToLower() == "https" ? "https" : "http";
-            var bridgeUrl = $"{protocol}://{BridgeHostInput.Text}:{BridgePortInput.Text}/api/connect";
-            
-            var requestData = new
+            // Check if we're disconnecting
+            if (!string.IsNullOrEmpty(currentContent) && currentContent.Contains("Disconnect"))
             {
-                type = connectionType,
-                apiKey = BridgeApiKeyInput.Password
-            };
-            
-            var jsonRequest = JsonConvert.SerializeObject(requestData);
-            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-            
-            var response = await httpClient.PostAsync(bridgeUrl, content);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                BridgeStatusText.Text = $"✅ Bridge connected successfully! Type: {connectionType}";
-                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-                ((Button)sender).Content = "❌ Disconnect Bridge";
+                // Handle Disconnect Bridge
+                UpdateBridgeStatus("● Disconnected", "AccentOrange");
+                BridgeStatusText.Text = BridgeStatus;
+                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+                button.Content = "🔌 Connect Bridge";
+                return;
             }
-            else
+            
+            // Handle Connect Bridge - use unified connection testing
+            await TestBridgeConnection();
+            
+            // Update local display and button based on result
+            BridgeStatusText.Text = BridgeStatus;
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+            
+            if (BridgeStatus.Contains("Connected"))
             {
-                BridgeStatusText.Text = $"❌ Bridge connection failed: HTTP {response.StatusCode}";
-                BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+                button.Content = "❌ Disconnect Bridge";
             }
         }
         catch (Exception ex)
         {
-            BridgeStatusText.Text = $"❌ Bridge connection failed: {ex.Message}";
-            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            UpdateBridgeStatus("● Not Available", "AccentPink");
+            BridgeStatusText.Text = BridgeStatus;
+            BridgeStatusText.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
         }
     }
 
@@ -497,19 +488,12 @@ public partial class AdminWindow : Window
                 // Update UI elements with loaded configuration
                 if (sslConfig != null)
                 {
-                    // Set connection type based on SSL enabled status
-                    if (BridgeTypeComboBox != null)
+                    // Only update SSL panel visibility based on current bridge type selection
+                    // DO NOT override bridge configuration connection type
+                    if (BridgeTypeComboBox != null && SSLConfigurationPanel != null)
                     {
-                        bool isEnabled = sslConfig.enabled != null ? (bool)sslConfig.enabled : false;
-                        string connectionType = isEnabled ? "HTTPS" : "HTTP";
-                        BridgeTypeComboBox.SelectedItem = BridgeTypeComboBox.Items.Cast<ComboBoxItem>()
-                            .FirstOrDefault(item => item.Content.ToString() == connectionType);
-                        
-                        // Update SSL panel visibility directly to avoid recursion
-                        if (SSLConfigurationPanel != null)
-                        {
-                            SSLConfigurationPanel.Visibility = connectionType == "HTTPS" ? Visibility.Visible : Visibility.Collapsed;
-                        }
+                        var currentConnectionType = ((ComboBoxItem)BridgeTypeComboBox.SelectedItem)?.Content?.ToString() ?? "HTTP";
+                        SSLConfigurationPanel.Visibility = currentConnectionType == "HTTPS" ? Visibility.Visible : Visibility.Collapsed;
                     }
                     SSLPortInput.Text = sslConfig.port?.ToString() ?? "8443";
                     
@@ -542,13 +526,8 @@ public partial class AdminWindow : Window
         // Update status based on configuration
         bool enabled = sslConfig?.enabled ?? false;
         
-        // Update connection type ComboBox
-        if (BridgeTypeComboBox != null)
-        {
-            string connectionType = enabled ? "HTTPS" : "HTTP";
-            BridgeTypeComboBox.SelectedItem = BridgeTypeComboBox.Items.Cast<ComboBoxItem>()
-                .FirstOrDefault(item => item.Content.ToString() == connectionType);
-        }
+        // DO NOT update connection type ComboBox - respect bridge configuration
+        // The bridge configuration should determine the connection type, not SSL config
         
         if (enabled)
         {
@@ -876,80 +855,28 @@ public partial class AdminWindow : Window
 
     private async void TestAIConnection(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            AiStatusText.Text = "Testing AI connection...";
-            AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
-            
-            var testRequest = new
-            {
-                model = ModelNameInput.Text,
-                prompt = "Hello, this is a test message. Please respond briefly.",
-                stream = false,
-                options = new
-                {
-                    temperature = TemperatureSlider.Value,
-                    num_predict = int.Parse(MaxTokensInput.Text)
-                }
-            };
+        AiStatusText.Text = "Testing AI connection...";
+        AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
 
-            var jsonRequest = JsonConvert.SerializeObject(testRequest);
-            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-            
-            var response = await httpClient.PostAsync(OllamaUrlInput.Text, content);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var ollamaResponse = JsonConvert.DeserializeObject<OllamaResponse>(jsonResponse);
-                
-                var responseText = ollamaResponse?.Response ?? "No response";
-                AiStatusText.Text = $"✅ AI connection successful! Response: {responseText.Substring(0, Math.Min(50, responseText.Length))}...";
-                AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-            }
-            else
-            {
-                AiStatusText.Text = $"❌ AI connection failed: HTTP {response.StatusCode}";
-                AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-            }
-        }
-        catch (Exception ex)
-        {
-            AiStatusText.Text = $"❌ AI connection failed: {ex.Message}";
-            AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-        }
+        var (success, message) = await TestOllamaConnection(
+            ModelNameInput.Text,
+            TemperatureSlider.Value,
+            int.Parse(MaxTokensInput.Text)
+        );
+
+        AiStatusText.Text = success ? $"✅ {message}" : $"❌ {message}";
+        AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource(success ? "AccentGreen" : "AccentPink");
     }
 
     private async void ListAvailableModels(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            AiStatusText.Text = "Fetching available models...";
-            AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
-            
-            var modelsUrl = OllamaUrlInput.Text.Replace("/api/generate", "/api/tags");
-            var response = await httpClient.GetAsync(modelsUrl);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var modelsResponse = JsonConvert.DeserializeObject<ModelsResponse>(jsonResponse);
-                
-                var modelNames = string.Join(", ", modelsResponse?.Models?.Select(m => m.Name) ?? new[] { "No models found" });
-                AiStatusText.Text = $"✅ Available models: {modelNames}";
-                AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-            }
-            else
-            {
-                AiStatusText.Text = $"❌ Failed to fetch models: HTTP {response.StatusCode}";
-                AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-            }
-        }
-        catch (Exception ex)
-        {
-            AiStatusText.Text = $"❌ Failed to fetch models: {ex.Message}";
-            AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-        }
+        AiStatusText.Text = "Fetching available models...";
+        AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+
+        var (success, message) = await GetAvailableModels();
+
+        AiStatusText.Text = success ? $"✅ {message}" : $"❌ {message}";
+        AiStatusText.Foreground = (System.Windows.Media.Brush)FindResource(success ? "AccentGreen" : "AccentPink");
     }
 
     private void SaveAISettings(object sender, RoutedEventArgs e)
@@ -1078,8 +1005,19 @@ public partial class AdminWindow : Window
         LoadActivityStatistics();
     }
 
-    private void TestAllConnections(object sender, RoutedEventArgs e)
+    private async void TestAllConnections(object sender, RoutedEventArgs e)
     {
+        // Test bridge connection using unified method
+        await TestBridgeConnection();
+        
+        // Update Activity tab displays with centralized status
+        ActivityBridgeSSLStatus.Text = BridgeStatus;
+        ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+        
+        ActivityBridgeAPIStatus.Text = BridgeStatus;
+        ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource(BridgeStatusColorName);
+        
+        // Test other connections (PulseDB, AI DB, etc.)
         TestActivityConnections();
     }
 
@@ -1246,140 +1184,199 @@ public partial class AdminWindow : Window
             ActivityOllamaStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
         }
 
-        // Test Bridge connections
-        UpdateBridgeActivityStatus();
+        // Test Bridge connections - REMOVED (Now using unified bridge status manager)
     }
 
     #endregion
 
-    #region Bridge Activity Status
-    
-    private async void UpdateBridgeActivityStatus()
+    #region Unified Bridge Status - Simple Solution
+
+    // Single source of truth for all bridge status displays
+    public static string BridgeStatus { get; private set; } = "● Not Configured";
+    public static string BridgeStatusColorName { get; private set; } = "AccentCyan";
+
+    public static void UpdateBridgeStatus(string text, string colorName)
     {
-        // Test Bridge SSL connection status
+        BridgeStatus = text;
+        BridgeStatusColorName = colorName;
+    }
+
+    public static async Task TestBridgeConnection()
+    {
         try
         {
-            var sslConfigPath = GetConfigPath("ssl_config.json", true);
-            if (File.Exists(sslConfigPath))
+            UpdateBridgeStatus("● Connecting...", "AccentCyan");
+
+            var bridgeConfigPath = GetConfigPathStatic("bridge_config.json", true);
+            if (!File.Exists(bridgeConfigPath))
             {
-                var sslConfigJson = File.ReadAllText(sslConfigPath);
-                var sslConfig = JsonConvert.DeserializeObject<dynamic>(sslConfigJson);
-                
-                bool sslEnabled = sslConfig?.enabled ?? false;
-                
-                if (sslEnabled)
-                {
-                    // Try to connect to bridge HTTPS endpoint
-                    try
-                    {
-                        string port = sslConfig?.port?.ToString() ?? "8443";
-                        var httpsUrl = $"https://pulsecore.one:{port}/ai/api/pc-bridge-status.php";
-                        
-                        var handler = new HttpClientHandler()
-                        {
-                            ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
-                        };
-                        
-                        using var httpsClient = new HttpClient(handler);
-                        httpsClient.Timeout = TimeSpan.FromSeconds(5);
-                        var response = await httpsClient.GetAsync(httpsUrl);
-                        
-                        if (response.IsSuccessStatusCode)
-                        {
-                            ActivityBridgeSSLStatus.Text = "● Connected";
-                            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-                        }
-                        else
-                        {
-                            ActivityBridgeSSLStatus.Text = "● Server Error";
-                            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-                        }
-                    }
-                    catch
-                    {
-                        ActivityBridgeSSLStatus.Text = "● Not Available";
-                        ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-                    }
-                }
-                else
-                {
-                    ActivityBridgeSSLStatus.Text = "● Disabled";
-                    ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
-                }
+                UpdateBridgeStatus("● Not Configured", "AccentCyan");
+                return;
+            }
+
+            var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
+            var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
+
+            if (bridgeConfig == null)
+            {
+                UpdateBridgeStatus("● Not Configured", "AccentCyan");
+                return;
+            }
+
+            var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
+            var apiUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/ai/api/pc-bridge-status.php";
+
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+
+            if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bridgeConfig.ApiKey);
+            }
+
+            httpClient.Timeout = TimeSpan.FromSeconds(5);
+            using var response = await httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                UpdateBridgeStatus("● Connected", "AccentGreen");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                UpdateBridgeStatus("● Auth Error", "AccentOrange");
             }
             else
             {
-                ActivityBridgeSSLStatus.Text = "● Not Configured";
-                ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
+                UpdateBridgeStatus("● Server Error", "AccentPink");
             }
         }
         catch
         {
-            ActivityBridgeSSLStatus.Text = "● Error";
-            ActivityBridgeSSLStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-        }
-        
-        // Test Bridge API connection status  
-        try
-        {
-            var bridgeConfigPath = GetConfigPath("bridge_config.json", true);
-            if (File.Exists(bridgeConfigPath))
-            {
-                var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
-                var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
-                
-                if (bridgeConfig != null)
-                {
-                    var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
-                    var apiUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/ai/api/pc-bridge-status.php";
-                    
-                    try
-                    {
-                        using var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
-                        if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
-                        {
-                            request.Headers.Add("X-API-Key", bridgeConfig.ApiKey);
-                        }
-                        
-                        httpClient.Timeout = TimeSpan.FromSeconds(5);
-                        using var response = await httpClient.SendAsync(request);
-                        
-                        if (response.IsSuccessStatusCode)
-                        {
-                            ActivityBridgeAPIStatus.Text = "● Connected";
-                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentGreen");
-                        }
-                        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                        {
-                            ActivityBridgeAPIStatus.Text = "● Auth Error";
-                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentOrange");
-                        }
-                        else
-                        {
-                            ActivityBridgeAPIStatus.Text = "● Server Error";
-                            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-                        }
-                    }
-                    catch
-                    {
-                        ActivityBridgeAPIStatus.Text = "● Not Available";
-                        ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
-                    }
-                }
-            }
-            else
-            {
-                ActivityBridgeAPIStatus.Text = "● Not Configured";
-                ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentCyan");
-            }
-        }
-        catch
-        {
-            ActivityBridgeAPIStatus.Text = "● Error";
-            ActivityBridgeAPIStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentPink");
+            UpdateBridgeStatus("● Not Available", "AccentPink");
         }
     }
-    
+
+    // Helper method for static access to config path
+    private static string GetConfigPathStatic(string filename, bool isPasswordFile = false)
+    {
+        var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
+        var configDir = isPasswordFile ? Path.Combine(baseDir, "data", "pws") : Path.Combine(baseDir, "data");
+        return Path.Combine(configDir, filename);
+    }
+
+    // Unified Ollama operations through bridge proxy
+    public static async Task<(bool success, string message)> TestOllamaConnection(string model, double temperature, int maxTokens)
+    {
+        try
+        {
+            var bridgeConfigPath = GetConfigPathStatic("bridge_config.json", true);
+            if (!File.Exists(bridgeConfigPath))
+            {
+                return (false, "Bridge configuration not found");
+            }
+
+            var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
+            var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
+
+            if (bridgeConfig == null)
+            {
+                return (false, "Invalid bridge configuration");
+            }
+
+            var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
+            var generateUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/api/generate";
+
+            var testRequest = new
+            {
+                model = model,
+                prompt = "Hello, this is a test message. Please respond briefly.",
+                stream = false,
+                options = new
+                {
+                    temperature = temperature,
+                    num_predict = maxTokens
+                }
+            };
+
+            using var httpClient = new HttpClient();
+            var jsonRequest = JsonConvert.SerializeObject(testRequest);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            
+            if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bridgeConfig.ApiKey);
+            }
+
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            var response = await httpClient.PostAsync(generateUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var ollamaResponse = JsonConvert.DeserializeObject<OllamaResponse>(jsonResponse);
+                var responseText = ollamaResponse?.Response ?? "No response";
+                return (true, $"AI connection successful! Response: {responseText.Substring(0, Math.Min(50, responseText.Length))}...");
+            }
+            else
+            {
+                return (false, $"AI connection failed: HTTP {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return (false, $"AI connection failed: {ex.Message}");
+        }
+    }
+
+    public static async Task<(bool success, string message)> GetAvailableModels()
+    {
+        try
+        {
+            var bridgeConfigPath = GetConfigPathStatic("bridge_config.json", true);
+            if (!File.Exists(bridgeConfigPath))
+            {
+                return (false, "Bridge configuration not found");
+            }
+
+            var bridgeConfigJson = File.ReadAllText(bridgeConfigPath);
+            var bridgeConfig = JsonConvert.DeserializeObject<BridgeConfiguration>(bridgeConfigJson);
+
+            if (bridgeConfig == null)
+            {
+                return (false, "Invalid bridge configuration");
+            }
+
+            var protocol = bridgeConfig.ConnectionType?.ToLower() == "https" ? "https" : "http";
+            var tagsUrl = $"{protocol}://{bridgeConfig.Host}:{bridgeConfig.Port}/api/tags";
+
+            using var httpClient = new HttpClient();
+            
+            if (!string.IsNullOrEmpty(bridgeConfig.ApiKey))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bridgeConfig.ApiKey);
+            }
+
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            var response = await httpClient.GetAsync(tagsUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var modelsResponse = JsonConvert.DeserializeObject<ModelsResponse>(jsonResponse);
+                var modelNames = string.Join(", ", modelsResponse?.Models?.Select(m => m.Name) ?? new[] { "No models found" });
+                return (true, $"Available models: {modelNames}");
+            }
+            else
+            {
+                return (false, $"Failed to fetch models: HTTP {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Failed to fetch models: {ex.Message}");
+        }
+    }
+
     #endregion
 
     #region Cleanup
@@ -1405,7 +1402,7 @@ public partial class AdminWindow : Window
                 {
                     SSLConfigurationPanel.Visibility = Visibility.Visible;
                     // Update port to HTTPS default if currently on HTTP default
-                    if (SSLPortInput?.Text == "8080" || SSLPortInput?.Text == "80")
+                    if (SSLPortInput?.Text == "8081" || SSLPortInput?.Text == "80")
                     {
                         SSLPortInput.Text = "8443";
                     }
@@ -1416,7 +1413,7 @@ public partial class AdminWindow : Window
                     // Update port to HTTP default if currently on HTTPS default
                     if (connectionType == "HTTP" && (SSLPortInput?.Text == "8443" || SSLPortInput?.Text == "443"))
                     {
-                        SSLPortInput.Text = "8080";
+                        SSLPortInput.Text = "8081";
                     }
                 }
             }
@@ -1478,7 +1475,7 @@ public class GeneralConfiguration
 public class BridgeConfiguration
 {
     public string Host { get; set; } = string.Empty;
-    public int Port { get; set; } = 8080;
+    public int Port { get; set; } = 8081;
     public string ApiKey { get; set; } = string.Empty;
     public string ConnectionType { get; set; } = "HTTP";
 }

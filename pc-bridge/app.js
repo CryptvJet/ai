@@ -55,6 +55,77 @@ class PCBridge {
         next();
     }
 
+    // Ollama Proxy Method
+    ollamaProxy(req, res) {
+        const ollamaHost = '127.0.0.1';
+        const ollamaPort = 11434;
+        
+        // Create proxy request options
+        const options = {
+            hostname: ollamaHost,
+            port: ollamaPort,
+            path: req.url,
+            method: req.method,
+            headers: req.headers
+        };
+
+        // Create proxy request to local Ollama
+        const proxyRequest = http.request(options, (proxyResponse) => {
+            // Set response headers
+            res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
+            
+            // Pipe response data
+            proxyResponse.pipe(res);
+            
+            // Log successful proxy
+            console.log(`✅ Ollama proxy: ${req.method} ${req.url} -> ${proxyResponse.statusCode}`);
+        });
+
+        // Handle proxy request errors
+        proxyRequest.on('error', (error) => {
+            console.error(`❌ Ollama proxy error: ${error.message}`);
+            res.status(503).send('Ollama service unavailable - Local Ollama server is not responding');
+        });
+
+        // Handle request timeout
+        proxyRequest.setTimeout(30000, () => {
+            console.error('⏰ Ollama proxy timeout');
+            res.status(504).send('Ollama request timeout - Request to local Ollama server timed out');
+            proxyRequest.destroy();
+        });
+
+        // Pipe request body to proxy
+        req.pipe(proxyRequest);
+    }
+
+    // Test Ollama Connection
+    async testOllamaConnection() {
+        return new Promise((resolve) => {
+            const options = {
+                hostname: '127.0.0.1',
+                port: 11434,
+                path: '/api/version',
+                method: 'GET',
+                timeout: 5000
+            };
+
+            const req = http.request(options, (res) => {
+                resolve(res.statusCode === 200);
+            });
+
+            req.on('error', () => {
+                resolve(false);
+            });
+
+            req.on('timeout', () => {
+                resolve(false);
+                req.destroy();
+            });
+
+            req.end();
+        });
+    }
+
     loadDatabaseConfig() {
         try {
             const configPath = path.join(__dirname, '../data/pws/pulse_db_config.json');
@@ -91,6 +162,10 @@ class PCBridge {
 
         // Load API key configuration
         this.loadApiKey();
+
+        // Setup JSON body parser for Ollama API calls
+        this.app.use(express.json({ limit: '50mb' }));
+        this.app.use(express.raw({ type: 'application/octet-stream', limit: '50mb' }));
 
         // Basic status endpoint (no auth required)
         this.app.get('/status', (req, res) => {
@@ -131,6 +206,104 @@ class PCBridge {
             }
         });
 
+        // Ollama API Proxy Routes
+        this.app.use('/api/version', this.authenticateRequest.bind(this), (req, res) => {
+            this.ollamaProxy(req, res);
+        });
+
+        this.app.use('/api/tags', this.authenticateRequest.bind(this), (req, res) => {
+            this.ollamaProxy(req, res);
+        });
+
+        // Direct proxy routes for streaming (NO authentication)
+        this.app.use('/api/generate', (req, res) => {
+            this.ollamaProxy(req, res);
+        });
+
+        this.app.use('/api/chat', (req, res) => {
+            this.ollamaProxy(req, res);
+        });
+
+        // Desktop app compatibility endpoint
+        this.app.get('/ai/api/pc-bridge-status.php', this.authenticateRequest.bind(this), async (req, res) => {
+            try {
+                // Test Ollama connection
+                const ollamaAvailable = await this.testOllamaConnection();
+                
+                res.json({
+                    success: true,
+                    status: 'online',
+                    timestamp: new Date().toISOString(),
+                    uptime: process.uptime(),
+                    bridge: {
+                        connected: true,
+                        version: '1.0.0'
+                    },
+                    ollama: {
+                        available: ollamaAvailable,
+                        proxy_ready: ollamaAvailable
+                    },
+                    system: {
+                        platform: os.platform(),
+                        hostname: os.hostname(),
+                        memory: Math.round(os.freemem() / 1024 / 1024) + ' MB free'
+                    }
+                });
+            } catch (error) {
+                res.status(500).json({
+                    success: false,
+                    error: 'Bridge status check failed',
+                    message: error.message
+                });
+            }
+        });
+
+        // Connect Bridge endpoint for desktop app
+        this.app.post('/api/connect', this.authenticateRequest.bind(this), async (req, res) => {
+            try {
+                const { type, apiKey } = req.body;
+                
+                // Validate connection type
+                const validTypes = ['HTTP', 'HTTPS'];
+                if (!validTypes.includes(type)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Invalid connection type',
+                        message: 'Connection type must be HTTP or HTTPS'
+                    });
+                }
+
+                // Test Ollama connection as part of bridge connection
+                const ollamaAvailable = await this.testOllamaConnection();
+                
+                // Log connection establishment
+                console.log(`🔌 Bridge connection established: Type=${type}, Ollama=${ollamaAvailable ? 'Available' : 'Unavailable'}`);
+                
+                res.json({
+                    success: true,
+                    message: 'Bridge connected successfully',
+                    connectionType: type,
+                    timestamp: new Date().toISOString(),
+                    bridge: {
+                        connected: true,
+                        version: '1.0.0'
+                    },
+                    ollama: {
+                        available: ollamaAvailable,
+                        proxy_ready: ollamaAvailable
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Bridge connection failed:', error.message);
+                res.status(500).json({
+                    success: false,
+                    error: 'Bridge connection failed',
+                    message: error.message
+                });
+            }
+        });
+
         this.startServer();
     }
 
@@ -146,6 +319,7 @@ class PCBridge {
                 console.log(`📊 Status: https://localhost:${sslConfig.port}/status`);
                 console.log(`🔗 Test DB: https://localhost:${sslConfig.port}/test-db`);
                 console.log(`🔑 API Status: https://localhost:${sslConfig.port}/api/status`);
+                console.log(`🤖 Ollama Proxy: https://localhost:${sslConfig.port}/api/*`);
             });
         } else {
             // HTTP Server (fallback)
@@ -155,6 +329,7 @@ class PCBridge {
                 console.log(`📊 Status: http://localhost:${this.port}/status`);
                 console.log(`🔗 Test DB: http://localhost:${this.port}/test-db`);
                 console.log(`🔑 API Status: http://localhost:${this.port}/api/status`);
+                console.log(`🤖 Ollama Proxy: http://localhost:${this.port}/api/*`);
             });
         }
     }

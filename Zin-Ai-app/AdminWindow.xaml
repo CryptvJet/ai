@@ -584,7 +584,7 @@
                             <TextBox x:Name="BridgePortInput" 
                                     Grid.Row="1" Grid.Column="1"
                                     Style="{StaticResource AdminInputStyle}"
-                                    Text="8080"
+                                    Text="8081"
                                     Margin="10,0,0,15"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" 
