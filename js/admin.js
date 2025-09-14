@@ -3211,38 +3211,35 @@ document.addEventListener('DOMContentLoaded', function() {
 // SmartAIRouter Debug Functions
 async function showSmartAIRouterLogs() {
     try {
+        addDebugLine('🤖 Fetching SmartAIRouter debug logs...', 'info');
         const response = await fetch('../api/debug-console.php?action=logs');
         const result = await response.json();
         
         if (result.success && result.logs.length > 0) {
-            console.log('%c🤖 SmartAIRouter Debug Logs:', 'color: #2196F3; font-weight: bold;');
+            addDebugLine(`🤖 SmartAIRouter Debug Logs (${result.logs.length} entries):`, 'success');
             
             result.logs.forEach(log => {
-                const levelColors = {
-                    'INFO': '#4CAF50',
-                    'WARN': '#FF9800', 
-                    'ERROR': '#F44336',
-                    'DEBUG': '#9C27B0'
-                };
+                const levelType = log.level.toLowerCase() === 'error' ? 'error' : 
+                                 log.level.toLowerCase() === 'warn' ? 'warning' :
+                                 log.level.toLowerCase() === 'debug' ? 'data' : 'info';
                 
-                const color = levelColors[log.level] || '#666';
-                console.log(`%c[${log.timestamp}] ${log.level}: ${log.message}`, `color: ${color}`);
+                addDebugLine(`[${log.timestamp}] ${log.level}: ${log.message}`, levelType);
                 
                 if (log.data && Object.keys(log.data).length > 0) {
-                    console.log('%cData:', 'color: #666; font-style: italic;', log.data);
+                    addDebugLine(`Data: ${JSON.stringify(log.data)}`, 'data');
                 }
             });
         } else {
-            console.log('%c🤖 SmartAIRouter: No debug logs available', 'color: #666;');
+            addDebugLine('🤖 SmartAIRouter: No debug logs available', 'warning');
         }
     } catch (error) {
-        console.error('%cError fetching SmartAIRouter logs:', 'color: #F44336;', error);
+        addDebugLine(`Error fetching SmartAIRouter logs: ${error.message}`, 'error');
     }
 }
 
 async function startLiveRouterMonitoring() {
-    console.log('%c🔴 Starting live SmartAIRouter monitoring...', 'color: #4CAF50; font-weight: bold;');
-    console.log('%cUse "router" to stop monitoring and view all logs', 'color: #666;');
+    addDebugLine('🔴 Starting live SmartAIRouter monitoring...', 'success');
+    addDebugLine('Use "router" or "router stop" to stop monitoring', 'info');
     
     // Set up polling for new logs every 2 seconds
     window.routerMonitorInterval = setInterval(async () => {
@@ -3252,23 +3249,19 @@ async function startLiveRouterMonitoring() {
             
             if (result.success && result.logs.length > 0) {
                 result.logs.forEach(log => {
-                    const levelColors = {
-                        'INFO': '#4CAF50',
-                        'WARN': '#FF9800',
-                        'ERROR': '#F44336', 
-                        'DEBUG': '#9C27B0'
-                    };
+                    const levelType = log.level.toLowerCase() === 'error' ? 'error' : 
+                                     log.level.toLowerCase() === 'warn' ? 'warning' :
+                                     log.level.toLowerCase() === 'debug' ? 'data' : 'info';
                     
-                    const color = levelColors[log.level] || '#666';
-                    console.log(`%c🤖 LIVE [${log.timestamp}] ${log.level}: ${log.message}`, `color: ${color}; font-weight: bold;`);
+                    addDebugLine(`🤖 LIVE [${log.timestamp}] ${log.level}: ${log.message}`, levelType);
                     
                     if (log.data && Object.keys(log.data).length > 0) {
-                        console.log('%cData:', 'color: #666; font-style: italic;', log.data);
+                        addDebugLine(`Data: ${JSON.stringify(log.data)}`, 'data');
                     }
                 });
             }
         } catch (error) {
-            console.error('%cLive monitoring error:', 'color: #F44336;', error);
+            addDebugLine(`Live monitoring error: ${error.message}`, 'error');
         }
     }, 2000);
 }
@@ -3277,45 +3270,49 @@ function stopLiveRouterMonitoring() {
     if (window.routerMonitorInterval) {
         clearInterval(window.routerMonitorInterval);
         window.routerMonitorInterval = null;
-        console.log('%c⏹️ Stopped live SmartAIRouter monitoring', 'color: #FF9800;');
+        addDebugLine('⏹️ Stopped live SmartAIRouter monitoring', 'warning');
+    } else {
+        addDebugLine('No live monitoring session active', 'info');
     }
 }
 
 async function clearRouterLogs() {
     try {
+        addDebugLine('🗑️ Clearing SmartAIRouter debug logs...', 'info');
         const response = await fetch('../api/debug-console.php?action=clear');
         const result = await response.json();
         
         if (result.success) {
-            console.log('%c🗑️ SmartAIRouter debug logs cleared', 'color: #4CAF50;');
+            addDebugLine('🗑️ SmartAIRouter debug logs cleared successfully', 'success');
         } else {
-            console.error('%cFailed to clear SmartAIRouter logs:', 'color: #F44336;', result.message);
+            addDebugLine(`Failed to clear SmartAIRouter logs: ${result.message}`, 'error');
         }
     } catch (error) {
-        console.error('%cError clearing SmartAIRouter logs:', 'color: #F44336;', error);
+        addDebugLine(`Error clearing SmartAIRouter logs: ${error.message}`, 'error');
     }
 }
 
 async function showRouterStats() {
     try {
+        addDebugLine('📊 Fetching SmartAIRouter statistics...', 'info');
         const response = await fetch('../api/debug-console.php?action=stats');
         const result = await response.json();
         
         if (result.success) {
-            console.log('%c📊 SmartAIRouter Statistics:', 'color: #2196F3; font-weight: bold;');
-            console.log(`%c• Total Logs: ${result.stats.total_logs}`, 'color: #4CAF50;');
-            console.log(`%c• Errors: ${result.stats.error_count}`, 'color: #F44336;');
-            console.log(`%c• Warnings: ${result.stats.warning_count}`, 'color: #FF9800;');
-            console.log(`%c• Info Messages: ${result.stats.info_count}`, 'color: #2196F3;');
-            console.log(`%c• Debug Messages: ${result.stats.debug_count}`, 'color: #9C27B0;');
+            addDebugLine('📊 SmartAIRouter Statistics:', 'success');
+            addDebugLine(`• Total Logs: ${result.stats.total_logs}`, 'info');
+            addDebugLine(`• Errors: ${result.stats.error_count}`, 'error');
+            addDebugLine(`• Warnings: ${result.stats.warning_count}`, 'warning');
+            addDebugLine(`• Info Messages: ${result.stats.info_count}`, 'info');
+            addDebugLine(`• Debug Messages: ${result.stats.debug_count}`, 'data');
             
             if (result.stats.recent_activity) {
-                console.log(`%c• Last Activity: ${result.stats.recent_activity}`, 'color: #666;');
+                addDebugLine(`• Last Activity: ${result.stats.recent_activity}`, 'data');
             }
         } else {
-            console.error('%cFailed to fetch SmartAIRouter stats:', 'color: #F44336;', result.message);
+            addDebugLine(`Failed to fetch SmartAIRouter stats: ${result.message}`, 'error');
         }
     } catch (error) {
-        console.error('%cError fetching SmartAIRouter stats:', 'color: #F44336;', error);
+        addDebugLine(`Error fetching SmartAIRouter stats: ${error.message}`, 'error');
     }
 }
