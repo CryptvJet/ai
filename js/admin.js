@@ -2145,6 +2145,10 @@ function executeDebugCommand(command) {
             addDebugLine('  clear - Clear debug output', 'info');
             addDebugLine('  time - Show current time', 'info');
             addDebugLine('  test [endpoint] - Test specific endpoint', 'info');
+            addDebugLine('  router - Show SmartAIRouter debug logs', 'info');
+            addDebugLine('  router live - Start live SmartAIRouter monitoring', 'info');
+            addDebugLine('  router clear - Clear SmartAIRouter debug logs', 'info');
+            addDebugLine('  router stats - Show SmartAIRouter statistics', 'info');
             break;
             
         case 'status':
@@ -2214,6 +2218,38 @@ function executeDebugCommand(command) {
             } else {
                 addDebugLine('Usage: test [endpoint]', 'warning');
                 addDebugLine('Example: test pulsecore', 'info');
+            }
+            break;
+            
+        case 'router':
+            if (args.length === 0) {
+                // If live monitoring is active, stop it and show logs
+                if (window.routerMonitorInterval) {
+                    stopLiveRouterMonitoring();
+                }
+                showSmartAIRouterLogs();
+            } else {
+                switch (args[0]) {
+                    case 'live':
+                        startLiveRouterMonitoring();
+                        break;
+                    case 'stop':
+                        stopLiveRouterMonitoring();
+                        break;
+                    case 'clear':
+                        clearRouterLogs();
+                        break;
+                    case 'stats':
+                        showRouterStats();
+                        break;
+                    default:
+                        addDebugLine('Usage: router [live|stop|clear|stats]', 'warning');
+                        addDebugLine('  router - Show recent debug logs (stops live monitoring)', 'info');
+                        addDebugLine('  router live - Start live monitoring', 'info');
+                        addDebugLine('  router stop - Stop live monitoring', 'info');
+                        addDebugLine('  router clear - Clear debug logs', 'info');
+                        addDebugLine('  router stats - Show statistics', 'info');
+                }
             }
             break;
             
@@ -3171,3 +3207,115 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Failed to instantiate AIAdmin:', error);
     }
 });
+
+// SmartAIRouter Debug Functions
+async function showSmartAIRouterLogs() {
+    try {
+        const response = await fetch('../api/debug-console.php?action=logs');
+        const result = await response.json();
+        
+        if (result.success && result.logs.length > 0) {
+            console.log('%c🤖 SmartAIRouter Debug Logs:', 'color: #2196F3; font-weight: bold;');
+            
+            result.logs.forEach(log => {
+                const levelColors = {
+                    'INFO': '#4CAF50',
+                    'WARN': '#FF9800', 
+                    'ERROR': '#F44336',
+                    'DEBUG': '#9C27B0'
+                };
+                
+                const color = levelColors[log.level] || '#666';
+                console.log(`%c[${log.timestamp}] ${log.level}: ${log.message}`, `color: ${color}`);
+                
+                if (log.data && Object.keys(log.data).length > 0) {
+                    console.log('%cData:', 'color: #666; font-style: italic;', log.data);
+                }
+            });
+        } else {
+            console.log('%c🤖 SmartAIRouter: No debug logs available', 'color: #666;');
+        }
+    } catch (error) {
+        console.error('%cError fetching SmartAIRouter logs:', 'color: #F44336;', error);
+    }
+}
+
+async function startLiveRouterMonitoring() {
+    console.log('%c🔴 Starting live SmartAIRouter monitoring...', 'color: #4CAF50; font-weight: bold;');
+    console.log('%cUse "router" to stop monitoring and view all logs', 'color: #666;');
+    
+    // Set up polling for new logs every 2 seconds
+    window.routerMonitorInterval = setInterval(async () => {
+        try {
+            const response = await fetch('../api/debug-console.php?action=live');
+            const result = await response.json();
+            
+            if (result.success && result.logs.length > 0) {
+                result.logs.forEach(log => {
+                    const levelColors = {
+                        'INFO': '#4CAF50',
+                        'WARN': '#FF9800',
+                        'ERROR': '#F44336', 
+                        'DEBUG': '#9C27B0'
+                    };
+                    
+                    const color = levelColors[log.level] || '#666';
+                    console.log(`%c🤖 LIVE [${log.timestamp}] ${log.level}: ${log.message}`, `color: ${color}; font-weight: bold;`);
+                    
+                    if (log.data && Object.keys(log.data).length > 0) {
+                        console.log('%cData:', 'color: #666; font-style: italic;', log.data);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('%cLive monitoring error:', 'color: #F44336;', error);
+        }
+    }, 2000);
+}
+
+function stopLiveRouterMonitoring() {
+    if (window.routerMonitorInterval) {
+        clearInterval(window.routerMonitorInterval);
+        window.routerMonitorInterval = null;
+        console.log('%c⏹️ Stopped live SmartAIRouter monitoring', 'color: #FF9800;');
+    }
+}
+
+async function clearRouterLogs() {
+    try {
+        const response = await fetch('../api/debug-console.php?action=clear');
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('%c🗑️ SmartAIRouter debug logs cleared', 'color: #4CAF50;');
+        } else {
+            console.error('%cFailed to clear SmartAIRouter logs:', 'color: #F44336;', result.message);
+        }
+    } catch (error) {
+        console.error('%cError clearing SmartAIRouter logs:', 'color: #F44336;', error);
+    }
+}
+
+async function showRouterStats() {
+    try {
+        const response = await fetch('../api/debug-console.php?action=stats');
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('%c📊 SmartAIRouter Statistics:', 'color: #2196F3; font-weight: bold;');
+            console.log(`%c• Total Logs: ${result.stats.total_logs}`, 'color: #4CAF50;');
+            console.log(`%c• Errors: ${result.stats.error_count}`, 'color: #F44336;');
+            console.log(`%c• Warnings: ${result.stats.warning_count}`, 'color: #FF9800;');
+            console.log(`%c• Info Messages: ${result.stats.info_count}`, 'color: #2196F3;');
+            console.log(`%c• Debug Messages: ${result.stats.debug_count}`, 'color: #9C27B0;');
+            
+            if (result.stats.recent_activity) {
+                console.log(`%c• Last Activity: ${result.stats.recent_activity}`, 'color: #666;');
+            }
+        } else {
+            console.error('%cFailed to fetch SmartAIRouter stats:', 'color: #F44336;', result.message);
+        }
+    } catch (error) {
+        console.error('%cError fetching SmartAIRouter stats:', 'color: #F44336;', error);
+    }
+}

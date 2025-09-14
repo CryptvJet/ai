@@ -11,11 +11,13 @@ class SmartAIRouter {
     private $circuit_breaker_threshold = 3;
     private $fallback_timeout = 5; // seconds
     private $bridge_config;
+    private $debug_logs = [];
     
     public function __construct() {
         global $ai_pdo;
         $this->ai_pdo = $ai_pdo;
         $this->loadBridgeConfiguration();
+        $this->debugLog('INFO', 'SmartAIRouter initialized');
     }
     
     /**
@@ -59,16 +61,40 @@ class SmartAIRouter {
      */
     public function routeRequest($message, $session_id, $mode = 'auto', $context = null) {
         try {
+            $this->debugLog('INFO', 'Chat request received', [
+                'message' => substr($message, 0, 100),
+                'session_id' => $session_id,
+                'mode' => $mode,
+                'has_context' => !empty($context)
+            ]);
+            
             // 1. Check PC status and capabilities
+            $this->debugLog('INFO', 'Checking PC status and Ollama availability');
             $pcStatus = $this->checkPCStatus();
+            $this->debugLog('INFO', 'PC status check complete', [
+                'available' => $pcStatus['available'],
+                'ollama_status' => $pcStatus['ollama_status'],
+                'reason' => $pcStatus['reason'] ?? null
+            ]);
             
             // 2. Determine optimal routing strategy
+            $this->debugLog('INFO', 'Determining optimal routing strategy');
             $route = $this->determineRoute($message, $mode, $pcStatus, $context);
+            $this->debugLog('INFO', 'Route determined', [
+                'chosen_route' => $route,
+                'pc_available' => $pcStatus['available'],
+                'mode' => $mode
+            ]);
             
             // 3. Execute with fallback logic
+            $this->debugLog('INFO', 'Executing route with fallback logic', ['route' => $route]);
             return $this->executeWithFallback($route, $message, $session_id, $mode, $context, $pcStatus);
             
         } catch (Exception $e) {
+            $this->debugLog('ERROR', 'SmartAIRouter fatal error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             error_log("SmartAIRouter error: " . $e->getMessage());
             return $this->createErrorResponse("Routing failed", $e->getMessage());
         }
@@ -257,6 +283,11 @@ class SmartAIRouter {
      */
     private function executeLocalAI($message, $session_id, $context) {
         try {
+            $this->debugLog('INFO', 'Attempting direct Ollama connection', [
+                'url' => 'localhost:11434/api/generate',
+                'method' => 'direct_tunnel'
+            ]);
+            
             // Connect directly to SSH tunnel endpoint (bypasses bridge proxy)
             $ollama_url = 'http://localhost:11434/api/generate';
             
@@ -266,6 +297,11 @@ class SmartAIRouter {
             $temperature = 0.7;
             $maxTokens = 1000;
             
+            $this->debugLog('INFO', 'Loading AI model configuration', [
+                'config_path' => $aiConfigPath,
+                'config_exists' => file_exists($aiConfigPath)
+            ]);
+            
             if (file_exists($aiConfigPath)) {
                 $aiConfig = json_decode(file_get_contents($aiConfigPath), true);
                 if ($aiConfig) {
@@ -274,6 +310,12 @@ class SmartAIRouter {
                     $maxTokens = $aiConfig['MaxTokens'] ?? $maxTokens;
                 }
             }
+            
+            $this->debugLog('INFO', 'AI configuration loaded', [
+                'model' => $preferredModel,
+                'temperature' => $temperature,
+                'max_tokens' => $maxTokens
+            ]);
             
             $postData = [
                 'model' => $preferredModel,
@@ -285,6 +327,12 @@ class SmartAIRouter {
                 ]
             ];
             
+            $this->debugLog('INFO', 'Sending request to Ollama', [
+                'url' => $ollama_url,
+                'payload_size' => strlen(json_encode($postData)),
+                'timeout' => 60
+            ]);
+            
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $ollama_url);
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -295,17 +343,35 @@ class SmartAIRouter {
                 'Content-Type: application/json'
             ]);
             
+            $startTime = microtime(true);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
+            $requestTime = round((microtime(true) - $startTime) * 1000);
+            
+            $this->debugLog('INFO', 'Ollama response received', [
+                'http_code' => $httpCode,
+                'request_time_ms' => $requestTime,
+                'has_error' => !empty($error),
+                'error' => $error,
+                'response_length' => strlen($response)
+            ]);
             
             if ($error) {
+                $this->debugLog('ERROR', 'Ollama connection failed', [
+                    'error' => $error,
+                    'url' => $ollama_url
+                ]);
                 error_log("Ollama tunnel communication error: " . $error);
                 return null;
             }
             
             if ($httpCode !== 200) {
+                $this->debugLog('ERROR', 'Ollama HTTP error', [
+                    'http_code' => $httpCode,
+                    'response' => substr($response, 0, 500)
+                ]);
                 error_log("Ollama returned HTTP " . $httpCode);
                 return null;
             }
@@ -313,9 +379,20 @@ class SmartAIRouter {
             $data = json_decode($response, true);
             
             if (!$data || !isset($data['response'])) {
+                $this->debugLog('ERROR', 'Invalid Ollama response', [
+                    'data' => $data,
+                    'raw_response' => substr($response, 0, 500)
+                ]);
                 error_log("Ollama response invalid: " . json_encode($data));
                 return null;
             }
+            
+            $this->debugLog('SUCCESS', 'Ollama connection successful', [
+                'model' => $data['model'] ?? 'unknown',
+                'response_length' => strlen($data['response']),
+                'total_duration' => $data['total_duration'] ?? 0,
+                'eval_count' => $data['eval_count'] ?? 0
+            ]);
             
             // Return in expected format
             return [
@@ -444,10 +521,21 @@ class SmartAIRouter {
      */
     private function handleConversationalQuery($message, $session_id, $context) {
         try {
+            $this->debugLog('INFO', 'Using Chill Mode (database templates)', [
+                'message' => substr($message, 0, 50)
+            ]);
+            
             // Try to find matching template from database
             $templateResponse = $this->getTemplateResponse($message);
             
             if ($templateResponse) {
+                $this->debugLog('SUCCESS', 'Database template found', [
+                    'template_id' => $templateResponse['id'],
+                    'category' => $templateResponse['category'],
+                    'pattern' => $templateResponse['trigger_pattern'],
+                    'priority' => $templateResponse['priority']
+                ]);
+                
                 // Update template usage count
                 $this->updateTemplateUsage($templateResponse['id']);
                 
@@ -690,6 +778,74 @@ class SmartAIRouter {
                 'bridge_used' => false
             ];
         }
+    }
+    
+    /**
+     * Debug logging system for SmartAIRouter
+     */
+    private function debugLog($level, $message, $data = []) {
+        $log_entry = [
+            'timestamp' => date('Y-m-d H:i:s.v'),
+            'level' => $level,
+            'source' => 'SmartAIRouter',
+            'message' => $message,
+            'data' => $data,
+            'request_id' => $this->getRequestId()
+        ];
+        
+        // Store in memory for this request
+        $this->debug_logs[] = $log_entry;
+        
+        // Also log to PHP error log for debugging
+        error_log("[SmartAIRouter-{$level}] {$message}" . (empty($data) ? '' : ' | Data: ' . json_encode($data)));
+        
+        // Send to debug console if available
+        $this->sendToDebugConsole($log_entry);
+    }
+    
+    /**
+     * Get unique request ID for tracking
+     */
+    private function getRequestId() {
+        static $request_id = null;
+        if ($request_id === null) {
+            $request_id = substr(uniqid(), -6);
+        }
+        return $request_id;
+    }
+    
+    /**
+     * Send debug log to admin console
+     */
+    private function sendToDebugConsole($log_entry) {
+        try {
+            // Store debug logs in database for admin console to retrieve
+            $stmt = $this->ai_pdo->prepare("
+                INSERT INTO debug_logs (
+                    timestamp, level, source, message, data, request_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            
+            $stmt->execute([
+                $log_entry['timestamp'],
+                $log_entry['level'],
+                $log_entry['source'],
+                $log_entry['message'],
+                json_encode($log_entry['data']),
+                $log_entry['request_id']
+            ]);
+            
+        } catch (Exception $e) {
+            // Don't let debug logging break the main flow
+            error_log("Debug console logging failed: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get all debug logs for this request
+     */
+    public function getDebugLogs() {
+        return $this->debug_logs;
     }
 }
 
