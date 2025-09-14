@@ -129,55 +129,46 @@ class SmartAIRouter {
     }
     
     /**
-     * Check Ollama server status via bridge
+     * Check Ollama server status via direct tunnel connection
      */
     private function checkOllamaStatus() {
         try {
-            // Check if bridge is enabled
-            if (!$this->bridge_config['enabled']) {
-                return $this->checkOllamaDirectly();
-            }
-            
-            // Try the configured bridge
-            $protocol = strtolower($this->bridge_config['type']) === 'https' ? 'https' : 'http';
-            $bridge_url = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}/api/tags";
+            // Connect directly to SSH tunnel endpoint (bypasses bridge proxy)
+            $ollama_url = 'http://localhost:11434/api/tags';
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $bridge_url);
+            curl_setopt($ch, CURLOPT_URL, $ollama_url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Quick 3 second timeout for status check
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-            
-            // Add API key if configured
-            if (!empty($this->bridge_config['api_key'])) {
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Authorization: Bearer ' . $this->bridge_config['api_key']
-                ]);
-            }
-            
-            // Configure SSL for HTTPS
-            if (strtolower($this->bridge_config['type']) === 'https') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-                curl_setopt($ch, CURLOPT_CAINFO, ''); // Use system CA bundle
-            }
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
             
-            // If Node.js bridge fails, try direct PHP test
             if ($error || $httpCode !== 200) {
-                return $this->checkOllamaDirectly();
+                return [
+                    'status' => 'offline',
+                    'models' => [],
+                    'error' => $error ?: 'Ollama server not responding via tunnel'
+                ];
             }
             
             $data = json_decode($response, true);
+            $models = [];
+            
+            if (isset($data['models']) && is_array($data['models'])) {
+                foreach ($data['models'] as $model) {
+                    $models[] = $model['name'];
+                }
+            }
             
             return [
-                'status' => $data['success'] ? 'online' : 'offline',
-                'models' => $data['models'] ?? [],
-                'preferred_model' => $data['preferred'] ?? null
+                'status' => 'online',
+                'models' => $models,
+                'preferred_model' => !empty($models) ? $models[0] : null,
+                'connection_type' => 'direct_tunnel'
             ];
             
         } catch (Exception $e) {
@@ -262,45 +253,47 @@ class SmartAIRouter {
     }
     
     /**
-     * Execute request on local PC Ollama via Bridge
+     * Execute request on local PC Ollama via direct tunnel connection
      */
     private function executeLocalAI($message, $session_id, $context) {
         try {
-            // Try to communicate with PC Bridge
-            $protocol = strtolower($this->bridge_config['type']) === 'https' ? 'https' : 'http';
-            $bridgeUrl = "{$protocol}://{$this->bridge_config['host']}:{$this->bridge_config['port']}";
+            // Connect directly to SSH tunnel endpoint (bypasses bridge proxy)
+            $ollama_url = 'http://localhost:11434/api/generate';
+            
+            // Load AI model configuration for preferred model
+            $aiConfigPath = __DIR__ . '/../../data/pws/ai_model_config.json';
+            $preferredModel = 'llama3.2:3b-instruct-q4_K_M'; // Default
+            $temperature = 0.7;
+            $maxTokens = 1000;
+            
+            if (file_exists($aiConfigPath)) {
+                $aiConfig = json_decode(file_get_contents($aiConfigPath), true);
+                if ($aiConfig) {
+                    $preferredModel = $aiConfig['ModelName'] ?? $preferredModel;
+                    $temperature = $aiConfig['Temperature'] ?? $temperature;
+                    $maxTokens = $aiConfig['MaxTokens'] ?? $maxTokens;
+                }
+            }
             
             $postData = [
-                'message' => $message,
-                'session_id' => $session_id,
-                'context' => $context,
-                'model' => null // Let bridge choose preferred model
+                'model' => $preferredModel,
+                'prompt' => $message,
+                'stream' => false,
+                'options' => [
+                    'temperature' => $temperature,
+                    'num_predict' => $maxTokens
+                ]
             ];
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $bridgeUrl . '/api/generate');
+            curl_setopt($ch, CURLOPT_URL, $ollama_url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30 second timeout
-            $headers = [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen(json_encode($postData))
-            ];
-            
-            // Add API key if configured
-            if (!empty($this->bridge_config['api_key'])) {
-                $headers[] = 'Authorization: Bearer ' . $this->bridge_config['api_key'];
-            }
-            
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            
-            // Configure SSL for HTTPS
-            if (strtolower($this->bridge_config['type']) === 'https') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-                curl_setopt($ch, CURLOPT_CAINFO, ''); // Use system CA bundle
-            }
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60); // 60 second timeout for generation
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json'
+            ]);
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -308,23 +301,33 @@ class SmartAIRouter {
             curl_close($ch);
             
             if ($error) {
-                error_log("Bridge communication error: " . $error);
+                error_log("Ollama tunnel communication error: " . $error);
                 return null;
             }
             
             if ($httpCode !== 200) {
-                error_log("Bridge returned HTTP " . $httpCode);
+                error_log("Ollama returned HTTP " . $httpCode);
                 return null;
             }
             
             $data = json_decode($response, true);
             
-            if (!$data || !$data['success']) {
-                error_log("Bridge response invalid or failed: " . ($data['error'] ?? 'Unknown error'));
+            if (!$data || !isset($data['response'])) {
+                error_log("Ollama response invalid: " . json_encode($data));
                 return null;
             }
             
-            return $data;
+            // Return in expected format
+            return [
+                'success' => true,
+                'response' => $data['response'],
+                'model' => $data['model'] ?? $preferredModel,
+                'connection_type' => 'direct_tunnel',
+                'total_duration' => $data['total_duration'] ?? 0,
+                'load_duration' => $data['load_duration'] ?? 0,
+                'prompt_eval_count' => $data['prompt_eval_count'] ?? 0,
+                'eval_count' => $data['eval_count'] ?? 0
+            ];
             
         } catch (Exception $e) {
             error_log("Local AI execution failed: " . $e->getMessage());
