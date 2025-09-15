@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zin AI - Mobile Chat</title>
+    <link rel="stylesheet" href="css/m-chat.css">
+    <script>
+        // Desktop redirect for screens wider than 800px
+        function checkDesktopRedirect() {
+            if (window.innerWidth > 800) {
+                // Save any existing session data before redirect
+                const currentSession = localStorage.getItem('zin_mobile_session');
+                if (currentSession) {
+                    localStorage.setItem('ai_session', currentSession);
+                }
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Check on page load
+        checkDesktopRedirect();
+        
+        // Check on window resize
+        window.addEventListener('resize', checkDesktopRedirect);
+    </script>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="header-logo">
+            <div class="ai-avatar">🤖</div>
+            <div class="logo-text">
+                <div class="ai-name" id="aiName">Zin AI</div>
+                <div class="ai-mode" id="aiMode">Full Power Mode 🧠</div>
+            </div>
+        </div>
+        
+        <div class="header-status">
+            <div class="status-indicator" id="connectionStatus">Active</div>
+        </div>
+        
+        <div class="header-menu">
+            <button class="menu-btn" id="menuBtn" onclick="toggleMobileMenu()">
+                <span class="menu-icon">⚙️</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="menu-header">
+            <h3>Settings & Stats</h3>
+            <button class="menu-close" onclick="closeMobileMenu()">✕</button>
+        </div>
+        
+        <div class="menu-section">
+            <h4>📊 PulseCore Stats</h4>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Total Climaxes:</span>
+                    <span class="stat-value" id="totalClimaxes">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Novas:</span>
+                    <span class="stat-value" id="totalNovas">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Average Complexity:</span>
+                    <span class="stat-value" id="avgComplexity">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Sessions:</span>
+                    <span class="stat-value" id="totalSessions">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h4>🎛️ Voice Settings</h4>
+            <div class="voice-settings">
+                <div class="setting-row">
+                    <label for="voiceSelect">Voice:</label>
+                    <select id="voiceSelect" class="voice-dropdown">
+                        <option value="">Loading voices...</option>
+                    </select>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="speechRate">Speed:</label>
+                    <input type="range" id="speechRate" min="0.5" max="2.5" step="0.1" value="1.2" class="speed-slider">
+                    <span id="speedValue">1.2x</span>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="speechPitch">Pitch:</label>
+                    <input type="range" id="speechPitch" min="0.5" max="2.0" step="0.1" value="1.0" class="pitch-slider">
+                    <span id="pitchValue">1.0</span>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="speechVolume">Volume:</label>
+                    <input type="range" id="speechVolume" min="0.1" max="1.0" step="0.1" value="0.8" class="volume-slider">
+                    <span id="volumeValue">0.8</span>
+                </div>
+
+                <div class="setting-row">
+                    <label class="voice-toggle">
+                        <input type="checkbox" id="autoSpeak" checked>
+                        <span class="toggle-slider"></span>
+                        Auto-speak responses
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <label for="voiceTimeout">Listen Duration:</label>
+                    <select id="voiceTimeout" class="timeout-dropdown">
+                        <option value="normal">Normal</option>
+                        <option value="30">30 seconds</option>
+                        <option value="60">60 seconds</option>
+                        <option value="continuous">Continuous</option>
+                    </select>
+                </div>
+
+                <div class="voice-test">
+                    <button id="testVoiceBtn" class="btn-test-voice">🎵 Test Voice</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h4>🔧 Actions</h4>
+            <button class="menu-action-btn" onclick="clearChat()">🗑️ Clear Chat</button>
+            <button class="menu-action-btn" onclick="openAdmin()">⚙️ Admin Panel</button>
+        </div>
+
+        <!-- Hidden Connection Status Elements (for JS compatibility) -->
+        <div style="display: none;">
+            <span id="pulseStatus" class="connection-status">PulseCore: <span class="status-dot"></span></span>
+            <span id="pcStatus" class="connection-status">PC Bridge: <span class="status-dot"></span></span>
+        </div>
+    </div>
+
+    <!-- Main Chat Container -->
+    <main class="chat-main">
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message" id="welcomeMessage">
+                <div class="welcome-content">
+                    <div class="zin-intro">
+                        <h2>Welcome to Zin AI! 🤖</h2>
+                        <p><strong id="aiNameLabel">Zin:</strong> <span id="welcomeText">Hi! I'm your AI Assistant powered by PulseCore technology. I hope you are doing well today! What should I call you?</span></p>
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <h3>Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button class="quick-btn" onclick="quickMessage('What are my recent novas?')">Recent Novas</button>
+                            <button class="quick-btn" onclick="quickMessage('Analyze my patterns')">Pattern Analysis</button>
+                            <button class="quick-btn" onclick="quickMessage('Help me optimize')">Optimization Tips</button>
+                            <button class="quick-btn" onclick="quickMessage('Show variables data')">Variables Data</button>
+                        </div>
+                    </div>
+
+                    <div class="team-section">
+                        <h3>Built Through Collaboration</h3>
+                        <p>Created through 25+ hours of collaborative development work</p>
+                        <div class="team-grid">
+                            <div class="team-item">
+                                <span class="team-icon">🚀</span>
+                                <span class="team-name">Powered by Ollama</span>
+                            </div>
+                            <div class="team-item">
+                                <span class="team-icon">🧠</span>
+                                <span class="team-name">Designed with Claude</span>
+                            </div>
+                            <div class="team-item">
+                                <span class="team-icon">💫</span>
+                                <span class="team-name">Inspired by Sorya GPT</span>
+                            </div>
+                            <div class="team-item">
+                                <span class="team-icon">🔬</span>
+                                <span class="team-name">Built for PulseCore Research</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Input Section -->
+    <footer class="input-section">
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type your message or use voice..."
+                autocomplete="off"
+            />
+            <button id="voiceBtn" class="btn-voice" onclick="toggleVoice()" title="Voice input">
+                🎤
+            </button>
+            <button id="sendBtn" class="btn-send" onclick="sendMessage()" title="Send message">
+                ➤
+            </button>
+        </div>
+    </footer>
+
+    <!-- Voice Indicator -->
+    <div id="voiceIndicator" class="voice-indicator hidden">
+        <button class="voice-close-btn" onclick="closeVoiceIndicator()">✕</button>
+        <div class="voice-animation"></div>
+        <p>Listening... Speak now</p>
+        <div class="voice-status" id="voiceStatus">Ready to listen...</div>
+    </div>
+
+    <script src="js/mchat.js"></script>
+</body>
+</html>
