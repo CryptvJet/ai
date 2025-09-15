@@ -97,62 +97,17 @@ class MobileChatInterface {
     }
 
     async checkSystemStatus() {
+        // Check PulseCore connection - EXACTLY like desktop version
         try {
-            // Check PulseCore status
-            const pulseResponse = await fetch('api/pulsecore-status.php');
-            
-            // Get content type to detect if PHP is processed
-            const contentType = pulseResponse.headers.get('content-type');
-            console.log('Status response content-type:', contentType);
-            
-            // Check if we get a proper JSON response or raw PHP (indicating static server)
-            const pulseText = await pulseResponse.text();
-            console.log('Status response preview:', pulseText.substring(0, 100));
-            
-            let pulseData;
-            let isStaticServer = false;
-            
-            // Detect static server by content-type or PHP code
-            if (contentType && contentType.includes('application/x-httpd-php') || 
-                pulseText.startsWith('<?php') || 
-                pulseText.includes('<?php')) {
-                // Static server - simulate connection for demo
-                console.warn('PHP backend not available - activating demo mode');
-                pulseData = { connected: true, demo_mode: true };
-                isStaticServer = true;
-            } else {
-                try {
-                    pulseData = JSON.parse(pulseText);
-                    console.log('Parsed status response:', pulseData);
-                } catch (parseError) {
-                    console.warn('Failed to parse status response, using demo mode');
-                    pulseData = { connected: true, demo_mode: true };
-                    isStaticServer = true;
-                }
-            }
-            
-            // For static server, skip PC Bridge check
-            let pcData = { connected: true, demo_mode: isStaticServer };
-            
-            if (!isStaticServer) {
-                // Check PC Bridge status only if we have real PHP backend
-                try {
-                    const pcResponse = await fetch('api/pc-bridge-status.php');
-                    const pcText = await pcResponse.text();
-                    pcData = JSON.parse(pcText);
-                } catch (pcError) {
-                    console.warn('PC Bridge check failed:', pcError);
-                    pcData = { connected: false };
-                }
-            }
-            
-            // Update status indicator
-            this.updateStatus(pulseData.connected && pcData.connected, pulseData.demo_mode || isStaticServer);
-            
+            const response = await fetch('api/pulsecore-status.php');
+            const status = await response.json();
+            console.log('PulseCore status response:', status);
+            const isConnected = status.success && status.status === 'connected';
+            console.log('PulseCore connection result:', isConnected);
+            this.updateStatus(isConnected, false);
         } catch (error) {
-            console.warn('Status check failed:', error);
-            // Fallback to demo mode instead of showing "Connecting..."
-            this.updateStatus(true, true);
+            console.error('PulseCore status check failed:', error);
+            this.updateStatus(false, false);
         }
     }
 
@@ -188,88 +143,62 @@ class MobileChatInterface {
         this.showTypingIndicator();
 
         try {
-            // Send to API
-            const response = await this.callChatAPI(message);
+            // Send to API - EXACTLY like desktop version
+            const result = await this.callChatAPI(message);
             
             // Hide typing indicator
             this.hideTypingIndicator();
-            
-            // Add AI response to DOM
-            this.addMessageToDOM(response.response, 'assistant');
-            
-            // Add to conversation history
-            this.conversationHistory.push({
-                content: response.response,
-                sender: 'assistant',
-                timestamp: Date.now()
-            });
 
-            // Save session
-            this.saveSession();
+            if (result.success) {
+                // Add AI response to DOM
+                this.addMessageToDOM(result.response, 'assistant');
+                
+                // Add to conversation history
+                this.conversationHistory.push({
+                    content: result.response,
+                    sender: 'assistant',
+                    timestamp: Date.now()
+                });
+
+                // Save session
+                this.saveSession();
+            } else {
+                this.addMessageToDOM('I apologize, but I encountered an issue processing your message. Please try again.', 'assistant');
+            }
 
         } catch (error) {
             console.error('Chat API error:', error);
             this.hideTypingIndicator();
             
-            // Show error message
+            // Show error message - same as desktop
             this.addMessageToDOM(
-                "I'm having trouble connecting right now. Please check your connection and try again.",
+                "I'm having trouble processing that. Could you try rephrasing?",
                 'assistant'
             );
         }
     }
 
     async callChatAPI(message) {
-        const requestData = {
-            message: message,
-            session_id: this.sessionId,
-            mode: this.currentMode,
-            timestamp: Date.now()
-        };
-
+        // EXACTLY like desktop version - no detection, just direct API call
         try {
-            console.log('Sending chat request:', requestData);
             const response = await fetch('api/chat.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify({
+                    message: message,
+                    session_id: this.sessionId,
+                    mode: this.currentMode
+                })
             });
 
-            console.log('Chat response status:', response.status);
-            console.log('Chat response content-type:', response.headers.get('content-type'));
-
-            if (!response.ok) {
-                throw new Error(`API request failed: ${response.status}`);
-            }
-
-            const responseText = await response.text();
-            console.log('Chat response preview:', responseText.substring(0, 200));
-            
-            // Get content type to detect if PHP is processed
-            const contentType = response.headers.get('content-type');
-            
-            // Check if we get PHP code back (static server) by content-type or content
-            if (contentType && contentType.includes('application/x-httpd-php') ||
-                responseText.startsWith('<?php') || 
-                responseText.includes('<?php')) {
-                console.warn('PHP backend not available - using demo responses');
-                return this.generateDemoResponse(message);
-            }
-
-            try {
-                const jsonResponse = JSON.parse(responseText);
-                console.log('Parsed chat response:', jsonResponse);
-                return jsonResponse;
-            } catch (parseError) {
-                console.warn('Failed to parse chat response, using demo mode:', parseError);
-                return this.generateDemoResponse(message);
-            }
+            const result = await response.json();
+            return result;
             
         } catch (error) {
-            console.warn('API call failed, using demo mode:', error);
-            return this.generateDemoResponse(message);
+            console.error('Chat API error:', error);
+            throw error;
         }
     }
 
