@@ -127,60 +127,18 @@ class MobileChatInterface {
         const message = this.messageInput.value.trim();
         if (!message || this.isTyping) return;
 
-        // Add user message to DOM
-        this.addMessageToDOM(message, 'user');
+        // Clear input and disable send button temporarily - EXACTLY like desktop
         this.messageInput.value = '';
         this.messageInput.style.height = 'auto';
+        
+        const sendBtn = this.sendButton;
+        sendBtn.disabled = true;
 
-        // Add to conversation history
-        this.conversationHistory.push({
-            content: message,
-            sender: 'user',
-            timestamp: Date.now()
-        });
-
-        // Show typing indicator
-        this.showTypingIndicator();
+        // Add user message to chat - EXACTLY like desktop
+        this.addMessage('user', message);
 
         try {
-            // Send to API - EXACTLY like desktop version
-            const result = await this.callChatAPI(message);
-            
-            // Hide typing indicator
-            this.hideTypingIndicator();
-
-            if (result.success) {
-                // Add AI response to DOM
-                this.addMessageToDOM(result.response, 'assistant');
-                
-                // Add to conversation history
-                this.conversationHistory.push({
-                    content: result.response,
-                    sender: 'assistant',
-                    timestamp: Date.now()
-                });
-
-                // Save session
-                this.saveSession();
-            } else {
-                this.addMessageToDOM('I apologize, but I encountered an issue processing your message. Please try again.', 'assistant');
-            }
-
-        } catch (error) {
-            console.error('Chat API error:', error);
-            this.hideTypingIndicator();
-            
-            // Show error message - same as desktop
-            this.addMessageToDOM(
-                "I'm having trouble processing that. Could you try rephrasing?",
-                'assistant'
-            );
-        }
-    }
-
-    async callChatAPI(message) {
-        // EXACTLY like desktop version - no detection, just direct API call
-        try {
+            // Send message to AI - EXACTLY like desktop
             const response = await fetch('api/chat.php', {
                 method: 'POST',
                 headers: {
@@ -194,13 +152,24 @@ class MobileChatInterface {
             });
 
             const result = await response.json();
-            return result;
-            
+
+            if (result.success) {
+                this.addMessage('ai', result.response);
+            } else {
+                this.addMessage('ai', 'Sorry, I encountered an error processing your message. Please try again.');
+                console.error('Chat error:', result.error);
+            }
         } catch (error) {
-            console.error('Chat API error:', error);
-            throw error;
+            console.error('Network error:', error);
+            this.addMessage('ai', 'Sorry, I\'m having trouble connecting right now. Please check your connection and try again.');
+        } finally {
+            sendBtn.disabled = false;
+            // Ensure input focus is maintained for continuous typing
+            this.messageInput.focus();
         }
     }
+
+    // Removed - now using direct fetch in sendMessage like desktop
 
     generateDemoResponse(message) {
         // Generate contextual demo responses
@@ -231,27 +200,34 @@ class MobileChatInterface {
         this.sendMessage();
     }
 
-    addMessageToDOM(content, sender, timestamp = null) {
-        // Remove welcome message if it exists
+    addMessage(type, content) {
+        // Remove welcome message if it exists - mobile specific
         if (this.welcomeMessage && this.welcomeMessage.parentNode) {
             this.welcomeMessage.remove();
         }
 
+        const chatContainer = this.chatContainer;
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}`;
+        messageDiv.className = `message ${type}-message`;
         
-        const displayTime = timestamp ? new Date(timestamp) : new Date();
-        const timeString = displayTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         messageDiv.innerHTML = `
             <div class="message-content">
-                ${this.formatMessage(content)}
-                <div class="message-time">${timeString}</div>
+                <strong>${type === 'user' ? 'You' : 'Zin AI'}:</strong> ${content}
             </div>
+            <div class="message-time">${timestamp}</div>
         `;
         
-        this.chatContainer.appendChild(messageDiv);
-        this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+        chatContainer.appendChild(messageDiv);
+        
+        // Smooth scroll to bottom with a slight delay to ensure DOM is updated
+        setTimeout(() => {
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 10);
     }
 
     formatMessage(content) {

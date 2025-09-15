@@ -346,12 +346,12 @@ body::before {
     animation: slideIn 0.3s ease-out;
 }
 
-.message.user {
+.message.user, .message.user-message {
     align-self: flex-end;
     margin-left: auto;
 }
 
-.message.assistant {
+.message.assistant, .message.ai-message {
     align-self: flex-start;
 }
 
@@ -362,14 +362,14 @@ body::before {
     word-wrap: break-word;
 }
 
-.message.user .message-content {
+.message.user .message-content, .message.user-message .message-content {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border-bottom-right-radius: 6px;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.message.assistant .message-content {
+.message.assistant .message-content, .message.ai-message .message-content {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #e0e0e0;
@@ -384,7 +384,7 @@ body::before {
     text-align: right;
 }
 
-.message.assistant .message-time {
+.message.assistant .message-time, .message.ai-message .message-time {
     text-align: left;
 }
 
