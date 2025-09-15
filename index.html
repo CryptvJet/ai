@@ -6,6 +6,25 @@
     <title>AI Chat Interface</title>
     <link rel="stylesheet" href="css/chat.css">
     <link rel="stylesheet" href="css/ai-site.css">
+    <script>
+        // Mobile redirect for screens 800px and below
+        function checkMobileRedirect() {
+            if (window.innerWidth <= 800) {
+                // Save any existing session data before redirect
+                const currentSession = localStorage.getItem('ai_session');
+                if (currentSession) {
+                    localStorage.setItem('zin_mobile_session', currentSession);
+                }
+                window.location.href = 'mobile-chat.html';
+            }
+        }
+        
+        // Check on page load
+        checkMobileRedirect();
+        
+        // Check on window resize (if user rotates device or changes window size)
+        window.addEventListener('resize', checkMobileRedirect);
+    </script>
 </head>
 <body>
     <div class="app-layout">
