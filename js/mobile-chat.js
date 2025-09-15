@@ -101,35 +101,58 @@ class MobileChatInterface {
             // Check PulseCore status
             const pulseResponse = await fetch('api/pulsecore-status.php');
             
-            // Check if we get a proper JSON response or HTML (indicating static server)
-            const pulseText = await pulseResponse.text();
-            let pulseData;
+            // Get content type to detect if PHP is processed
+            const contentType = pulseResponse.headers.get('content-type');
+            console.log('Status response content-type:', contentType);
             
-            if (pulseText.startsWith('<?php') || pulseText.includes('<html')) {
+            // Check if we get a proper JSON response or raw PHP (indicating static server)
+            const pulseText = await pulseResponse.text();
+            console.log('Status response preview:', pulseText.substring(0, 100));
+            
+            let pulseData;
+            let isStaticServer = false;
+            
+            // Detect static server by content-type or PHP code
+            if (contentType && contentType.includes('application/x-httpd-php') || 
+                pulseText.startsWith('<?php') || 
+                pulseText.includes('<?php')) {
                 // Static server - simulate connection for demo
-                console.warn('PHP not available - using demo mode');
+                console.warn('PHP backend not available - activating demo mode');
                 pulseData = { connected: true, demo_mode: true };
+                isStaticServer = true;
             } else {
-                pulseData = JSON.parse(pulseText);
+                try {
+                    pulseData = JSON.parse(pulseText);
+                    console.log('Parsed status response:', pulseData);
+                } catch (parseError) {
+                    console.warn('Failed to parse status response, using demo mode');
+                    pulseData = { connected: true, demo_mode: true };
+                    isStaticServer = true;
+                }
             }
             
-            // Check PC Bridge status (similar fallback)
-            const pcResponse = await fetch('api/pc-bridge-status.php');
-            const pcText = await pcResponse.text();
-            let pcData;
+            // For static server, skip PC Bridge check
+            let pcData = { connected: true, demo_mode: isStaticServer };
             
-            if (pcText.startsWith('<?php') || pcText.includes('<html')) {
-                pcData = { connected: true, demo_mode: true };
-            } else {
-                pcData = JSON.parse(pcText);
+            if (!isStaticServer) {
+                // Check PC Bridge status only if we have real PHP backend
+                try {
+                    const pcResponse = await fetch('api/pc-bridge-status.php');
+                    const pcText = await pcResponse.text();
+                    pcData = JSON.parse(pcText);
+                } catch (pcError) {
+                    console.warn('PC Bridge check failed:', pcError);
+                    pcData = { connected: false };
+                }
             }
             
             // Update status indicator
-            this.updateStatus(pulseData.connected && pcData.connected, pulseData.demo_mode);
+            this.updateStatus(pulseData.connected && pcData.connected, pulseData.demo_mode || isStaticServer);
             
         } catch (error) {
             console.warn('Status check failed:', error);
-            this.updateStatus(false);
+            // Fallback to demo mode instead of showing "Connecting..."
+            this.updateStatus(true, true);
         }
     }
 
@@ -205,6 +228,7 @@ class MobileChatInterface {
         };
 
         try {
+            console.log('Sending chat request:', requestData);
             const response = await fetch('api/chat.php', {
                 method: 'POST',
                 headers: {
@@ -213,19 +237,35 @@ class MobileChatInterface {
                 body: JSON.stringify(requestData)
             });
 
+            console.log('Chat response status:', response.status);
+            console.log('Chat response content-type:', response.headers.get('content-type'));
+
             if (!response.ok) {
                 throw new Error(`API request failed: ${response.status}`);
             }
 
             const responseText = await response.text();
+            console.log('Chat response preview:', responseText.substring(0, 200));
             
-            // Check if we get PHP code back (static server)
-            if (responseText.startsWith('<?php') || responseText.includes('<html')) {
+            // Get content type to detect if PHP is processed
+            const contentType = response.headers.get('content-type');
+            
+            // Check if we get PHP code back (static server) by content-type or content
+            if (contentType && contentType.includes('application/x-httpd-php') ||
+                responseText.startsWith('<?php') || 
+                responseText.includes('<?php')) {
                 console.warn('PHP backend not available - using demo responses');
                 return this.generateDemoResponse(message);
             }
 
-            return JSON.parse(responseText);
+            try {
+                const jsonResponse = JSON.parse(responseText);
+                console.log('Parsed chat response:', jsonResponse);
+                return jsonResponse;
+            } catch (parseError) {
+                console.warn('Failed to parse chat response, using demo mode:', parseError);
+                return this.generateDemoResponse(message);
+            }
             
         } catch (error) {
             console.warn('API call failed, using demo mode:', error);
