@@ -207,6 +207,7 @@ body::before {
 .chat-container {
     flex: 1;
     padding: 1rem;
+    padding-bottom: 200px; /* Space for fixed input */
     overflow-y: auto;
     scroll-behavior: smooth;
     display: flex;
@@ -444,7 +445,11 @@ body::before {
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(59, 130, 246, 0.2);
     padding: 1rem;
-    position: relative;
+    position: fixed;
+    bottom: 150px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
 }
 
 .input-container::before {
@@ -525,10 +530,12 @@ body::before {
     
     .chat-container {
         padding: 0.75rem;
+        padding-bottom: 200px; /* Maintain space for fixed input */
     }
     
     .input-container {
         padding: 0.75rem;
+        bottom: 120px; /* Slightly higher on smaller screens */
     }
     
     .message {
@@ -547,5 +554,39 @@ body::before {
 
     .team-credits {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Additional mobile device specific adjustments */
+@media (max-width: 480px) {
+    .input-container {
+        bottom: 140px; /* Medium adjustment for common phone sizes */
+    }
+    
+    .chat-container {
+        padding-bottom: 190px;
+    }
+}
+
+/* For very tall mobile screens */
+@media (max-width: 800px) and (min-height: 800px) {
+    .input-container {
+        bottom: 160px; /* More space on taller screens */
+    }
+    
+    .chat-container {
+        padding-bottom: 210px;
+    }
+}
+
+/* Safe area adjustments for devices with home indicators */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .input-container {
+        bottom: calc(150px + env(safe-area-inset-bottom));
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+    
+    .chat-container {
+        padding-bottom: calc(200px + env(safe-area-inset-bottom));
     }
 }

@@ -100,14 +100,32 @@ class MobileChatInterface {
         try {
             // Check PulseCore status
             const pulseResponse = await fetch('api/pulsecore-status.php');
-            const pulseData = await pulseResponse.json();
             
-            // Check PC Bridge status
+            // Check if we get a proper JSON response or HTML (indicating static server)
+            const pulseText = await pulseResponse.text();
+            let pulseData;
+            
+            if (pulseText.startsWith('<?php') || pulseText.includes('<html')) {
+                // Static server - simulate connection for demo
+                console.warn('PHP not available - using demo mode');
+                pulseData = { connected: true, demo_mode: true };
+            } else {
+                pulseData = JSON.parse(pulseText);
+            }
+            
+            // Check PC Bridge status (similar fallback)
             const pcResponse = await fetch('api/pc-bridge-status.php');
-            const pcData = await pcResponse.json();
+            const pcText = await pcResponse.text();
+            let pcData;
+            
+            if (pcText.startsWith('<?php') || pcText.includes('<html')) {
+                pcData = { connected: true, demo_mode: true };
+            } else {
+                pcData = JSON.parse(pcText);
+            }
             
             // Update status indicator
-            this.updateStatus(pulseData.connected && pcData.connected);
+            this.updateStatus(pulseData.connected && pcData.connected, pulseData.demo_mode);
             
         } catch (error) {
             console.warn('Status check failed:', error);
@@ -115,10 +133,10 @@ class MobileChatInterface {
         }
     }
 
-    updateStatus(isConnected) {
+    updateStatus(isConnected, isDemo = false) {
         if (isConnected) {
             this.statusDot.style.background = '#22c55e';
-            this.statusText.textContent = 'Active';
+            this.statusText.textContent = isDemo ? 'Demo Mode' : 'Active';
             this.statusText.style.color = '#22c55e';
         } else {
             this.statusDot.style.background = '#ef4444';
@@ -186,19 +204,57 @@ class MobileChatInterface {
             timestamp: Date.now()
         };
 
-        const response = await fetch('api/chat.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        });
+        try {
+            const response = await fetch('api/chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
 
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            
+            // Check if we get PHP code back (static server)
+            if (responseText.startsWith('<?php') || responseText.includes('<html')) {
+                console.warn('PHP backend not available - using demo responses');
+                return this.generateDemoResponse(message);
+            }
+
+            return JSON.parse(responseText);
+            
+        } catch (error) {
+            console.warn('API call failed, using demo mode:', error);
+            return this.generateDemoResponse(message);
         }
+    }
 
-        return await response.json();
+    generateDemoResponse(message) {
+        // Generate contextual demo responses
+        const lowerMessage = message.toLowerCase();
+        
+        let response = "I understand you're asking about that. This is a demo response since the PHP backend isn't currently available.";
+        
+        if (lowerMessage.includes('nova')) {
+            response = "Based on your recent nova data, I can see several interesting patterns. Your most recent novas show complexity values ranging from 4,200 to 12,847, with Nova #4789 representing a significant energy surge event. *(Demo Mode)*";
+        } else if (lowerMessage.includes('variable') || lowerMessage.includes('harmonic')) {
+            response = "Local Harmonic Amplifier is a critical variable in your PulseCore system. It represents a localized field mechanism that amplifies harmonic resonance patterns within specific dimensional boundaries. Currently showing 3.4x baseline values. *(Demo Mode)*";
+        } else if (lowerMessage.includes('complexity')) {
+            response = "Your complexity patterns show fascinating trends. The current average is 5,792.4 with recent peaks reaching 17,090. I'm detecting strong correlations with your harmonic variables. *(Demo Mode)*";
+        } else if (lowerMessage.includes('file') || lowerMessage.includes('organize')) {
+            response = "I can help you organize your project files. Based on your current structure, I recommend categorizing by research phases and creating automated backup workflows. *(Demo Mode)*";
+        }
+        
+        return {
+            response: response,
+            session_id: this.sessionId,
+            timestamp: Date.now(),
+            demo_mode: true
+        };
     }
 
     sendQuickMessage(message) {
