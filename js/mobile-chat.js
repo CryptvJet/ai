@@ -354,24 +354,22 @@ class MobileChatInterface {
                 <div class="team-section">
                     <h3>Built Through Collaboration</h3>
                     <p>This project represents genuine collaboration between human vision and AI assistance</p>
-                    <p class="collab-hours">Created through 25+ hours of collaborative development work</p>
                     
-                    <div class="team-credits">
                         <div class="team-item">
-                            <span class="team-icon">🚀</span>
-                            <span>Powered by Ollama</span>
+                            <span class="team-icon">🦙</span>
+                            <span>Based on Ollama</span>
                         </div>
                         <div class="team-item">
                             <span class="team-icon">🧠</span>
-                            <span>Designed with Claude (Anthropic)</span>
+                            <span>Developed with Claude (Anthropic)</span>
                         </div>
                         <div class="team-item">
                             <span class="team-icon">💫</span>
                             <span>Inspired by Sorya GPT</span>
                         </div>
                         <div class="team-item">
-                            <span class="team-icon">🔬</span>
-                            <span>Built for PulseCore Research</span>
+                            <span class="team-icon">🚀</span>
+                            <span>Powered by PulseCore</span>
                         </div>
                     </div>
                 </div>
