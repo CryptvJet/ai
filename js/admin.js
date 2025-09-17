@@ -107,6 +107,16 @@ class AIAdmin {
                 document.getElementById('personality').value = result.data.personality || 'helpful,analytical,curious';
                 document.getElementById('responseStyle').value = result.data.response_style || 'conversational';
                 document.getElementById('systemPrompt').value = result.data.welcome_message || '';
+                document.getElementById('conversationDepth').value = result.data.conversation_depth || 'medium';
+                document.getElementById('maxConversationLength').value = result.data.max_conversation_length || '100';
+                document.getElementById('askForName').checked = (result.data.ask_for_name === 'true');
+                document.getElementById('dailyCheckIns').checked = (result.data.daily_check_ins === 'true');
+                document.getElementById('followUpQuestions').checked = (result.data.follow_up_questions === 'true');
+                document.getElementById('usePersonalResponses').checked = (result.data.use_personal_responses === 'true');
+                document.getElementById('learningEnabled').checked = (result.data.learning_enabled === 'true');
+                document.getElementById('pulsecoreIntegration').checked = (result.data.pulsecore_integration === 'true');
+                document.getElementById('variablesIntegration').checked = (result.data.variables_integration === 'true');
+                document.getElementById('voiceEnabled').checked = (result.data.voice_enabled === 'true');
             }
         } catch (error) {
             console.error('Error loading settings:', error);
