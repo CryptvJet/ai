@@ -150,6 +150,59 @@ class AdminAuth {
         }
     }
     
+    public function resetPassword($email, $newPassword) {
+        try {
+            // Find user by email
+            $stmt = $this->pdo->prepare("
+                SELECT username, email 
+                FROM ai_admin_users 
+                WHERE email = ? AND is_active = TRUE
+            ");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'error' => 'No active user found with that email address'
+                ];
+            }
+            
+            // Hash the new password
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            
+            // Update password in database
+            $stmt = $this->pdo->prepare("
+                UPDATE ai_admin_users 
+                SET password_hash = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE email = ?
+            ");
+            
+            if ($stmt->execute([$hashedPassword, $email])) {
+                // Log the password reset activity
+                $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+                $this->logActivity($user['username'], 'password_reset', $ip);
+                
+                return [
+                    'success' => true,
+                    'message' => 'Password reset successfully for user: ' . $user['username']
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'Failed to update password'
+                ];
+            }
+            
+        } catch (Exception $e) {
+            error_log('Password reset error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Password reset system temporarily unavailable'
+            ];
+        }
+    }
+    
     private function logActivity($username, $action, $ip) {
         try {
             $stmt = $this->pdo->prepare("
@@ -168,15 +221,33 @@ class AdminAuth {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
-    if (!$input || !isset($input['username']) || !isset($input['password'])) {
-        echo json_encode(['success' => false, 'error' => 'Username and password required']);
+    if (!$input) {
+        echo json_encode(['success' => false, 'error' => 'Invalid JSON input']);
         exit;
     }
     
     $auth = new AdminAuth($ai_pdo);
-    $result = $auth->login($input['username'], $input['password']);
     
-    echo json_encode($result);
+    // Check if this is a password reset request
+    if (isset($input['action']) && $input['action'] === 'reset_password') {
+        if (!isset($input['email']) || !isset($input['new_password'])) {
+            echo json_encode(['success' => false, 'error' => 'Email and new password required for reset']);
+            exit;
+        }
+        
+        $result = $auth->resetPassword($input['email'], $input['new_password']);
+        echo json_encode($result);
+        
+    } else {
+        // Regular login request
+        if (!isset($input['username']) || !isset($input['password'])) {
+            echo json_encode(['success' => false, 'error' => 'Username and password required']);
+            exit;
+        }
+        
+        $result = $auth->login($input['username'], $input['password']);
+        echo json_encode($result);
+    }
     
 } else {
     echo json_encode(['success' => false, 'error' => 'Only POST requests allowed']);
