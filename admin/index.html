@@ -59,6 +59,94 @@
                     <textarea id="systemPrompt" rows="5" placeholder="Base instructions for the AI...">You are an AI assistant specialized in analyzing PulseCore simulations and helping with data analysis. You have access to nova events, pattern data, and variables calculations.</textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="conversationDepth">Conversation Depth:</label>
+                    <select id="conversationDepth">
+                        <option value="light">Light</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="deep">Deep</option>
+                    </select>
+                    <small>How deep should conversations typically go</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="maxConversationLength">Max Conversation Length:</label>
+                    <input type="number" id="maxConversationLength" min="1" max="500" value="100" placeholder="100">
+                    <small>Maximum number of messages in a single conversation (1-500)</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="askForName" checked>
+                        <span class="toggle-slider"></span>
+                        Ask for User Name
+                    </label>
+                    <small>Should the AI ask for the user's name during conversations</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dailyCheckIns" checked>
+                        <span class="toggle-slider"></span>
+                        Daily Check-ins
+                    </label>
+                    <small>Enable daily check-in conversations with users</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="followUpQuestions" checked>
+                        <span class="toggle-slider"></span>
+                        Follow-up Questions
+                    </label>
+                    <small>Should the AI ask follow-up questions to deepen conversations</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="usePersonalResponses" checked>
+                        <span class="toggle-slider"></span>
+                        Personal Responses
+                    </label>
+                    <small>Use personalized responses based on user history and preferences</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="learningEnabled" checked>
+                        <span class="toggle-slider"></span>
+                        Learning Mode
+                    </label>
+                    <small>Allow the AI to learn and adapt from conversations</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pulsecoreIntegration" checked>
+                        <span class="toggle-slider"></span>
+                        PulseCore Integration
+                    </label>
+                    <small>Enable integration with PulseCore database and calculations</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="variablesIntegration" checked>
+                        <span class="toggle-slider"></span>
+                        Variables Integration
+                    </label>
+                    <small>Enable dynamic variable integration in responses</small>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="voiceEnabled" checked>
+                        <span class="toggle-slider"></span>
+                        Voice Features
+                    </label>
+                    <small>Enable voice recognition and text-to-speech features</small>
+                </div>
+
             </section>
 
             <!-- Responses Section -->

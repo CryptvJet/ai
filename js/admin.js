@@ -167,7 +167,17 @@ class AIAdmin {
             ai_name: document.getElementById('aiName').value,
             personality: document.getElementById('personality').value,
             response_style: document.getElementById('responseStyle').value,
-            welcome_message: document.getElementById('systemPrompt').value
+            welcome_message: document.getElementById('systemPrompt').value,
+            conversation_depth: document.getElementById('conversationDepth').value,
+            max_conversation_length: document.getElementById('maxConversationLength').value,
+            ask_for_name: document.getElementById('askForName').checked ? 'true' : 'false',
+            daily_check_ins: document.getElementById('dailyCheckIns').checked ? 'true' : 'false',
+            follow_up_questions: document.getElementById('followUpQuestions').checked ? 'true' : 'false',
+            use_personal_responses: document.getElementById('usePersonalResponses').checked ? 'true' : 'false',
+            learning_enabled: document.getElementById('learningEnabled').checked ? 'true' : 'false',
+            pulsecore_integration: document.getElementById('pulsecoreIntegration').checked ? 'true' : 'false',
+            variables_integration: document.getElementById('variablesIntegration').checked ? 'true' : 'false',
+            voice_enabled: document.getElementById('voiceEnabled').checked ? 'true' : 'false'
         };
 
         try {
