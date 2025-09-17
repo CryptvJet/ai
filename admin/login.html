@@ -215,12 +215,6 @@
             
             debugLog('🔑 Starting login for username: ' + username);
             
-            // Temporary offline mode credentials check (remove when APIs work)
-            const offlineCredentials = {
-                'admin': 'PulseCore2024!',
-                'zin': 'ZinAdmin123!'
-            };
-            
             try {
                 debugLog('📡 Trying server API login...');
                 const response = await fetch('../api/login.php', {
@@ -264,37 +258,14 @@
                 }
             } catch (error) {
                 debugLog('🔌 Server API failed: ' + error.message);
-                debugLog('🔄 Trying offline mode...');
+                debugLog('❌ Database connection required for authentication');
                 
-                // Fallback to offline credential check
-                if (offlineCredentials[username] && offlineCredentials[username] === password) {
-                    debugLog('✅ Offline credentials valid!');
-                    
-                    // Create temporary local session (4 hours)
-                    const expires = Date.now() + (4 * 60 * 60 * 1000);
-                    const token = 'offline_' + Date.now() + '_' + Math.random().toString(36).substring(0,8);
-                    
-                    debugLog('🎫 Creating offline token: ' + token);
-                    debugLog('⏰ Expires: ' + new Date(expires).toLocaleString());
-                    
-                    localStorage.setItem('admin_token', token);
-                    localStorage.setItem('admin_expires', expires.toString());
-                    
-                    debugLog('💾 Offline token saved to localStorage');
-                    debugLog('🔄 Redirecting to admin panel...');
-                    
-                    // Redirect to admin panel
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
-                } else {
-                    debugLog('❌ Invalid offline credentials');
-                    errorDiv.textContent = 'Invalid credentials. Please try again.';
-                    errorDiv.style.display = 'block';
-                    
-                    // Clear form
-                    document.getElementById('password').value = '';
-                }
+                // Show database connection error
+                errorDiv.textContent = 'Database connection required. Please check your database configuration.';
+                errorDiv.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('password').value = '';
             }
         });
     </script>

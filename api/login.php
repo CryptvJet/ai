@@ -15,11 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'db_config.php';
 
-// Admin credentials - in production, store these securely hashed in database
-$ADMIN_CREDENTIALS = [
-    'admin' => password_hash('PulseCore2024!', PASSWORD_DEFAULT),
-    'zin' => password_hash('ZinAdmin123!', PASSWORD_DEFAULT)
-];
+// Admin credentials are now stored in database table: ai_admin_users
 
 class AdminAuth {
     private $pdo;
@@ -29,20 +25,44 @@ class AdminAuth {
     }
     
     public function login($username, $password) {
-        global $ADMIN_CREDENTIALS;
-        
-        // Check credentials
-        if (!isset($ADMIN_CREDENTIALS[$username])) {
+        // Get user from database
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT username, password_hash, is_active 
+                FROM ai_admin_users 
+                WHERE username = ? AND is_active = TRUE
+            ");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'error' => 'Invalid username or password'
+                ];
+            }
+            
+            // Verify password
+            if (!password_verify($password, $user['password_hash'])) {
+                return [
+                    'success' => false,
+                    'error' => 'Invalid username or password'
+                ];
+            }
+            
+            // Update last login time
+            $stmt = $this->pdo->prepare("
+                UPDATE ai_admin_users 
+                SET last_login = CURRENT_TIMESTAMP 
+                WHERE username = ?
+            ");
+            $stmt->execute([$username]);
+            
+        } catch (Exception $e) {
+            error_log('Database error during login: ' . $e->getMessage());
             return [
                 'success' => false,
-                'error' => 'Invalid username or password'
-            ];
-        }
-        
-        if (!password_verify($password, $ADMIN_CREDENTIALS[$username])) {
-            return [
-                'success' => false,
-                'error' => 'Invalid username or password'
+                'error' => 'Authentication system temporarily unavailable'
             ];
         }
         

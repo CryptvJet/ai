@@ -42,7 +42,28 @@ class AIAdmin {
             console.log('✅ Admin Debug: Authentication successful for user:', result.user);
         } catch (error) {
             console.warn('⚠️ Admin Debug: Authentication check failed:', error);
-            console.log('🔄 Admin Debug: Continuing with admin load despite error');
+            console.log('🔄 Admin Debug: Checking offline token validity...');
+            
+            // Offline fallback: check token format and expiration
+            if (token.startsWith('offline_')) {
+                const expires = localStorage.getItem('admin_expires');
+                if (expires && Date.now() < parseInt(expires)) {
+                    console.log('✅ Admin Debug: Offline token still valid');
+                    return;
+                } else {
+                    console.log('❌ Admin Debug: Offline token expired');
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_expires');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            } else {
+                console.log('❌ Admin Debug: Server token validation failed, redirecting to login');
+                localStorage.removeItem('admin_token');
+                sessionStorage.removeItem('admin_token');
+                window.location.href = 'login.html';
+                return;
+            }
         }
     }
 
