@@ -13,8 +13,7 @@ class AIAdmin {
         
         if (!token) {
             console.log('❌ Admin Debug: No token found, redirecting to login');
-            console.log('❌ Admin Debug: REDIRECT DISABLED FOR DEBUGGING');
-            // window.location.href = 'login.html';
+            window.location.href = 'login.html';
             return;
         }
         
@@ -34,10 +33,9 @@ class AIAdmin {
             
             if (!result.success) {
                 console.log('❌ Admin Debug: Token validation failed, redirecting to login');
-                console.log('❌ Admin Debug: REDIRECT DISABLED FOR DEBUGGING');
                 localStorage.removeItem('admin_token');
                 sessionStorage.removeItem('admin_token');
-                // window.location.href = 'login.html';
+                window.location.href = 'login.html';
                 return;
             }
             
