@@ -150,7 +150,7 @@ class AdminAuth {
         }
     }
     
-    public function resetPassword($email, $newPassword) {
+    public function requestPasswordReset($email) {
         try {
             // Find user by email
             $stmt = $this->pdo->prepare("
@@ -162,30 +162,96 @@ class AdminAuth {
             $user = $stmt->fetch();
             
             if (!$user) {
+                // Don't reveal if email exists for security
+                return [
+                    'success' => true,
+                    'message' => 'If an account with that email exists, a reset link has been sent.'
+                ];
+            }
+            
+            // Generate secure reset token
+            $resetToken = bin2hex(random_bytes(32));
+            $expires = date('Y-m-d H:i:s', time() + (30 * 60)); // 30 minutes
+            
+            // Store reset token in database
+            $stmt = $this->pdo->prepare("
+                UPDATE ai_admin_users 
+                SET reset_token = ?, reset_token_expires = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE email = ?
+            ");
+            
+            if ($stmt->execute([$resetToken, $expires, $email])) {
+                // Send reset email
+                $this->sendResetEmail($email, $user['username'], $resetToken);
+                
+                // Log the reset request
+                $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+                $this->logActivity($user['username'], 'password_reset_requested', $ip);
+                
+                return [
+                    'success' => true,
+                    'message' => 'If an account with that email exists, a reset link has been sent.'
+                ];
+            } else {
                 return [
                     'success' => false,
-                    'error' => 'No active user found with that email address'
+                    'error' => 'Failed to generate reset token'
+                ];
+            }
+            
+        } catch (Exception $e) {
+            error_log('Password reset request error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Password reset system temporarily unavailable'
+            ];
+        }
+    }
+    
+    public function resetPasswordWithToken($token, $newPassword) {
+        try {
+            // Find user with valid reset token
+            $stmt = $this->pdo->prepare("
+                SELECT username, email, reset_token_expires 
+                FROM ai_admin_users 
+                WHERE reset_token = ? AND is_active = TRUE
+            ");
+            $stmt->execute([$token]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'error' => 'Invalid or expired reset token'
+                ];
+            }
+            
+            // Check if token is expired
+            if (strtotime($user['reset_token_expires']) < time()) {
+                return [
+                    'success' => false,
+                    'error' => 'Reset token has expired. Please request a new one.'
                 ];
             }
             
             // Hash the new password
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
             
-            // Update password in database
+            // Update password and clear reset token
             $stmt = $this->pdo->prepare("
                 UPDATE ai_admin_users 
-                SET password_hash = ?, updated_at = CURRENT_TIMESTAMP 
-                WHERE email = ?
+                SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP 
+                WHERE reset_token = ?
             ");
             
-            if ($stmt->execute([$hashedPassword, $email])) {
-                // Log the password reset activity
+            if ($stmt->execute([$hashedPassword, $token])) {
+                // Log the password reset completion
                 $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-                $this->logActivity($user['username'], 'password_reset', $ip);
+                $this->logActivity($user['username'], 'password_reset_completed', $ip);
                 
                 return [
                     'success' => true,
-                    'message' => 'Password reset successfully for user: ' . $user['username']
+                    'message' => 'Password reset successfully! You can now login with your new password.'
                 ];
             } else {
                 return [
@@ -195,11 +261,48 @@ class AdminAuth {
             }
             
         } catch (Exception $e) {
-            error_log('Password reset error: ' . $e->getMessage());
+            error_log('Password reset completion error: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => 'Password reset system temporarily unavailable'
             ];
+        }
+    }
+    
+    private function sendResetEmail($email, $username, $resetToken) {
+        // Get the site URL
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $resetUrl = "$protocol://$host/ai/admin/reset-password.html?token=$resetToken";
+        
+        $subject = "Admin Password Reset Request";
+        $message = "
+Hello $username,
+
+You have requested a password reset for your admin account.
+
+Click the link below to reset your password:
+$resetUrl
+
+This link will expire in 30 minutes for security.
+
+If you did not request this reset, please ignore this email.
+
+Best regards,
+AI Admin System
+        ";
+        
+        $headers = [
+            'From: noreply@' . ($host ?: 'localhost'),
+            'Reply-To: noreply@' . ($host ?: 'localhost'),
+            'Content-Type: text/plain; charset=UTF-8'
+        ];
+        
+        // Send email
+        if (mail($email, $subject, $message, implode("\r\n", $headers))) {
+            error_log("Password reset email sent to: $email");
+        } else {
+            error_log("Failed to send password reset email to: $email");
         }
     }
     
@@ -229,13 +332,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $auth = new AdminAuth($ai_pdo);
     
     // Check if this is a password reset request
-    if (isset($input['action']) && $input['action'] === 'reset_password') {
-        if (!isset($input['email']) || !isset($input['new_password'])) {
-            echo json_encode(['success' => false, 'error' => 'Email and new password required for reset']);
+    if (isset($input['action']) && $input['action'] === 'request_reset') {
+        if (!isset($input['email'])) {
+            echo json_encode(['success' => false, 'error' => 'Email address required']);
             exit;
         }
         
-        $result = $auth->resetPassword($input['email'], $input['new_password']);
+        $result = $auth->requestPasswordReset($input['email']);
+        echo json_encode($result);
+        
+    } elseif (isset($input['action']) && $input['action'] === 'reset_password') {
+        if (!isset($input['token']) || !isset($input['new_password'])) {
+            echo json_encode(['success' => false, 'error' => 'Reset token and new password required']);
+            exit;
+        }
+        
+        $result = $auth->resetPasswordWithToken($input['token'], $input['new_password']);
         echo json_encode($result);
         
     } else {

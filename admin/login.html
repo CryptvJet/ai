@@ -208,25 +208,15 @@
             </button>
         </form>
         
-        <!-- Password Reset Form (Hidden by default) -->
+        <!-- Password Reset Request Form (Hidden by default) -->
         <form id="resetForm" style="display: none;">
             <div class="form-group">
                 <label for="resetEmail">Email Address</label>
                 <input type="email" id="resetEmail" name="resetEmail" placeholder="Enter your email address" required>
             </div>
             
-            <div class="form-group">
-                <label for="newPassword">New Password</label>
-                <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password" required>
-            </div>
-            
             <button type="submit" class="login-btn">
-                🔄 Reset Password
+                📧 Send Reset Link
             </button>
             
             <button type="button" class="reset-btn" onclick="showLoginForm()">
@@ -339,41 +329,24 @@
             e.preventDefault();
             
             const email = document.getElementById('resetEmail').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('errorMessage');
             
             // Clear previous debug info
             document.getElementById('debugLog').innerHTML = '';
             document.getElementById('debugInfo').style.display = 'none';
             
-            // Validate passwords match
-            if (newPassword !== confirmPassword) {
-                errorDiv.textContent = 'Passwords do not match. Please try again.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            // Validate password length
-            if (newPassword.length < 8) {
-                errorDiv.textContent = 'Password must be at least 8 characters long.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            debugLog('🔄 Starting password reset for email: ' + email);
+            debugLog('📧 Requesting password reset for email: ' + email);
             
             try {
-                debugLog('📡 Sending password reset request...');
+                debugLog('📡 Sending reset link request...');
                 const response = await fetch('../api/login.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        action: 'reset_password',
-                        email: email,
-                        new_password: newPassword
+                        action: 'request_reset',
+                        email: email
                     })
                 });
                 
@@ -381,19 +354,19 @@
                 debugLog('📡 Server response: ' + JSON.stringify(result));
                 
                 if (result.success) {
-                    debugLog('✅ Password reset successful!');
+                    debugLog('✅ Reset link request successful!');
                     
                     // Show success message
                     errorDiv.style.background = 'rgba(34, 197, 94, 0.2)';
                     errorDiv.style.borderColor = 'rgba(34, 197, 94, 0.5)';
                     errorDiv.style.color = '#16a34a';
-                    errorDiv.textContent = 'Password reset successfully! You can now login with your new password.';
+                    errorDiv.textContent = result.message || 'If an account with that email exists, a reset link has been sent.';
                     errorDiv.style.display = 'block';
                     
                     // Clear form
                     document.getElementById('resetForm').reset();
                     
-                    // Switch back to login form after 3 seconds
+                    // Switch back to login form after 5 seconds
                     setTimeout(() => {
                         showLoginForm();
                         errorDiv.style.display = 'none';
@@ -401,15 +374,15 @@
                         errorDiv.style.background = 'rgba(239, 68, 68, 0.2)';
                         errorDiv.style.borderColor = 'rgba(239, 68, 68, 0.5)';
                         errorDiv.style.color = '#ff6b6b';
-                    }, 3000);
+                    }, 5000);
                     
                 } else {
-                    debugLog('❌ Password reset failed: ' + result.error);
-                    errorDiv.textContent = result.error || 'Password reset failed. Please try again.';
+                    debugLog('❌ Reset link request failed: ' + result.error);
+                    errorDiv.textContent = result.error || 'Failed to send reset link. Please try again.';
                     errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                debugLog('🔌 Password reset API failed: ' + error.message);
+                debugLog('🔌 Reset link API failed: ' + error.message);
                 errorDiv.textContent = 'Password reset system temporarily unavailable. Please try again later.';
                 errorDiv.style.display = 'block';
             }

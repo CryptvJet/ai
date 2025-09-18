@@ -12,10 +12,13 @@ CREATE TABLE IF NOT EXISTS ai_admin_users (
     role VARCHAR(20) DEFAULT 'admin',
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP NULL,
+    reset_token VARCHAR(64) NULL,
+    reset_token_expires TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
-    INDEX idx_active (is_active)
+    INDEX idx_active (is_active),
+    INDEX idx_reset_token (reset_token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Insert default admin users (same as hardcoded ones)
