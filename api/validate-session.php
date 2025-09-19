@@ -16,8 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     require_once 'db_config.php';
     require_once 'login.php';
+    
+    // Check if $ai_pdo exists
+    if (!isset($ai_pdo)) {
+        throw new Exception('AI database connection not available');
+    }
+    
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => 'Database configuration error: ' . $e->getMessage()]);
+    exit;
+} catch (Error $e) {
+    echo json_encode(['success' => false, 'error' => 'PHP error: ' . $e->getMessage()]);
     exit;
 }
 
