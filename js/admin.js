@@ -2231,12 +2231,7 @@ function executeDebugCommand(command) {
             break;
             
         case 'logs':
-            addDebugLine('Recent Console Logs:', 'info');
-            // Show recent console entries if available
-            if (window.console && console.memory) {
-                addDebugLine(`Console Memory: ${JSON.stringify(console.memory)}`, 'data');
-            }
-            addDebugLine('Check browser console for detailed logs', 'info');
+            fetchDebugLogs();
             break;
             
         case 'memory':

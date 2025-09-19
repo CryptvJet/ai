@@ -13,22 +13,41 @@ function getOllamaUrl() {
         require_once 'db_config.php';
         global $ai_pdo;
         
-        $stmt = $ai_pdo->query("SELECT * FROM ollama_config WHERE id = 1");
-        $config = $stmt->fetch();
+        // Check if $ai_pdo exists and is connected
+        if (!isset($ai_pdo) || !$ai_pdo) {
+            error_log("Ollama config error: AI database connection not available");
+            throw new Exception("AI database connection not available");
+        }
+        
+        // Test the connection
+        $ai_pdo->query("SELECT 1");
+        
+        $stmt = $ai_pdo->prepare("SELECT protocol, host, port FROM ollama_config WHERE id = 1");
+        $stmt->execute();
+        $config = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($config) {
             $protocol = $config['protocol'] ?: 'http';
             $host = trim($config['host'] ?: 'localhost');
             $port = $config['port'] ?: 11434;
             
+            // Clean up host (remove any existing protocol)
             $host = preg_replace('/^https?:\/\//', '', $host);
-            return $protocol . '://' . $host . ':' . $port;
+            $url = $protocol . '://' . $host . ':' . $port;
+            
+            error_log("Ollama config from database: $url");
+            return $url;
+        } else {
+            error_log("Ollama config error: No config found in ollama_config table");
         }
+    } catch (PDOException $e) {
+        error_log("Ollama config database error: " . $e->getMessage());
     } catch (Exception $e) {
-        error_log("Database config failed: " . $e->getMessage());
+        error_log("Ollama config error: " . $e->getMessage());
     }
     
-    // Fallback to direct tunnel
+    // Only use fallback if database read completely fails
+    error_log("Ollama config: Using fallback URL due to database read failure");
     return 'http://localhost:11434';
 }
 
