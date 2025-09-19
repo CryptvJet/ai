@@ -34,11 +34,14 @@ try {
     $pulseConfig = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($pulseConfig) {
+        // Decrypt the stored password
+        $decrypted_password = openssl_decrypt(base64_decode($pulseConfig['password']), 'AES-256-CBC', 'zin-ai-secret-key-2024', 0, '1234567890123456');
+        
         // PulseCore PDO connection for PulseCore tables (nova_events, climax_groups)
         $pulse_pdo = new PDO(
             "mysql:host={$pulseConfig['server_host']};port={$pulseConfig['server_port']};dbname={$pulseConfig['database_name']};charset=utf8mb4",
             $pulseConfig['username'],
-            $pulseConfig['password'],
+            $decrypted_password,
             [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
