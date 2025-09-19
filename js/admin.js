@@ -810,7 +810,7 @@ async function addNewTemplate() {
     };
     
     try {
-        const apiResponse = await fetch('../api/templates.php', {
+        const apiResponse = await fetch('../api/admin/templates.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -871,7 +871,7 @@ async function editTemplate(templateId) {
             priority: newPriority
         };
         
-        const apiResponse = await fetch('../api/templates.php', {
+        const apiResponse = await fetch('../api/admin/templates.php', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -900,7 +900,7 @@ async function deleteTemplate(templateId) {
     }
     
     try {
-        const apiResponse = await fetch(`../api/templates.php?id=${templateId}`, {
+        const apiResponse = await fetch(`../api/admin/templates.php?id=${templateId}`, {
             method: 'DELETE'
         });
         
@@ -1670,7 +1670,7 @@ async function importTemplates() {
                         active: template.active !== false // Default to true if not specified
                     };
                     
-                    const apiResponse = await fetch('../api/templates.php', {
+                    const apiResponse = await fetch('../api/admin/templates.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
