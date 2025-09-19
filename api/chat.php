@@ -1026,6 +1026,28 @@ class AIChat {
             WHERE id = ?
         ");
         $stmt->execute([$conversation_id, $conversation_id]);
+        
+        // Auto-mark old conversations as completed
+        $this->markOldConversationsAsCompleted();
+    }
+    
+    private function markOldConversationsAsCompleted() {
+        // Mark conversations as completed if they haven't had activity in last 2 hours
+        $stmt = $this->ai_pdo->prepare("
+            UPDATE ai_conversations 
+            SET status = 'completed', ended_at = NOW()
+            WHERE status = 'active' 
+            AND id IN (
+                SELECT conversation_id 
+                FROM (
+                    SELECT conversation_id, MAX(timestamp) as last_message
+                    FROM ai_messages 
+                    GROUP BY conversation_id
+                    HAVING last_message < DATE_SUB(NOW(), INTERVAL 2 HOUR)
+                ) as old_convs
+            )
+        ");
+        $stmt->execute();
     }
 }
 
