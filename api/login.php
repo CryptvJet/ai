@@ -75,7 +75,7 @@ class AdminAuth {
         
         // Generate session token
         $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', time() + (4 * 60 * 60)); // 4 hours
+        $expires = gmdate('Y-m-d H:i:s', time() + (4 * 60 * 60)); // 4 hours UTC
         
         // Store session in database
         try {
@@ -119,7 +119,7 @@ class AdminAuth {
             $stmt = $this->pdo->prepare("
                 SELECT username, expires_at 
                 FROM ai_admin_sessions 
-                WHERE token = ? AND expires_at > NOW()
+                WHERE token = ? AND expires_at > UTC_TIMESTAMP()
             ");
             $stmt->execute([$token]);
             $session = $stmt->fetch();
