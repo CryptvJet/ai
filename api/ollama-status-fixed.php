@@ -37,52 +37,101 @@ function checkOllamaStatus() {
     
     error_log("Attempting to connect to Ollama at: " . $ollama_url . '/api/tags');
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $ollama_url . '/api/tags');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-    
-    error_log("Ollama connection result - HTTP Code: $httpCode, Error: " . ($error ?: 'none'));
-    
-    if ($error || $httpCode !== 200) {
+    try {
+        // Initialize cURL with proper error handling
+        $ch = curl_init();
+        if ($ch === false) {
+            throw new Exception("Failed to initialize cURL");
+        }
+        
+        curl_setopt($ch, CURLOPT_URL, $ollama_url . '/api/tags');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
+        
+        $response = curl_exec($ch);
+        
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            error_log("cURL execution failed: " . $error);
+            return [
+                'success' => false,
+                'status' => 'offline',
+                'error' => 'Connection failed: ' . $error,
+                'models' => []
+            ];
+        }
+        
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        error_log("Ollama connection result - HTTP Code: $httpCode");
+        
+        if ($httpCode !== 200) {
+            return [
+                'success' => false,
+                'status' => 'offline',
+                'error' => "HTTP $httpCode",
+                'models' => []
+            ];
+        }
+        
+        // Validate and parse JSON response
+        if (empty($response)) {
+            return [
+                'success' => false,
+                'status' => 'offline',
+                'error' => 'Empty response from server',
+                'models' => []
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return [
+                'success' => false,
+                'status' => 'offline',
+                'error' => 'Invalid JSON response: ' . json_last_error_msg(),
+                'models' => []
+            ];
+        }
+        
+        $models = $data['models'] ?? [];
+        
+        $primaryModel = null;
+        if (!empty($models)) {
+            $primaryModel = $models[0]['name'];
+            foreach ($models as $model) {
+                if (strpos($model['name'], 'llama') !== false) {
+                    $primaryModel = $model['name'];
+                    break;
+                }
+            }
+        }
+        
+        return [
+            'success' => true,
+            'status' => 'online',
+            'models' => $models,
+            'primary_model' => $primaryModel,
+            'model_count' => count($models),
+            'server_url' => $ollama_url
+        ];
+        
+    } catch (Exception $e) {
+        error_log("Ollama status check exception: " . $e->getMessage());
         return [
             'success' => false,
             'status' => 'offline',
-            'error' => $error ?: "HTTP $httpCode",
+            'error' => 'Connection error: ' . $e->getMessage(),
             'models' => []
         ];
     }
-    
-    $data = json_decode($response, true);
-    $models = $data['models'] ?? [];
-    
-    $primaryModel = null;
-    if (!empty($models)) {
-        $primaryModel = $models[0]['name'];
-        foreach ($models as $model) {
-            if (strpos($model['name'], 'llama') !== false) {
-                $primaryModel = $model['name'];
-                break;
-            }
-        }
-    }
-    
-    return [
-        'success' => true,
-        'status' => 'online',
-        'models' => $models,
-        'primary_model' => $primaryModel,
-        'model_count' => count($models),
-        'server_url' => $ollama_url
-    ];
 }
 
 echo json_encode(checkOllamaStatus());
