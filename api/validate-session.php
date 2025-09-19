@@ -39,12 +39,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
+        // Debug log the validation attempt
+        $stmt = $ai_pdo->prepare("INSERT INTO debug_logs (timestamp, level, source, message, data) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([date('Y-m-d H:i:s'), 'info', 'validate-session', 'Starting session validation', json_encode(['token_prefix' => substr($input['token'], 0, 16)])]);
+        
         $auth = new AdminAuth($ai_pdo);
         $result = $auth->validateSession($input['token']);
         
+        // Debug log the result
+        $stmt->execute([date('Y-m-d H:i:s'), 'info', 'validate-session', 'Validation result', json_encode($result)]);
+        
         echo json_encode($result);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => 'Session validation error: ' . $e->getMessage()]);
+        // Debug log the error
+        $error_msg = 'Session validation error: ' . $e->getMessage();
+        $stmt = $ai_pdo->prepare("INSERT INTO debug_logs (timestamp, level, source, message, data) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([date('Y-m-d H:i:s'), 'error', 'validate-session', $error_msg, json_encode(['exception' => $e->getTraceAsString()])]);
+        
+        echo json_encode(['success' => false, 'error' => $error_msg]);
     }
     
 } else {
