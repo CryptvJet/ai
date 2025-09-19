@@ -9,6 +9,7 @@ class AIChat {
         this.selectedVoice = null;
         this.autoSpeak = true;
         this.currentMode = 'chill'; // 'chill' or 'full-power'
+        this.pcBridgeAvailable = false; // Track PC Bridge status
         this.journalMode = false;
         this.journalRecording = false;
         this.journalPaused = false;
@@ -381,6 +382,7 @@ class AIChat {
             
             if (status.success && status.data.is_online) {
                 this.updateConnectionStatus('pcStatus', true);
+                this.pcBridgeAvailable = true;
                 console.log('✅ PC Bridge is online');
             } else {
                 throw new Error('PC Bridge not responding');
@@ -389,6 +391,7 @@ class AIChat {
             // PC Bridge not running - this is normal for web-only usage
             console.log('PC Bridge not available (this is normal for web-only usage):', error.message);
             this.updateConnectionStatus('pcStatus', false);
+            this.pcBridgeAvailable = false;
         }
 
         // Check Local Llama AI connection
@@ -416,25 +419,26 @@ class AIChat {
             
             if (result.success && result.ai_source === 'local_ollama') {
                 console.log('🧠 Local AI is online via SmartAIRouter with model:', result.model);
-                this.currentMode = 'full-power';
+                // Full power mode requires BOTH AI and PC Bridge
+                this.currentMode = this.pcBridgeAvailable ? 'full-power' : 'chill';
                 this.updateAIMode(true, result.model);
                 return true;
             } else if (result.success && result.ai_source === 'web_ai') {
                 // SmartAIRouter is working but using web AI fallback
                 console.log('🌐 AI available via web fallback mode');
-                this.currentMode = 'full-power'; // Still use full-power since AI is working
+                this.currentMode = this.pcBridgeAvailable ? 'full-power' : 'chill';
                 this.updateAIMode(true, 'Web AI');
                 return true;
             } else if (result.success && (result.ai_source === 'database_template' || result.ai_source === 'basic_fallback')) {
                 // SmartAIRouter is working with enhanced Chill Mode templates
                 console.log('✨ AI available via enhanced Chill Mode templates');
-                this.currentMode = 'full-power'; // Treat enhanced Chill Mode as functional AI
+                this.currentMode = this.pcBridgeAvailable ? 'full-power' : 'chill';
                 this.updateAIMode(true, 'Enhanced Chill Mode');
                 return true;
             } else if (result.success) {
                 // Any other successful response from SmartAIRouter should be considered available
                 console.log('🤖 AI available via SmartAIRouter:', result.ai_source);
-                this.currentMode = 'full-power';
+                this.currentMode = this.pcBridgeAvailable ? 'full-power' : 'chill';
                 this.updateAIMode(true, result.ai_source || 'AI Assistant');
                 return true;
             } else {
@@ -448,14 +452,19 @@ class AIChat {
         }
     }
 
-    updateAIMode(hasLocalAI, modelName = null) {
+    updateAIMode(hasAI, modelName = null) {
         const aiModeElement = document.getElementById('aiMode');
         
-        if (hasLocalAI) {
+        if (hasAI && this.currentMode === 'full-power') {
             aiModeElement.textContent = 'Full Power Mode 🧠';
             aiModeElement.className = 'mode-indicator full-power';
-            aiModeElement.title = `Local AI Active (${modelName || 'Unknown Model'})`;
-            console.log('🚀 Switched to Full Power Mode with local Llama');
+            aiModeElement.title = `AI + PC Bridge Active (${modelName || 'AI Assistant'})`;
+            console.log('🚀 Switched to Full Power Mode (AI + PC Bridge)');
+        } else if (hasAI && this.currentMode === 'chill') {
+            aiModeElement.textContent = 'Chill Mode (AI Available)';
+            aiModeElement.className = 'mode-indicator chill';
+            aiModeElement.title = `AI Available but PC Bridge Offline (${modelName || 'AI Assistant'})`;
+            console.log('📝 Using Chill Mode - AI available but PC Bridge offline');
         } else {
             aiModeElement.textContent = 'Chill Mode';
             aiModeElement.className = 'mode-indicator chill';
