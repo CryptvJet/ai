@@ -426,61 +426,32 @@ class AIAdmin {
             const response = await fetch('../api/admin/learning.php');
             const result = await response.json();
             
-            if (result.success && result.data) {
-                this.displayLearningPatterns(result.data, result.stats);
+            if (result.success) {
+                // Handle both empty and populated data gracefully
+                const data = result.data || [];
+                const stats = result.stats || { total_entries: 0, unique_patterns: 0, active_days: 0 };
+                this.displayLearningPatterns(data, stats);
             } else {
-                throw new Error('API failed or no learning data');
+                // Only show error for actual API failures, not empty data
+                console.error('Learning API error:', result.error);
+                this.showLearningError(result.error || 'Failed to load learning data');
             }
         } catch (error) {
-            console.error('Learning patterns API failed, using sample data:', error);
-            // Show sample learning patterns for demo
-            this.displayLearningPatterns([
-                {
-                    id: 1,
-                    pattern_type: 'user_question_style',
-                    pattern: 'Users frequently ask about nova complexity analysis',
-                    confidence: 0.87,
-                    usage_count: 23,
-                    last_seen: '2024-09-09T14:30:00Z',
-                    examples: ['What is my complexity?', 'Analyze my patterns', 'Show complexity trends']
-                },
-                {
-                    id: 2,
-                    pattern_type: 'common_response',
-                    pattern: 'Users respond positively to detailed explanations',
-                    confidence: 0.93,
-                    usage_count: 31,
-                    last_seen: '2024-09-09T13:15:00Z',
-                    examples: ['Thanks for the detailed explanation', 'That helps a lot', 'Very clear analysis']
-                },
-                {
-                    id: 3,
-                    pattern_type: 'optimization_interest',
-                    pattern: 'Users show high interest in optimization suggestions',
-                    confidence: 0.79,
-                    usage_count: 18,
-                    last_seen: '2024-09-08T16:45:00Z',
-                    examples: ['How can I optimize?', 'Any suggestions?', 'What should I improve?']
-                },
-                {
-                    id: 4,
-                    pattern_type: 'time_preference',
-                    pattern: 'Users prefer conversations between 2-4 PM',
-                    confidence: 0.71,
-                    usage_count: 42,
-                    last_seen: '2024-09-09T15:30:00Z',
-                    examples: ['Peak activity during afternoon hours']
-                },
-                {
-                    id: 5,
-                    pattern_type: 'topic_transition',
-                    pattern: 'Users often switch from nova analysis to variables',
-                    confidence: 0.64,
-                    usage_count: 15,
-                    last_seen: '2024-09-09T12:20:00Z',
-                    examples: ['After nova discussion, users ask about variables', 'Pattern: nova → variables → calculations']
-                }
-            ]);
+            console.error('Learning patterns network error:', error);
+            this.showLearningError('Network error loading learning data. Please check your connection.');
+        }
+    }
+
+    showLearningError(message) {
+        const container = document.getElementById('patternsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-state">
+                    <h4>⚠️ Unable to Load Learning Data</h4>
+                    <p>${message}</p>
+                    <button onclick="window.aiAdmin.loadLearningPatterns()" class="btn-secondary">🔄 Retry</button>
+                </div>
+            `;
         }
     }
     
