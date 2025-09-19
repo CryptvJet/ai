@@ -199,7 +199,7 @@ try {
         $stmt->execute([$id]);
         $template = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!template) {
+        if (!$template) {
             throw new Exception('Template not found');
         }
         
