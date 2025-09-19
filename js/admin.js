@@ -490,9 +490,11 @@ class AIAdmin {
         
         container.innerHTML += groupedPatterns.map(pattern => {
             const frequency = pattern.frequency || 1;
+            const confidence = pattern.confidence || pattern.confidence_score || 0;
             const frequencyColor = frequency >= 5 ? '#10b981' : 
-                                   (pattern.confidence || 0) >= 0.6 ? '#f59e0b' : '#ef4444';
-            const confidencePercent = Math.round((pattern.confidence || 0) * 100);
+                                   confidence >= 0.6 ? '#f59e0b' : '#ef4444';
+            const confidenceColor = this.confidenceColor(confidence);
+            const confidencePercent = Math.round(confidence * 100);
             
             // Safe property access with fallbacks
             const patternType = (pattern.pattern_type || pattern.type || 'unknown').replace(/_/g, ' ');
@@ -845,6 +847,13 @@ class AIAdmin {
     updateDatabaseStats(stats) {
         document.getElementById('configuredCount').textContent = stats.total || 0;
         document.getElementById('activeCount').textContent = stats.active_count || 0;
+    }
+
+    // Utility function for confidence-based colors
+    confidenceColor(confidence) {
+        if (confidence >= 0.8) return '#10b981'; // Green for high confidence
+        if (confidence >= 0.6) return '#f59e0b'; // Yellow for medium confidence
+        return '#ef4444'; // Red for low confidence
     }
 }
 
