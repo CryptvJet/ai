@@ -3881,14 +3881,100 @@ function addNewTableConfig() {
     document.getElementById('modalTitle').textContent = 'Add Table Configuration';
     document.getElementById('tableConfigModal').style.display = 'block';
     refreshTableRegistry(); // Load available tables
+    
+    // Add one default pattern and field to get started
+    setTimeout(() => {
+        addTriggerPattern();
+        addSearchField();
+    }, 100);
 }
 
-function editTableConfig(configId) {
-    // Load config data and populate form
-    // This would fetch the specific config and fill the form
-    document.getElementById('modalTitle').textContent = 'Edit Table Configuration';
-    document.getElementById('configId').value = configId;
-    document.getElementById('tableConfigModal').style.display = 'block';
+async function editTableConfig(configId) {
+    try {
+        // First, get the configuration data
+        const response = await fetch('../api/admin/database_queries.php');
+        const result = await response.json();
+        
+        if (!result.success) {
+            window.aiAdmin.showNotification('Error loading configurations: ' + result.error, 'error');
+            return;
+        }
+        
+        // Find the specific configuration
+        const config = result.configs.find(c => c.id == configId);
+        if (!config) {
+            window.aiAdmin.showNotification('Configuration not found', 'error');
+            return;
+        }
+        
+        // Reset form and populate with current data
+        resetTableConfigForm();
+        document.getElementById('modalTitle').textContent = 'Edit Table Configuration';
+        document.getElementById('configId').value = configId;
+        
+        // Load available tables first
+        await refreshTableRegistry();
+        
+        // Populate form fields
+        document.getElementById('tableName').value = config.table_name;
+        document.getElementById('responseTemplate').value = config.response_template;
+        document.getElementById('priority').value = config.priority;
+        document.getElementById('maxResults').value = config.max_results;
+        document.getElementById('isActive').checked = config.active;
+        
+        // Populate trigger patterns
+        const patternsContainer = document.getElementById('modalPatternsContainer');
+        config.trigger_patterns.forEach(pattern => {
+            const patternDiv = document.createElement('div');
+            patternDiv.className = 'pattern-item';
+            
+            const patternInput = document.createElement('input');
+            patternInput.type = 'text';
+            patternInput.className = 'pattern-input';
+            patternInput.value = pattern;
+            patternInput.required = true;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-small btn-danger';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = function() { removePatternItem(this); };
+            
+            patternDiv.appendChild(patternInput);
+            patternDiv.appendChild(removeBtn);
+            patternsContainer.appendChild(patternDiv);
+        });
+        
+        // Populate search fields
+        const fieldsContainer = document.getElementById('searchFieldsContainer');
+        config.search_fields.forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'field-item';
+            
+            const fieldInput = document.createElement('input');
+            fieldInput.type = 'text';
+            fieldInput.className = 'field-input';
+            fieldInput.value = field;
+            fieldInput.required = true;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-small btn-danger';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = function() { removeFieldItem(this); };
+            
+            fieldDiv.appendChild(fieldInput);
+            fieldDiv.appendChild(removeBtn);
+            fieldsContainer.appendChild(fieldDiv);
+        });
+        
+        // Show the modal
+        document.getElementById('tableConfigModal').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading table config for edit:', error);
+        window.aiAdmin.showNotification('Network error loading configuration', 'error');
+    }
 }
 
 function closeTableConfigModal() {
@@ -3899,13 +3985,18 @@ function closeTableConfigModal() {
 function resetTableConfigForm() {
     document.getElementById('tableConfigForm').reset();
     document.getElementById('configId').value = '';
-    document.getElementById('patternsContainer').innerHTML = '';
+    document.getElementById('modalPatternsContainer').innerHTML = '';
     document.getElementById('searchFieldsContainer').innerHTML = '';
     document.getElementById('testResults').innerHTML = '';
 }
 
 function addTriggerPattern() {
-    const container = document.getElementById('patternsContainer');
+    const container = document.getElementById('modalPatternsContainer');
+    if (!container) {
+        console.error('modalPatternsContainer not found');
+        return;
+    }
+    
     const patternDiv = document.createElement('div');
     patternDiv.className = 'pattern-item';
     patternDiv.innerHTML = `
@@ -3913,10 +4004,21 @@ function addTriggerPattern() {
         <button type="button" onclick="removePatternItem(this)" class="btn-small btn-danger">Remove</button>
     `;
     container.appendChild(patternDiv);
+    
+    // Focus on the new input
+    const newInput = patternDiv.querySelector('.pattern-input');
+    if (newInput) {
+        newInput.focus();
+    }
 }
 
 function addSearchField() {
     const container = document.getElementById('searchFieldsContainer');
+    if (!container) {
+        console.error('searchFieldsContainer not found');
+        return;
+    }
+    
     const fieldDiv = document.createElement('div');
     fieldDiv.className = 'field-item';
     fieldDiv.innerHTML = `
@@ -3924,6 +4026,12 @@ function addSearchField() {
         <button type="button" onclick="removeFieldItem(this)" class="btn-small btn-danger">Remove</button>
     `;
     container.appendChild(fieldDiv);
+    
+    // Focus on the new input
+    const newInput = fieldDiv.querySelector('.field-input');
+    if (newInput) {
+        newInput.focus();
+    }
 }
 
 function removePatternItem(button) {

@@ -2402,6 +2402,12 @@ input:checked + .toggle-slider:before {
     gap: 1rem;
 }
 
+.pattern-builder button,
+.fields-builder button {
+    align-self: flex-start;
+    margin-top: 0.5rem;
+}
+
 .patterns-list,
 .fields-list {
     display: flex;
