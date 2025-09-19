@@ -28,6 +28,29 @@ class AIChat {
         $this->router = new SmartAIRouter();
     }
     
+    public function statusCheck($session_id, $mode = 'auto') {
+        // Status check - test AI connection without logging conversations/messages
+        try {
+            $conversation_id = $this->getOrCreateConversation($session_id);
+            $response = $this->generateResponse('Hi', $conversation_id, $mode, null);
+            
+            return [
+                'success' => true,
+                'response' => $response,
+                'mode' => $mode,
+                'processing_time_ms' => 0,
+                'speak' => false,
+                'status_check' => true
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'status_check' => true
+            ];
+        }
+    }
+
     public function processMessage($message, $session_id, $mode = 'chill', $journal_context = null) {
         $start_time = microtime(true);
         
@@ -1017,15 +1040,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $chat = new AIChat($ai_pdo, $pulse_pdo, $vars_pdo);
     
-    // Handle status check requests with lightweight test
+    // Handle status check requests with lightweight test (DON'T LOG TO DATABASE)
     if (isset($input['status_check']) && $input['status_check'] === true) {
-        // Use a lightweight test message for status checking
-        $result = $chat->processMessage(
-            'Hi', // Simple test message
-            $input['session_id'], 
-            $input['mode'] ?? 'auto',
-            null
-        );
+        // Status check - test AI connection without logging to database
+        $result = $chat->statusCheck($input['session_id'], $input['mode'] ?? 'auto');
     } else {
         // Normal message processing
         $result = $chat->processMessage(
