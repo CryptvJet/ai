@@ -21,30 +21,46 @@ try {
         $limit = $_GET['limit'] ?? 50;
         $offset = $_GET['offset'] ?? 0;
         
-        // Get learning patterns grouped by similar user messages
+        // Get learning patterns grouped by pattern type (using correct schema)
         $stmt = $ai_pdo->prepare("
             SELECT 
                 l.id,
-                l.user_message,
-                l.ai_response,
-                l.source,
+                l.pattern_type,
+                l.pattern_data,
+                l.confidence_score,
+                l.usage_count,
+                l.last_used,
                 l.created_at,
-                l.conversation_id,
-                COUNT(*) OVER (PARTITION BY LOWER(TRIM(l.user_message))) as frequency,
-                ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(l.user_message)) ORDER BY l.created_at DESC) as rn
+                COUNT(*) OVER (PARTITION BY l.pattern_type) as frequency,
+                ROW_NUMBER() OVER (PARTITION BY l.pattern_type ORDER BY l.created_at DESC) as rn
             FROM ai_learning l
             WHERE l.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
-            ORDER BY frequency DESC, l.created_at DESC
+            ORDER BY l.confidence_score DESC, l.usage_count DESC, l.created_at DESC
             LIMIT ? OFFSET ?
         ");
         $stmt->execute([(int)$limit, (int)$offset]);
         $learning_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // Parse JSON pattern_data and format for display
+        foreach ($learning_data as &$entry) {
+            $pattern_data = json_decode($entry['pattern_data'], true);
+            if ($pattern_data) {
+                $entry['user_message'] = $pattern_data['user_message'] ?? '';
+                $entry['ai_response'] = $pattern_data['ai_response'] ?? '';
+                $entry['source'] = $pattern_data['source'] ?? 'unknown';
+                $entry['conversation_id'] = $pattern_data['conversation_id'] ?? null;
+            }
+            // Add display properties for frontend
+            $entry['pattern'] = $entry['pattern_type'];
+            $entry['confidence'] = $entry['confidence_score'];
+        }
+        unset($entry);
+        
         // Get summary stats
         $stmt = $ai_pdo->query("
             SELECT 
                 COUNT(*) as total_entries,
-                COUNT(DISTINCT user_message) as unique_patterns,
+                COUNT(DISTINCT pattern_type) as unique_patterns,
                 COUNT(DISTINCT DATE(created_at)) as active_days
             FROM ai_learning
             WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
@@ -79,9 +95,14 @@ try {
             throw new Exception('Learning entry not found');
         }
         
+        // Parse pattern data from JSON
+        $pattern_data = json_decode($learning['pattern_data'], true);
+        $user_message = $pattern_data['user_message'] ?? '';
+        $ai_response = $pattern_data['ai_response'] ?? '';
+        
         // Create template from learning data
-        $trigger_pattern = $input['trigger_pattern'] ?? $learning['user_message'];
-        $response_text = $input['response_text'] ?? $learning['ai_response'];
+        $trigger_pattern = $input['trigger_pattern'] ?? $user_message;
+        $response_text = $input['response_text'] ?? $ai_response;
         $category = $input['category'] ?? 'learned';
         $priority = $input['priority'] ?? 75; // Higher priority for learned patterns
         

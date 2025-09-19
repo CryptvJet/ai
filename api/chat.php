@@ -1284,16 +1284,52 @@ class AIChat {
      */
     private function recordLearningOpportunity($message, $response, $conversation_id) {
         try {
-            // Only record if learning is enabled
-            if (isset($this->settings['learning_enabled']) && $this->settings['learning_enabled'] === 'true') {
+            error_log("DEBUG: recordLearningOpportunity called with message: " . substr($message, 0, 100));
+            
+            // Check if learning is enabled
+            $learning_enabled = isset($this->settings['learning_enabled']) ? 
+                               $this->settings['learning_enabled'] : 'false';
+            
+            error_log("DEBUG: Learning enabled setting: " . $learning_enabled);
+            
+            if ($learning_enabled === 'true' || $learning_enabled === true) {
+                // Prepare pattern data according to actual table schema
+                $pattern_data = json_encode([
+                    'user_message' => $message,
+                    'ai_response' => $response,
+                    'conversation_id' => $conversation_id,
+                    'source' => 'chat_interaction'
+                ]);
+                
+                // Determine pattern type based on message content
+                $pattern_type = 'user_interaction';
+                if (preg_match('/\?/', $message)) {
+                    $pattern_type = 'user_question';
+                } elseif (preg_match('/what|how|why|when|where|tell|explain/i', $message)) {
+                    $pattern_type = 'information_request';
+                } elseif (preg_match('/thank|thanks|appreciate/i', $message)) {
+                    $pattern_type = 'gratitude_expression';
+                }
+                
+                // Insert using correct table schema
                 $stmt = $this->ai_pdo->prepare("
-                    INSERT INTO ai_learning (conversation_id, user_message, ai_response, source, created_at)
-                    VALUES (?, ?, ?, ?, NOW())
+                    INSERT INTO ai_learning (pattern_type, pattern_data, confidence_score, usage_count, last_used, created_at)
+                    VALUES (?, ?, 0.5, 1, NOW(), NOW())
                 ");
-                $stmt->execute([$conversation_id, $message, $response, 'chat_interaction']);
+                
+                $result = $stmt->execute([$pattern_type, $pattern_data]);
+                
+                if ($result) {
+                    error_log("DEBUG: Learning opportunity recorded successfully - Pattern: $pattern_type");
+                } else {
+                    error_log("DEBUG: Learning opportunity failed to record");
+                }
+            } else {
+                error_log("DEBUG: Learning disabled, not recording opportunity");
             }
         } catch (Exception $e) {
             error_log("Learning record error: " . $e->getMessage());
+            error_log("Learning record stack trace: " . $e->getTraceAsString());
         }
     }
 
