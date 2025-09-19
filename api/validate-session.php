@@ -13,19 +13,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+// Log that we started
+file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - validate-session.php called\n", FILE_APPEND);
+
 try {
     require_once 'db_config.php';
+    file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - db_config loaded\n", FILE_APPEND);
+    
     require_once 'login.php';
+    file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - login.php loaded\n", FILE_APPEND);
     
     // Check if $ai_pdo exists
     if (!isset($ai_pdo)) {
         throw new Exception('AI database connection not available');
     }
     
+    file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - ai_pdo verified\n", FILE_APPEND);
+    
 } catch (Exception $e) {
+    file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - Exception: " . $e->getMessage() . "\n", FILE_APPEND);
     echo json_encode(['success' => false, 'error' => 'Database configuration error: ' . $e->getMessage()]);
     exit;
 } catch (Error $e) {
+    file_put_contents('/tmp/validate-debug.log', date('Y-m-d H:i:s') . " - PHP Error: " . $e->getMessage() . "\n", FILE_APPEND);
     echo json_encode(['success' => false, 'error' => 'PHP error: ' . $e->getMessage()]);
     exit;
 }

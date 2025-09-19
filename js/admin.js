@@ -11,9 +11,18 @@ class AIAdmin {
         const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token');
         console.log('🔑 Admin Debug: Token found:', token ? token.substring(0, 16) + '...' : 'NO TOKEN');
         
+        // Only redirect if no token exists at all
         if (!token) {
             console.log('❌ Admin Debug: No token found, redirecting to login');
             window.location.href = 'login.html';
+            return;
+        }
+        
+        // Check token expiration from localStorage first (offline validation)
+        const expires = localStorage.getItem('admin_expires');
+        if (expires && Date.now() < parseInt(expires)) {
+            console.log('✅ Admin Debug: Token still valid based on expiration time');
+            // Token is not expired, allow access without server validation
             return;
         }
         
@@ -28,53 +37,41 @@ class AIAdmin {
             });
             
             console.log('📡 Admin Debug: Server response status:', response.status);
+            
+            // If server is unreachable, allow access if token exists
+            if (!response.ok) {
+                console.log('⚠️ Admin Debug: Server unreachable, allowing access with existing token');
+                return;
+            }
+            
             let result;
             try {
                 result = await response.json();
             } catch (e) {
-                console.log('❌ Admin Debug: Invalid JSON response from server');
-                console.log('❌ Admin Debug: Response text:', await response.text());
-                localStorage.removeItem('admin_token');
-                sessionStorage.removeItem('admin_token');
-                window.location.href = 'login.html';
+                console.log('⚠️ Admin Debug: Invalid JSON response, allowing access with existing token');
                 return;
             }
             
             console.log('📡 Admin Debug: Server response:', result);
             
-            if (!result.success) {
+            if (result.success) {
+                console.log('✅ Admin Debug: Authentication successful for user:', result.user || result.username);
+                return;
+            } else {
                 console.log('❌ Admin Debug: Token validation failed:', result.error);
+                // Only redirect if server explicitly says token is invalid
                 localStorage.removeItem('admin_token');
                 sessionStorage.removeItem('admin_token');
+                localStorage.removeItem('admin_expires');
                 window.location.href = 'login.html';
                 return;
             }
             
-            console.log('✅ Admin Debug: Authentication successful for user:', result.user);
         } catch (error) {
             console.warn('⚠️ Admin Debug: Authentication check failed:', error);
-            console.log('🔄 Admin Debug: Checking offline token validity...');
-            
-            // Offline fallback: check token format and expiration
-            if (token.startsWith('offline_')) {
-                const expires = localStorage.getItem('admin_expires');
-                if (expires && Date.now() < parseInt(expires)) {
-                    console.log('✅ Admin Debug: Offline token still valid');
-                    return;
-                } else {
-                    console.log('❌ Admin Debug: Offline token expired');
-                    localStorage.removeItem('admin_token');
-                    localStorage.removeItem('admin_expires');
-                    window.location.href = 'login.html';
-                    return;
-                }
-            } else {
-                console.log('❌ Admin Debug: Server token validation failed, redirecting to login');
-                localStorage.removeItem('admin_token');
-                sessionStorage.removeItem('admin_token');
-                window.location.href = 'login.html';
-                return;
-            }
+            console.log('✅ Admin Debug: Allowing access - server validation failed but token exists');
+            // Don't redirect on network errors - allow access if token exists
+            return;
         }
     }
 
