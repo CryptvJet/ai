@@ -28,11 +28,22 @@ class AIAdmin {
             });
             
             console.log('📡 Admin Debug: Server response status:', response.status);
-            const result = await response.json();
+            let result;
+            try {
+                result = await response.json();
+            } catch (e) {
+                console.log('❌ Admin Debug: Invalid JSON response from server');
+                console.log('❌ Admin Debug: Response text:', await response.text());
+                localStorage.removeItem('admin_token');
+                sessionStorage.removeItem('admin_token');
+                window.location.href = 'login.html';
+                return;
+            }
+            
             console.log('📡 Admin Debug: Server response:', result);
             
             if (!result.success) {
-                console.log('❌ Admin Debug: Token validation failed, redirecting to login');
+                console.log('❌ Admin Debug: Token validation failed:', result.error);
                 localStorage.removeItem('admin_token');
                 sessionStorage.removeItem('admin_token');
                 window.location.href = 'login.html';
