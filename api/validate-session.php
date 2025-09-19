@@ -13,8 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once 'db_config.php';
-require_once 'login.php';
+try {
+    require_once 'db_config.php';
+    require_once 'login.php';
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => 'Database configuration error: ' . $e->getMessage()]);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -24,10 +29,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    $auth = new AdminAuth($ai_pdo);
-    $result = $auth->validateSession($input['token']);
-    
-    echo json_encode($result);
+    try {
+        $auth = new AdminAuth($ai_pdo);
+        $result = $auth->validateSession($input['token']);
+        
+        echo json_encode($result);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => 'Session validation error: ' . $e->getMessage()]);
+    }
     
 } else {
     echo json_encode(['success' => false, 'error' => 'Only POST requests allowed']);
