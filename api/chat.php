@@ -20,12 +20,42 @@ class AIChat {
     private $ai_pdo;
     private $pulse_pdo;
     private $vars_pdo;
+    private $settings;
     
     public function __construct($ai_pdo, $pulse_pdo, $vars_pdo) {
         $this->ai_pdo = $ai_pdo;
         $this->pulse_pdo = $pulse_pdo;
         $this->vars_pdo = $vars_pdo;
+        $this->settings = $this->loadAISettings();
         $this->router = new SmartAIRouter();
+    }
+    
+    private function loadAISettings() {
+        try {
+            $stmt = $this->ai_pdo->query("SELECT setting_key, setting_value FROM ai_settings");
+            $settings = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $settings[$row['setting_key']] = $row['setting_value'];
+            }
+            return $settings;
+        } catch (Exception $e) {
+            error_log("Failed to load AI settings: " . $e->getMessage());
+            return $this->getDefaultSettings();
+        }
+    }
+    
+    private function getDefaultSettings() {
+        return [
+            'ai_name' => 'Zin',
+            'personality' => 'helpful,analytical,curious',
+            'response_style' => 'conversational',
+            'pulsecore_integration' => 'true',
+            'variables_integration' => 'true',
+            'ask_for_name' => 'true',
+            'use_personal_responses' => 'true',
+            'follow_up_questions' => 'true',
+            'conversation_depth' => 'light'
+        ];
     }
     
     public function statusCheck($session_id, $mode = 'auto') {
@@ -132,23 +162,25 @@ class AIChat {
             return $this->generateJournalResponse($message, $conversation_id, $journal_context);
         }
         
-        // Build context for Smart Router
+        // Build context for Smart Router with AI settings
         $context = [
             'conversation_id' => $conversation_id,
-            'journal_context' => $journal_context
+            'journal_context' => $journal_context,
+            'ai_settings' => $this->settings
         ];
         
-        // Add PulseCore data context if relevant
-        if ($this->isPulseCoreQuery($message)) {
+        // Add PulseCore data context if enabled and relevant
+        if ($this->settings['pulsecore_integration'] === 'true' && $this->isPulseCoreQuery($message)) {
             $context['pulsecore_data'] = $this->getPulseCoreContext();
         }
         
-        // Route through Smart AI Router
+        // Route through Smart AI Router with settings context
         $session_id = "conv_" . $conversation_id;
         $router_response = $this->router->routeRequest($message, $session_id, $mode, $context);
         
         if ($router_response && $router_response['success']) {
-            return $router_response['response'];
+            $response = $router_response['response'];
+            return $this->applyPersonalityToResponse($response, $message, $conversation_id);
         }
         
         // Fallback to original logic if router fails
@@ -1009,6 +1041,97 @@ class AIChat {
         if ($avg < 0.1) return "Low energy levels suggest stable, controlled patterns.";
         if ($avg < 0.5) return "Moderate energy levels indicate balanced dynamics.";
         return "High energy levels show active, dynamic pattern evolution.";
+    }
+    
+    private function applyPersonalityToResponse($response, $message, $conversation_id) {
+        // Get user name for personalization
+        $user_name = null;
+        if ($this->settings['use_personal_responses'] === 'true') {
+            $user_name = $this->getUserName($conversation_id);
+        }
+        
+        // Apply AI name and personality
+        $ai_name = $this->settings['ai_name'] ?? 'Zin';
+        $response = $this->personalizeResponse($response, $user_name, null, $ai_name);
+        
+        // Add follow-up questions if enabled
+        if ($this->settings['follow_up_questions'] === 'true') {
+            $response = $this->addFollowUpQuestion($response, $message, $user_name);
+        }
+        
+        // Ask for name if enabled and we don't have one
+        if ($this->settings['ask_for_name'] === 'true' && !$user_name && $this->shouldAskForName($conversation_id)) {
+            $response = $this->addNameRequest($response);
+        }
+        
+        return $response;
+    }
+    
+    private function personalizeResponse($response, $user_name, $extracted_name, $ai_name = 'Zin') {
+        // Use provided name or extracted name
+        $name_to_use = $user_name ?: $extracted_name;
+        
+        // Add personal touch if we have a name
+        if ($name_to_use && $this->settings['use_personal_responses'] === 'true') {
+            // Add name naturally to response
+            if (!preg_match('/\b' . preg_quote($name_to_use) . '\b/i', $response)) {
+                $response = $name_to_use . ', ' . lcfirst($response);
+            }
+        }
+        
+        // Ensure AI introduces itself with correct name
+        $response = str_replace(['I\'m Zin', 'I am Zin'], ["I'm $ai_name", "I am $ai_name"], $response);
+        
+        return $response;
+    }
+    
+    private function addFollowUpQuestion($response, $original_message, $user_name = null) {
+        // Only add follow-up for certain conversation depths
+        $depth = $this->settings['conversation_depth'] ?? 'light';
+        
+        if ($depth === 'light') {
+            // Light follow-ups only for specific topics
+            if (preg_match('/\b(project|work|study|learning)\b/i', $original_message)) {
+                $followUps = [
+                    'How is that going for you?',
+                    'What aspect interests you most?',
+                    'Any particular challenges you\'re facing?'
+                ];
+                $response .= ' ' . $followUps[array_rand($followUps)];
+            }
+        } else if ($depth === 'deep') {
+            // More engaging follow-ups
+            $followUps = [
+                'What are your thoughts on that?',
+                'How does that make you feel?',
+                'What would you like to explore further?',
+                'Is there more you\'d like to share about this?'
+            ];
+            $response .= ' ' . $followUps[array_rand($followUps)];
+        }
+        
+        return $response;
+    }
+    
+    private function addNameRequest($response) {
+        $nameRequests = [
+            'By the way, what should I call you?',
+            'What\'s your name, if you don\'t mind me asking?',
+            'I\'d love to know your name so I can personalize our conversation.',
+            'Feel free to tell me your name so I can address you properly.'
+        ];
+        
+        return $response . ' ' . $nameRequests[array_rand($nameRequests)];
+    }
+    
+    private function shouldAskForName($conversation_id) {
+        // Ask for name only once per conversation, and not on first message
+        $stmt = $this->ai_pdo->prepare("SELECT COUNT(*) as count FROM ai_messages WHERE conversation_id = ?");
+        $stmt->execute([$conversation_id]);
+        $message_count = $stmt->fetch()['count'];
+        
+        // Ask after 2-3 messages if we still don't have a name
+        return $message_count >= 2 && $message_count <= 4;
     }
     
     private function shouldSpeak($message) {

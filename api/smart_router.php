@@ -349,6 +349,46 @@ class SmartAIRouter {
     }
     
     /**
+     * Build system prompt from AI settings
+     */
+    private function buildSystemPrompt($context) {
+        $settings = $context['ai_settings'] ?? [];
+        
+        $ai_name = $settings['ai_name'] ?? 'Zin';
+        $personality = $settings['personality'] ?? 'helpful,analytical,curious';
+        $response_style = $settings['response_style'] ?? 'conversational';
+        $conversation_depth = $settings['conversation_depth'] ?? 'light';
+        
+        // Convert personality traits to descriptive text
+        $traits = explode(',', $personality);
+        $personality_text = implode(', ', array_map('trim', $traits));
+        
+        // Build comprehensive system prompt
+        $prompt = "You are $ai_name, an AI assistant with a $personality_text personality. ";
+        $prompt .= "Your response style is $response_style. ";
+        
+        if ($conversation_depth === 'light') {
+            $prompt .= "Keep conversations light and friendly. ";
+        } elseif ($conversation_depth === 'deep') {
+            $prompt .= "Engage in deeper, more meaningful conversations. Ask thoughtful follow-up questions. ";
+        }
+        
+        // Add feature-specific context
+        if (isset($settings['pulsecore_integration']) && $settings['pulsecore_integration'] === 'true') {
+            $prompt .= "You have access to PulseCore data analysis capabilities. ";
+        }
+        
+        if (isset($settings['variables_integration']) && $settings['variables_integration'] === 'true') {
+            $prompt .= "You can work with mathematical variables and calculations. ";
+        }
+        
+        $prompt .= "Be helpful, engaging, and maintain your personality throughout the conversation. ";
+        $prompt .= "Always respond as $ai_name.";
+        
+        return $prompt;
+    }
+
+    /**
      * Execute request on local PC Ollama via direct tunnel connection
      */
     private function executeLocalAI($message, $session_id, $context) {
@@ -389,9 +429,13 @@ class SmartAIRouter {
                 'max_tokens' => $maxTokens
             ]);
             
+            // Build system prompt with AI settings
+            $system_prompt = $this->buildSystemPrompt($context);
+            $full_prompt = $system_prompt . "\n\nUser: " . $message . "\nAssistant:";
+            
             $postData = [
                 'model' => $preferredModel,
-                'prompt' => $message,
+                'prompt' => $full_prompt,
                 'stream' => false,
                 'options' => [
                     'temperature' => $temperature,
