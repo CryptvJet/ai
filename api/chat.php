@@ -32,11 +32,24 @@ class AIChat {
     
     private function loadAISettings() {
         try {
+            // Check if ai_pdo exists
+            if (!$this->ai_pdo) {
+                error_log("AI PDO connection not available for settings");
+                return $this->getDefaultSettings();
+            }
+            
             $stmt = $this->ai_pdo->query("SELECT setting_key, setting_value FROM ai_settings");
             $settings = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $settings[$row['setting_key']] = $row['setting_value'];
             }
+            
+            // Ensure we have at least some settings
+            if (empty($settings)) {
+                error_log("No AI settings found in database, using defaults");
+                return $this->getDefaultSettings();
+            }
+            
             return $settings;
         } catch (Exception $e) {
             error_log("Failed to load AI settings: " . $e->getMessage());
@@ -1044,30 +1057,40 @@ class AIChat {
     }
     
     private function applyPersonalityToResponse($response, $message, $conversation_id) {
-        // Get user name for personalization
-        $user_name = null;
-        if ($this->settings['use_personal_responses'] === 'true') {
-            $user_name = $this->getUserName($conversation_id);
+        // Safety check - ensure we have settings and response
+        if (!$this->settings || !$response) {
+            return $response;
         }
         
-        // Apply AI name and personality
-        $ai_name = $this->settings['ai_name'] ?? 'Zin';
-        $response = $this->personalizeResponse($response, $user_name, null, $ai_name);
-        
-        // Add follow-up questions if enabled
-        if ($this->settings['follow_up_questions'] === 'true') {
-            $response = $this->addFollowUpQuestion($response, $message, $user_name);
+        try {
+            // Get user name for personalization
+            $user_name = null;
+            if (isset($this->settings['use_personal_responses']) && $this->settings['use_personal_responses'] === 'true') {
+                $user_name = $this->getUserName($conversation_id);
+            }
+            
+            // Apply AI name and personality
+            $ai_name = $this->settings['ai_name'] ?? 'Zin';
+            $response = $this->personalizeResponseWithSettings($response, $user_name, null, $ai_name);
+            
+            // Add follow-up questions if enabled
+            if (isset($this->settings['follow_up_questions']) && $this->settings['follow_up_questions'] === 'true') {
+                $response = $this->addFollowUpQuestion($response, $message, $user_name);
+            }
+            
+            // Ask for name if enabled and we don't have one
+            if (isset($this->settings['ask_for_name']) && $this->settings['ask_for_name'] === 'true' && !$user_name && $this->shouldAskForName($conversation_id)) {
+                $response = $this->addNameRequest($response);
+            }
+            
+            return $response;
+        } catch (Exception $e) {
+            error_log("Error applying personality to response: " . $e->getMessage());
+            return $response; // Return original response on error
         }
-        
-        // Ask for name if enabled and we don't have one
-        if ($this->settings['ask_for_name'] === 'true' && !$user_name && $this->shouldAskForName($conversation_id)) {
-            $response = $this->addNameRequest($response);
-        }
-        
-        return $response;
     }
     
-    private function personalizeResponse($response, $user_name, $extracted_name, $ai_name = 'Zin') {
+    private function personalizeResponseWithSettings($response, $user_name, $extracted_name, $ai_name = 'Zin') {
         // Use provided name or extracted name
         $name_to_use = $user_name ?: $extracted_name;
         
