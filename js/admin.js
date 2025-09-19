@@ -812,6 +812,69 @@ class AIAdmin {
             }
         }, 5000);
     }
+
+    // Database Query Management Methods
+    async loadDatabaseQueries() {
+        try {
+            const response = await fetch('../api/admin/database_queries.php');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.displayDatabaseQueries(result.configs);
+                this.updateDatabaseStats(result.stats);
+            }
+        } catch (error) {
+            console.error('Error loading database queries:', error);
+        }
+    }
+
+    displayDatabaseQueries(configs) {
+        const container = document.getElementById('tableConfigsContainer');
+        if (!container) return;
+
+        if (!configs || configs.length === 0) {
+            container.innerHTML = '<p>No table configurations found. <button onclick="addNewTableConfig()" class="btn-primary">Add First Configuration</button></p>';
+            return;
+        }
+
+        container.innerHTML = configs.map(config => `
+            <div class="config-item" data-id="${config.id}" data-active="${config.active}">
+                <div class="config-header">
+                    <h4 class="config-title">${config.table_name}</h4>
+                    <div class="config-actions">
+                        <button class="btn-small btn-secondary" onclick="editTableConfig(${config.id})">Edit</button>
+                        <button class="btn-small btn-danger" onclick="deleteTableConfig(${config.id})">Delete</button>
+                        <button class="btn-small ${config.active ? 'btn-warning' : 'btn-success'}" onclick="toggleTableConfig(${config.id})">${config.active ? 'Disable' : 'Enable'}</button>
+                    </div>
+                </div>
+                <div class="config-content">
+                    <div class="config-field">
+                        <strong>Trigger Patterns:</strong>
+                        <div class="patterns-display">${config.trigger_patterns.map(p => `<code>${p}</code>`).join(' ')}</div>
+                    </div>
+                    <div class="config-field">
+                        <strong>Search Fields:</strong>
+                        <div class="fields-display">${config.search_fields.map(f => `<span class="field-tag">${f}</span>`).join(' ')}</div>
+                    </div>
+                    <div class="config-field">
+                        <strong>Response Template:</strong>
+                        <div class="template-preview">${config.response_template}</div>
+                    </div>
+                    <div class="config-meta">
+                        <span class="priority">Priority: ${config.priority}</span>
+                        <span class="max-results">Max Results: ${config.max_results}</span>
+                        <span class="usage">Used ${config.usage_count} times</span>
+                        <span class="status ${config.active ? 'active' : 'inactive'}">${config.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    updateDatabaseStats(stats) {
+        document.getElementById('configuredCount').textContent = stats.total || 0;
+        document.getElementById('activeCount').textContent = stats.active_count || 0;
+    }
 }
 
 // Global functions - use the one defined in index.html
@@ -3784,69 +3847,7 @@ async function showRouterStats() {
     }
 }
 
-// Database Query Management Functions
-async function loadDatabaseQueries() {
-    try {
-        const response = await fetch('../api/admin/database_queries.php');
-        const result = await response.json();
-        
-        if (result.success) {
-            displayDatabaseQueries(result.configs);
-            updateDatabaseStats(result.stats);
-        }
-    } catch (error) {
-        console.error('Error loading database queries:', error);
-    }
-}
-
-function displayDatabaseQueries(configs) {
-    const container = document.getElementById('tableConfigsContainer');
-    if (!container) return;
-
-    if (!configs || configs.length === 0) {
-        container.innerHTML = '<p>No table configurations found. <button onclick="addNewTableConfig()" class="btn-primary">Add First Configuration</button></p>';
-        return;
-    }
-
-    container.innerHTML = configs.map(config => `
-        <div class="config-item" data-id="${config.id}" data-active="${config.active}">
-            <div class="config-header">
-                <h4 class="config-title">${config.table_name}</h4>
-                <div class="config-actions">
-                    <button class="btn-small btn-secondary" onclick="editTableConfig(${config.id})">Edit</button>
-                    <button class="btn-small btn-danger" onclick="deleteTableConfig(${config.id})">Delete</button>
-                    <button class="btn-small ${config.active ? 'btn-warning' : 'btn-success'}" onclick="toggleTableConfig(${config.id})">${config.active ? 'Disable' : 'Enable'}</button>
-                </div>
-            </div>
-            <div class="config-content">
-                <div class="config-field">
-                    <strong>Trigger Patterns:</strong>
-                    <div class="patterns-display">${config.trigger_patterns.map(p => `<code>${p}</code>`).join(' ')}</div>
-                </div>
-                <div class="config-field">
-                    <strong>Search Fields:</strong>
-                    <div class="fields-display">${config.search_fields.map(f => `<span class="field-tag">${f}</span>`).join(' ')}</div>
-                </div>
-                <div class="config-field">
-                    <strong>Response Template:</strong>
-                    <div class="template-preview">${config.response_template}</div>
-                </div>
-                <div class="config-meta">
-                    <span class="priority">Priority: ${config.priority}</span>
-                    <span class="max-results">Max Results: ${config.max_results}</span>
-                    <span class="usage">Used ${config.usage_count} times</span>
-                    <span class="status ${config.active ? 'active' : 'inactive'}">${config.active ? 'Active' : 'Inactive'}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateDatabaseStats(stats) {
-    document.getElementById('configuredCount').textContent = stats.total || 0;
-    document.getElementById('activeCount').textContent = stats.active_count || 0;
-}
-
+// Database Query Management Functions (Global scope for onclick handlers)
 async function refreshTableRegistry() {
     try {
         const response = await fetch('../api/admin/database_queries.php?action=tables');
@@ -4035,7 +4036,7 @@ async function saveTableConfig() {
                 'success'
             );
             closeTableConfigModal();
-            loadDatabaseQueries(); // Refresh the list
+            window.aiAdmin.loadDatabaseQueries(); // Use the instance method
         } else {
             window.aiAdmin.showNotification('Error saving configuration: ' + result.error, 'error');
         }
@@ -4059,7 +4060,7 @@ async function deleteTableConfig(configId) {
         
         if (result.success) {
             window.aiAdmin.showNotification('Configuration deleted successfully!', 'success');
-            loadDatabaseQueries(); // Refresh the list
+            window.aiAdmin.loadDatabaseQueries(); // Use the instance method
         } else {
             window.aiAdmin.showNotification('Error deleting configuration: ' + result.error, 'error');
         }
@@ -4092,7 +4093,7 @@ async function toggleTableConfig(configId) {
                 isActive ? 'Configuration disabled' : 'Configuration enabled', 
                 'success'
             );
-            loadDatabaseQueries(); // Refresh the list
+            window.aiAdmin.loadDatabaseQueries(); // Use the instance method
         } else {
             window.aiAdmin.showNotification('Error toggling configuration: ' + result.error, 'error');
         }
