@@ -88,6 +88,7 @@ class AIAdmin {
         this.loadConversationStats();
         this.checkIntegrations();
         this.loadLearningPatterns();
+        this.loadDatabaseQueries();
     }
 
     showSection(sectionName) {
@@ -3780,5 +3781,323 @@ async function showRouterStats() {
         }
     } catch (error) {
         addDebugLine(`Error fetching SmartAIRouter stats: ${error.message}`, 'error');
+    }
+}
+
+// Database Query Management Functions
+async function loadDatabaseQueries() {
+    try {
+        const response = await fetch('../api/admin/database_queries.php');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayDatabaseQueries(result.configs);
+            updateDatabaseStats(result.stats);
+        }
+    } catch (error) {
+        console.error('Error loading database queries:', error);
+    }
+}
+
+function displayDatabaseQueries(configs) {
+    const container = document.getElementById('tableConfigsContainer');
+    if (!container) return;
+
+    if (!configs || configs.length === 0) {
+        container.innerHTML = '<p>No table configurations found. <button onclick="addNewTableConfig()" class="btn-primary">Add First Configuration</button></p>';
+        return;
+    }
+
+    container.innerHTML = configs.map(config => `
+        <div class="config-item" data-id="${config.id}" data-active="${config.active}">
+            <div class="config-header">
+                <h4 class="config-title">${config.table_name}</h4>
+                <div class="config-actions">
+                    <button class="btn-small btn-secondary" onclick="editTableConfig(${config.id})">Edit</button>
+                    <button class="btn-small btn-danger" onclick="deleteTableConfig(${config.id})">Delete</button>
+                    <button class="btn-small ${config.active ? 'btn-warning' : 'btn-success'}" onclick="toggleTableConfig(${config.id})">${config.active ? 'Disable' : 'Enable'}</button>
+                </div>
+            </div>
+            <div class="config-content">
+                <div class="config-field">
+                    <strong>Trigger Patterns:</strong>
+                    <div class="patterns-display">${config.trigger_patterns.map(p => `<code>${p}</code>`).join(' ')}</div>
+                </div>
+                <div class="config-field">
+                    <strong>Search Fields:</strong>
+                    <div class="fields-display">${config.search_fields.map(f => `<span class="field-tag">${f}</span>`).join(' ')}</div>
+                </div>
+                <div class="config-field">
+                    <strong>Response Template:</strong>
+                    <div class="template-preview">${config.response_template}</div>
+                </div>
+                <div class="config-meta">
+                    <span class="priority">Priority: ${config.priority}</span>
+                    <span class="max-results">Max Results: ${config.max_results}</span>
+                    <span class="usage">Used ${config.usage_count} times</span>
+                    <span class="status ${config.active ? 'active' : 'inactive'}">${config.active ? 'Active' : 'Inactive'}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateDatabaseStats(stats) {
+    document.getElementById('configuredCount').textContent = stats.total || 0;
+    document.getElementById('activeCount').textContent = stats.active_count || 0;
+}
+
+async function refreshTableRegistry() {
+    try {
+        const response = await fetch('../api/admin/database_queries.php?action=tables');
+        const result = await response.json();
+        
+        if (result.success) {
+            updateTableRegistry(result.tables);
+            window.aiAdmin.showNotification('Table registry refreshed successfully!', 'success');
+        } else {
+            window.aiAdmin.showNotification('Error refreshing tables: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error refreshing table registry:', error);
+        window.aiAdmin.showNotification('Network error refreshing tables', 'error');
+    }
+}
+
+function updateTableRegistry(tables) {
+    document.getElementById('tablesCount').textContent = tables.length;
+    
+    // Update table selection dropdown
+    const tableSelect = document.getElementById('tableName');
+    if (tableSelect) {
+        tableSelect.innerHTML = '<option value="">Select a table...</option>' +
+            tables.map(table => `<option value="${table.name}">${table.name} (${table.row_count} rows)</option>`).join('');
+    }
+}
+
+function addNewTableConfig() {
+    resetTableConfigForm();
+    document.getElementById('modalTitle').textContent = 'Add Table Configuration';
+    document.getElementById('tableConfigModal').style.display = 'block';
+    refreshTableRegistry(); // Load available tables
+}
+
+function editTableConfig(configId) {
+    // Load config data and populate form
+    // This would fetch the specific config and fill the form
+    document.getElementById('modalTitle').textContent = 'Edit Table Configuration';
+    document.getElementById('configId').value = configId;
+    document.getElementById('tableConfigModal').style.display = 'block';
+}
+
+function closeTableConfigModal() {
+    document.getElementById('tableConfigModal').style.display = 'none';
+    resetTableConfigForm();
+}
+
+function resetTableConfigForm() {
+    document.getElementById('tableConfigForm').reset();
+    document.getElementById('configId').value = '';
+    document.getElementById('patternsContainer').innerHTML = '';
+    document.getElementById('searchFieldsContainer').innerHTML = '';
+    document.getElementById('testResults').innerHTML = '';
+}
+
+function addTriggerPattern() {
+    const container = document.getElementById('patternsContainer');
+    const patternDiv = document.createElement('div');
+    patternDiv.className = 'pattern-item';
+    patternDiv.innerHTML = `
+        <input type="text" class="pattern-input" placeholder="e.g., tell me about *" required>
+        <button type="button" onclick="removePatternItem(this)" class="btn-small btn-danger">Remove</button>
+    `;
+    container.appendChild(patternDiv);
+}
+
+function addSearchField() {
+    const container = document.getElementById('searchFieldsContainer');
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'field-item';
+    fieldDiv.innerHTML = `
+        <input type="text" class="field-input" placeholder="e.g., name" required>
+        <button type="button" onclick="removeFieldItem(this)" class="btn-small btn-danger">Remove</button>
+    `;
+    container.appendChild(fieldDiv);
+}
+
+function removePatternItem(button) {
+    button.parentElement.remove();
+}
+
+function removeFieldItem(button) {
+    button.parentElement.remove();
+}
+
+async function testDatabaseConnection() {
+    try {
+        const response = await fetch('../api/admin/database_queries.php?action=tables');
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification(`✅ Connected! Found ${result.tables.length} tables`, 'success');
+        } else {
+            window.aiAdmin.showNotification('❌ Connection failed: ' + result.error, 'error');
+        }
+    } catch (error) {
+        window.aiAdmin.showNotification('❌ Connection error: ' + error.message, 'error');
+    }
+}
+
+async function testTableConfig() {
+    const testQuery = document.getElementById('testQuery').value.trim();
+    if (!testQuery) {
+        window.aiAdmin.showNotification('Please enter a test query', 'error');
+        return;
+    }
+
+    const patterns = Array.from(document.querySelectorAll('.pattern-input')).map(input => input.value).filter(v => v);
+    const resultsDiv = document.getElementById('testResults');
+    
+    resultsDiv.innerHTML = '<p>Testing pattern matching...</p>';
+    
+    // Test pattern matching locally
+    let matched = false;
+    for (const pattern of patterns) {
+        const regex = new RegExp(pattern.replace('*', '.*'), 'i');
+        if (regex.test(testQuery)) {
+            matched = true;
+            break;
+        }
+    }
+    
+    resultsDiv.innerHTML = matched 
+        ? '<p class="success">✅ Pattern matches! This query would trigger this configuration.</p>'
+        : '<p class="error">❌ No pattern match. This query would not trigger this configuration.</p>';
+}
+
+// Form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('tableConfigForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveTableConfig();
+        });
+    }
+});
+
+async function saveTableConfig() {
+    const configId = document.getElementById('configId').value;
+    const isEdit = !!configId;
+    
+    // Collect form data
+    const patterns = Array.from(document.querySelectorAll('.pattern-input')).map(input => input.value).filter(v => v);
+    const fields = Array.from(document.querySelectorAll('.field-input')).map(input => input.value).filter(v => v);
+    
+    if (patterns.length === 0) {
+        window.aiAdmin.showNotification('At least one trigger pattern is required', 'error');
+        return;
+    }
+    
+    if (fields.length === 0) {
+        window.aiAdmin.showNotification('At least one search field is required', 'error');
+        return;
+    }
+    
+    const configData = {
+        table_name: document.getElementById('tableName').value,
+        trigger_patterns: patterns,
+        search_fields: fields,
+        response_template: document.getElementById('responseTemplate').value,
+        priority: parseInt(document.getElementById('priority').value),
+        max_results: parseInt(document.getElementById('maxResults').value),
+        active: document.getElementById('isActive').checked
+    };
+    
+    if (isEdit) {
+        configData.id = configId;
+    }
+    
+    try {
+        const response = await fetch('../api/admin/database_queries.php', {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(configData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification(
+                isEdit ? 'Configuration updated successfully!' : 'Configuration created successfully!', 
+                'success'
+            );
+            closeTableConfigModal();
+            loadDatabaseQueries(); // Refresh the list
+        } else {
+            window.aiAdmin.showNotification('Error saving configuration: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error saving table config:', error);
+        window.aiAdmin.showNotification('Network error saving configuration', 'error');
+    }
+}
+
+async function deleteTableConfig(configId) {
+    if (!confirm('Are you sure you want to delete this table configuration? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`../api/admin/database_queries.php?id=${configId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Configuration deleted successfully!', 'success');
+            loadDatabaseQueries(); // Refresh the list
+        } else {
+            window.aiAdmin.showNotification('Error deleting configuration: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting table config:', error);
+        window.aiAdmin.showNotification('Network error deleting configuration', 'error');
+    }
+}
+
+async function toggleTableConfig(configId) {
+    try {
+        const configElement = document.querySelector(`[data-id="${configId}"]`);
+        const isActive = configElement.dataset.active === 'true';
+        
+        const response = await fetch('../api/admin/database_queries.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: configId,
+                active: !isActive
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification(
+                isActive ? 'Configuration disabled' : 'Configuration enabled', 
+                'success'
+            );
+            loadDatabaseQueries(); // Refresh the list
+        } else {
+            window.aiAdmin.showNotification('Error toggling configuration: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error toggling table config:', error);
+        window.aiAdmin.showNotification('Network error toggling configuration', 'error');
     }
 }

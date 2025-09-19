@@ -23,6 +23,7 @@
             <button class="nav-btn" onclick="showSection('responses')">💬 Responses</button>
             <button class="nav-btn" onclick="showSection('conversations')">📊 Conversations</button>
             <button class="nav-btn" onclick="showSection('learning')">🧠 Learning</button>
+            <button class="nav-btn" onclick="showSection('database')">🗄️ Database Queries</button>
             <button class="nav-btn" onclick="showSection('console')">🔍 Console</button>
             <button class="nav-btn" onclick="showSection('integrations')">🔗 Integrations</button>
         </nav>
@@ -524,6 +525,133 @@
                     <button onclick="analyzeConversations()" class="btn-primary">🔍 Analyze Conversations</button>
                     <button onclick="clearLearningData()" class="btn-danger">🗑️ Clear Learning Data</button>
                     <button onclick="exportLearningData()" class="btn-secondary">📤 Export Patterns</button>
+                </div>
+            </section>
+
+            <!-- Database Queries Section -->
+            <section id="database" class="admin-section">
+                <h2>Database Query Management</h2>
+                <p class="section-description">Configure Zin's responses to PulseCore database queries</p>
+                
+                <div class="database-controls">
+                    <button onclick="addNewTableConfig()" class="btn-primary">+ Add Table Configuration</button>
+                    <button onclick="refreshTableRegistry()" class="btn-secondary">🔄 Refresh Tables</button>
+                    <button onclick="testDatabaseConnection()" class="btn-secondary">🔗 Test Connection</button>
+                </div>
+
+                <!-- Table Registry Overview -->
+                <div class="table-registry">
+                    <h3>Available PulseCore Tables</h3>
+                    <div class="registry-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Tables Found:</span>
+                            <span class="stat-value" id="tablesCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Configured:</span>
+                            <span class="stat-value" id="configuredCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Active:</span>
+                            <span class="stat-value" id="activeCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Configurations -->
+                <div class="table-configurations">
+                    <h3>Table Configurations</h3>
+                    <div id="tableConfigsContainer" class="configs-container">
+                        <!-- Table configurations will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Configuration Modal -->
+                <div id="tableConfigModal" class="modal" style="display: none;">
+                    <div class="modal-content large-modal">
+                        <div class="modal-header">
+                            <h3 id="modalTitle">Configure Table Query</h3>
+                            <button onclick="closeTableConfigModal()" class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="tableConfigForm">
+                                <input type="hidden" id="configId" value="">
+                                
+                                <!-- Table Selection -->
+                                <div class="form-group">
+                                    <label for="tableName">Table Name</label>
+                                    <select id="tableName" required>
+                                        <option value="">Select a table...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Query Patterns -->
+                                <div class="form-group">
+                                    <label for="triggerPatterns">Trigger Patterns</label>
+                                    <div class="pattern-builder">
+                                        <div id="patternsContainer" class="patterns-list">
+                                            <!-- Pattern items will be added here -->
+                                        </div>
+                                        <button type="button" onclick="addTriggerPattern()" class="btn-small btn-secondary">+ Add Pattern</button>
+                                    </div>
+                                </div>
+
+                                <!-- Search Fields -->
+                                <div class="form-group">
+                                    <label for="searchFields">Search Fields</label>
+                                    <div class="fields-builder">
+                                        <div id="searchFieldsContainer" class="fields-list">
+                                            <!-- Search field items will be added here -->
+                                        </div>
+                                        <button type="button" onclick="addSearchField()" class="btn-small btn-secondary">+ Add Field</button>
+                                    </div>
+                                </div>
+
+                                <!-- Response Template -->
+                                <div class="form-group">
+                                    <label for="responseTemplate">Response Template</label>
+                                    <textarea id="responseTemplate" rows="6" placeholder="Variable: {name}\nValue: {value}\nDescription: {description}"></textarea>
+                                    <small>Use {field_name} to insert database field values</small>
+                                </div>
+
+                                <!-- Configuration Options -->
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="priority">Priority</label>
+                                        <input type="number" id="priority" value="50" min="1" max="100">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="maxResults">Max Results</label>
+                                        <input type="number" id="maxResults" value="5" min="1" max="20">
+                                    </div>
+                                </div>
+
+                                <div class="form-group toggle-group">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="isActive" checked>
+                                        <span class="toggle-slider"></span>
+                                        Active
+                                    </label>
+                                </div>
+
+                                <!-- Test Section -->
+                                <div class="test-section">
+                                    <h4>Test Configuration</h4>
+                                    <div class="form-group">
+                                        <label for="testQuery">Test Query</label>
+                                        <input type="text" id="testQuery" placeholder="tell me about variable pulse_rate">
+                                        <button type="button" onclick="testTableConfig()" class="btn-small btn-primary">Test</button>
+                                    </div>
+                                    <div id="testResults" class="test-results"></div>
+                                </div>
+
+                                <div class="modal-actions">
+                                    <button type="submit" class="btn-primary">Save Configuration</button>
+                                    <button type="button" onclick="closeTableConfigModal()" class="btn-secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </section>
 
