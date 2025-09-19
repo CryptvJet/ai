@@ -3115,8 +3115,8 @@ async function savePulseCoreConfig() {
 async function saveAIDatabaseConfiguration() {
     try {
         const server_host = document.getElementById('aiDbServer').value || 'pulsecore.one';
-        const database_name = document.getElementById('aiDbName').value || 'vemite5_pulse-core-ai';
-        const username = document.getElementById('aiDbUsername').value || 'vemite5_p-core';
+        const database_name = document.getElementById('aiDbName').value || 'your_database_name';
+        const username = document.getElementById('aiDbUsername').value || 'your_username';
         const password = document.getElementById('aiDbPassword').value;
         const server_port = document.getElementById('aiDbPort').value || 3306;
         

@@ -128,23 +128,24 @@ class PCBridge {
 
     loadDatabaseConfig() {
         try {
-            const configPath = path.join(__dirname, '../data/pws/pulse_db_config.json');
-            const configData = fs.readFileSync(configPath, 'utf8');
-            const config = JSON.parse(configData);
+            // Load AI database config first (for pc_status table)
+            const aiConfigPath = path.join(__dirname, '../data/pws/ai_db_config.json');
+            const aiConfigData = fs.readFileSync(aiConfigPath, 'utf8');
+            const aiConfig = JSON.parse(aiConfigData);
             
             return {
-                host: config.Server || 'localhost',
-                user: config.Username || 'root',
-                password: config.Password || '',
-                database: config.Database || 'vemite5_pulse-core'
+                host: aiConfig.Server || 'localhost',
+                user: aiConfig.Username || 'root',
+                password: aiConfig.Password || '',
+                database: aiConfig.Database || 'vemite5_pulse-core-ai'
             };
         } catch (error) {
-            console.log('⚠️ Could not load database config, using defaults');
+            console.log('⚠️ Could not load AI database config, using defaults');
             return {
                 host: 'localhost',
                 user: 'root',
                 password: '',
-                database: 'vemite5_pulse-core'
+                database: 'vemite5_pulse-core-ai'
             };
         }
     }

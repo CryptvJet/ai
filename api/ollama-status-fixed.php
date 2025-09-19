@@ -10,19 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 function getOllamaUrl() {
     try {
-        $DB_HOST = 'localhost';
-        $DB_NAME = 'vemite5_pulse-core-ai';
-        $DB_USER = 'vemite5_p-core';
-        $DB_PASS = 'l%tN!^6^u4=2';
+        require_once 'db_config.php';
+        global $ai_pdo;
         
-        $pdo = new PDO(
-            "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",
-            $DB_USER,
-            $DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-        
-        $stmt = $pdo->query("SELECT * FROM ollama_config WHERE id = 1");
+        $stmt = $ai_pdo->query("SELECT * FROM ollama_config WHERE id = 1");
         $config = $stmt->fetch();
         
         if ($config) {

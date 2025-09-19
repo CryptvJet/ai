@@ -36,19 +36,26 @@ class AdminAuth {
             $user = $stmt->fetch();
             
             if (!$user) {
+                error_log("LOGIN DEBUG: No user found for username: $username");
                 return [
                     'success' => false,
                     'error' => 'Invalid username or password'
                 ];
             }
             
+            error_log("LOGIN DEBUG: Found user: {$user['username']}, checking password...");
+            
             // Verify password
             if (!password_verify($password, $user['password_hash'])) {
+                error_log("LOGIN DEBUG: Password verification failed for user: $username");
+                error_log("LOGIN DEBUG: Password hash in DB: " . substr($user['password_hash'], 0, 20) . "...");
                 return [
                     'success' => false,
                     'error' => 'Invalid username or password'
                 ];
             }
+            
+            error_log("LOGIN DEBUG: Password verification successful for user: $username");
             
             // Update last login time
             $stmt = $this->pdo->prepare("
