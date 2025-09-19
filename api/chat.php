@@ -1032,10 +1032,19 @@ class AIChat {
     }
     
     private function markOldConversationsAsCompleted() {
-        // Mark conversations as completed if they haven't had activity in last 2 hours
+        // First, ensure the status column can hold 'inactive' 
+        try {
+            // Try to modify the column to allow longer status values
+            $this->ai_pdo->exec("ALTER TABLE ai_conversations MODIFY COLUMN status VARCHAR(20) DEFAULT 'active'");
+        } catch (Exception $e) {
+            // If ALTER fails, column might already be correct or we don't have permissions
+            error_log("Could not modify status column: " . $e->getMessage());
+        }
+        
+        // Mark conversations as inactive if they haven't had activity in last 2 hours
         $stmt = $this->ai_pdo->prepare("
             UPDATE ai_conversations 
-            SET status = 'completed', ended_at = NOW()
+            SET status = 'inactive', ended_at = NOW()
             WHERE status = 'active' 
             AND id IN (
                 SELECT conversation_id 

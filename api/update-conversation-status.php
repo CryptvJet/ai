@@ -16,10 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once 'db_config.php';
 
 try {
-    // Mark conversations as completed if they haven't had activity in last 2 hours
+    // First, ensure the status column can hold 'inactive'
+    try {
+        $ai_pdo->exec("ALTER TABLE ai_conversations MODIFY COLUMN status VARCHAR(20) DEFAULT 'active'");
+    } catch (Exception $e) {
+        error_log("Could not modify status column: " . $e->getMessage());
+    }
+    
+    // Mark conversations as inactive if they haven't had activity in last 2 hours
     $stmt = $ai_pdo->prepare("
         UPDATE ai_conversations 
-        SET status = 'completed', ended_at = NOW()
+        SET status = 'inactive', ended_at = NOW()
         WHERE status = 'active' 
         AND id IN (
             SELECT conversation_id 
@@ -47,7 +54,7 @@ try {
     echo json_encode([
         'success' => true,
         'updated_conversations' => $updated_count,
-        'message' => "Updated $updated_count conversations from active to completed",
+        'message' => "Updated $updated_count conversations from active to inactive",
         'current_status_counts' => $status_counts
     ]);
     
