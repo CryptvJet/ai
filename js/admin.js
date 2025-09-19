@@ -241,7 +241,7 @@ class AIAdmin {
 
     async loadTemplates() {
         try {
-            const response = await fetch('../api/templates.php');
+            const response = await fetch('../api/admin/templates.php');
             const result = await response.json();
             
             if (result.success) {
@@ -390,17 +390,17 @@ class AIAdmin {
     
     async loadLearningPatterns() {
         try {
-            const response = await fetch('../api/learning-patterns.php');
+            const response = await fetch('../api/admin/learning.php');
             const result = await response.json();
             
-            if (result.success && result.data && result.data.patterns) {
-                this.displayLearningPatterns(result.data.patterns);
+            if (result.success && result.data) {
+                this.displayLearningPatterns(result.data, result.stats);
             } else {
-                throw new Error('API failed or no patterns data');
+                throw new Error('API failed or no learning data');
             }
         } catch (error) {
             console.error('Learning patterns API failed, using sample data:', error);
-            // Show sample learning patterns
+            // Show sample learning patterns for demo
             this.displayLearningPatterns([
                 {
                     id: 1,
@@ -451,17 +451,42 @@ class AIAdmin {
         }
     }
     
-    displayLearningPatterns(patterns) {
+    displayLearningPatterns(patterns, stats) {
         const container = document.getElementById('patternsContainer');
         if (!container) return;
         
+        // Display stats if available
+        if (stats) {
+            const statsHtml = `
+                <div class="learning-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">${stats.total_entries}</span>
+                        <span class="stat-label">Total Entries</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">${stats.unique_patterns}</span>
+                        <span class="stat-label">Unique Patterns</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">${stats.active_days}</span>
+                        <span class="stat-label">Active Days</span>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = statsHtml;
+        }
+        
         if (!patterns || patterns.length === 0) {
-            container.innerHTML = '<p>No learning patterns detected yet. Start some conversations to build patterns!</p>';
+            container.innerHTML += '<div class="no-patterns"><p>No learning patterns detected yet. Start some conversations to build patterns!</p></div>';
             return;
         }
         
-        container.innerHTML = patterns.map(pattern => {
-            const confidenceColor = (pattern.confidence || 0) >= 0.8 ? '#10b981' : 
+        // Group patterns by frequency for better display
+        const groupedPatterns = patterns.filter(p => p.rn === 1); // Only show unique patterns
+        
+        container.innerHTML += groupedPatterns.map(pattern => {
+            const frequency = pattern.frequency || 1;
+            const frequencyColor = frequency >= 5 ? '#10b981' : 
                                    (pattern.confidence || 0) >= 0.6 ? '#f59e0b' : '#ef4444';
             const confidencePercent = Math.round((pattern.confidence || 0) * 100);
             
@@ -494,8 +519,8 @@ class AIAdmin {
                         </div>
                     ` : ''}
                     <div class="pattern-actions">
-                        <button class="pattern-btn btn-reinforce" onclick="reinforcePattern('${pattern.id || 'unknown'}')">✅ Reinforce</button>
-                        <button class="pattern-btn btn-dismiss" onclick="dismissPattern('${pattern.id || 'unknown'}')">❌ Dismiss</button>
+                        <button class="pattern-btn btn-create-template" onclick="createTemplateFromLearning('${pattern.id || 'unknown'}')">🎯 Create Template</button>
+                        <button class="pattern-btn btn-dismiss" onclick="dismissLearningPattern('${pattern.id || 'unknown'}')">❌ Dismiss</button>
                     </div>
                 </div>
             `;
@@ -1997,9 +2022,183 @@ const notificationStyles = `
 }
 `;
 
+// Template modal styles
+const templateModalStyles = `
+.template-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.template-modal {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.template-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.template-modal-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.5em;
+}
+
+.template-modal-close {
+    color: #aaa;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.template-modal-close:hover {
+    color: #fff;
+}
+
+.template-modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #aaa;
+    font-size: 12px;
+}
+
+.template-modal-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00d4ff, #007acc);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.learning-stats {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #00d4ff;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9em;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+.no-patterns {
+    text-align: center;
+    padding: 40px;
+    color: #aaa;
+}
+
+.btn-create-template {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white !important;
+}
+
+.btn-create-template:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+}
+`;
+
 // Add styles to page
 const styleSheet = document.createElement('style');
-styleSheet.textContent = notificationStyles;
+styleSheet.textContent = notificationStyles + templateModalStyles;
 document.head.appendChild(styleSheet);
 
 // Learning pattern interaction functions
@@ -2033,27 +2232,174 @@ window.reinforcePattern = function(patternId) {
     }
 };
 
-window.dismissPattern = function(patternId) {
+// Create template from learning pattern
+window.createTemplateFromLearning = async function(learningId) {
     try {
-        // Find and remove the pattern
-        let patterns = JSON.parse(localStorage.getItem('learningPatterns') || '[]');
-        patterns = patterns.filter(p => p.id !== patternId);
-        
-        // Save updated patterns
-        localStorage.setItem('learningPatterns', JSON.stringify(patterns));
-        
-        // Reload the display
-        loadLearningPatterns();
-        
-        if (window.aiAdmin && window.aiAdmin.showNotification) {
-            window.aiAdmin.showNotification('Pattern dismissed and removed.', 'success');
+        // Get the learning pattern data
+        const learningCard = document.querySelector(`[data-learning-id="${learningId}"]`);
+        if (!learningCard) {
+            throw new Error('Learning pattern not found');
         }
+        
+        const userMessage = learningCard.querySelector('.user-message').textContent.replace('User: "', '').replace('"', '');
+        const aiResponse = learningCard.querySelector('.ai-response').textContent.replace('Zin: "', '').replace('...', '').replace('"', '');
+        
+        // Show template creation modal
+        const templateData = await showTemplateCreationModal({
+            triggerPattern: userMessage,
+            responseText: aiResponse,
+            category: 'learned',
+            priority: 75
+        });
+        
+        if (!templateData) return; // User cancelled
+        
+        // Create template via API
+        const response = await fetch('../api/admin/learning.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                learning_id: learningId,
+                trigger_pattern: templateData.triggerPattern,
+                response_text: templateData.responseText,
+                category: templateData.category,
+                priority: templateData.priority
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Template created successfully!', 'success');
+            window.aiAdmin.loadTemplates(); // Refresh templates
+            window.aiAdmin.loadLearningPatterns(); // Refresh learning patterns
+        } else {
+            window.aiAdmin.showNotification('Error creating template: ' + result.error, 'error');
+        }
+        
     } catch (error) {
-        console.error('Error dismissing pattern:', error);
-        if (window.aiAdmin && window.aiAdmin.showNotification) {
-            window.aiAdmin.showNotification('Failed to dismiss pattern', 'error');
-        }
+        console.error('Error creating template from learning:', error);
+        window.aiAdmin.showNotification('Failed to create template', 'error');
     }
+};
+
+// Dismiss learning pattern
+window.dismissLearningPattern = async function(learningId) {
+    if (!confirm('Are you sure you want to dismiss this learning pattern? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`../api/admin/learning.php?id=${learningId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.aiAdmin.showNotification('Learning pattern dismissed successfully!', 'success');
+            window.aiAdmin.loadLearningPatterns(); // Refresh display
+        } else {
+            window.aiAdmin.showNotification('Error dismissing pattern: ' + result.error, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error dismissing learning pattern:', error);
+        window.aiAdmin.showNotification('Failed to dismiss pattern', 'error');
+    }
+};
+
+// Template creation modal
+function showTemplateCreationModal(initialData = {}) {
+    return new Promise((resolve) => {
+        // Create modal HTML
+        const modalHtml = `
+            <div class="template-modal-overlay" id="templateModal">
+                <div class="template-modal">
+                    <div class="template-modal-header">
+                        <h3>Create Response Template</h3>
+                        <span class="template-modal-close" onclick="closeTemplateModal()">&times;</span>
+                    </div>
+                    <div class="template-modal-body">
+                        <div class="form-group">
+                            <label for="triggerPattern">Trigger Pattern:</label>
+                            <input type="text" id="triggerPattern" value="${initialData.triggerPattern || ''}" placeholder="e.g., 'hello', 'how are you', or regex '/pattern/'">
+                            <small>Users will get the template response when their message matches this pattern</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="responseText">Response Text:</label>
+                            <textarea id="responseText" rows="4" placeholder="Zin's response...">${initialData.responseText || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category:</label>
+                            <select id="category">
+                                <option value="learned" ${initialData.category === 'learned' ? 'selected' : ''}>Learned</option>
+                                <option value="greeting" ${initialData.category === 'greeting' ? 'selected' : ''}>Greeting</option>
+                                <option value="help" ${initialData.category === 'help' ? 'selected' : ''}>Help</option>
+                                <option value="general" ${initialData.category === 'general' ? 'selected' : ''}>General</option>
+                                <option value="custom" ${initialData.category === 'custom' ? 'selected' : ''}>Custom</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority">Priority (1-100):</label>
+                            <input type="number" id="priority" min="1" max="100" value="${initialData.priority || 50}">
+                            <small>Higher priority templates are checked first</small>
+                        </div>
+                    </div>
+                    <div class="template-modal-footer">
+                        <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="submitTemplate()">Create Template</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Store resolve function for later use
+        window.templateModalResolve = resolve;
+    });
+}
+
+window.closeTemplateModal = function() {
+    const modal = document.getElementById('templateModal');
+    if (modal) {
+        modal.remove();
+    }
+    if (window.templateModalResolve) {
+        window.templateModalResolve(null); // User cancelled
+    }
+};
+
+window.submitTemplate = function() {
+    const triggerPattern = document.getElementById('triggerPattern').value.trim();
+    const responseText = document.getElementById('responseText').value.trim();
+    const category = document.getElementById('category').value;
+    const priority = parseInt(document.getElementById('priority').value);
+    
+    if (!triggerPattern || !responseText) {
+        alert('Please fill in both trigger pattern and response text');
+        return;
+    }
+    
+    const templateData = {
+        triggerPattern,
+        responseText,
+        category,
+        priority
+    };
+    
+    closeTemplateModal();
+    if (window.templateModalResolve) {
+        window.templateModalResolve(templateData);
+    }
+};
+
+// Legacy function for backward compatibility
+window.dismissPattern = function(patternId) {
+    console.log('Legacy dismissPattern called, redirecting to dismissLearningPattern');
+    dismissLearningPattern(patternId);
 };
 
 // View Conversation Modal Functions

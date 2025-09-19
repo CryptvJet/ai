@@ -175,6 +175,19 @@ class AIChat {
             return $this->generateJournalResponse($message, $conversation_id, $journal_context);
         }
         
+        // FIRST: Check for matching response templates (highest priority)
+        $template_response = $this->getTemplateResponse($message);
+        if ($template_response) {
+            // Update template usage count
+            $this->updateTemplateUsage($template_response['id']);
+            
+            // Apply personality to template response
+            $response = $this->applyPersonalityToResponse($template_response['response_text'], $message, $conversation_id);
+            
+            error_log("Using response template: " . $template_response['category'] . " (ID: " . $template_response['id'] . ")");
+            return $response;
+        }
+        
         // Build context for Smart Router with AI settings
         $context = [
             'conversation_id' => $conversation_id,
@@ -193,7 +206,12 @@ class AIChat {
         
         if ($router_response && $router_response['success']) {
             $response = $router_response['response'];
-            return $this->applyPersonalityToResponse($response, $message, $conversation_id);
+            $final_response = $this->applyPersonalityToResponse($response, $message, $conversation_id);
+            
+            // Record for learning if enabled
+            $this->recordLearningOpportunity($message, $final_response, $conversation_id);
+            
+            return $final_response;
         }
         
         // Fallback to original logic if router fails
@@ -1157,6 +1175,128 @@ class AIChat {
         return $message_count >= 2 && $message_count <= 4;
     }
     
+    /**
+     * Get matching response template from database (highest priority)
+     */
+    private function getTemplateResponse($message) {
+        try {
+            // Get all active templates ordered by priority
+            $stmt = $this->ai_pdo->prepare("
+                SELECT id, trigger_pattern, response_text, category, priority
+                FROM ai_response_templates 
+                WHERE active = 1 
+                ORDER BY priority DESC, usage_count ASC
+            ");
+            $stmt->execute();
+            $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Check each template pattern
+            foreach ($templates as $template) {
+                if ($this->matchesPattern($message, $template['trigger_pattern'])) {
+                    return $template;
+                }
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            error_log("Template response error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Check if message matches template pattern (enhanced matching)
+     */
+    private function matchesPattern($message, $pattern) {
+        $message = strtolower(trim($message));
+        $pattern = strtolower(trim($pattern));
+        
+        // 1. Exact match
+        if ($message === $pattern) {
+            return true;
+        }
+        
+        // 2. Regex match (if pattern starts with /)
+        if (preg_match('/^\/.*\/$/', $pattern)) {
+            try {
+                return preg_match($pattern . 'i', $message);
+            } catch (Exception $e) {
+                error_log("Invalid regex pattern: " . $pattern);
+                return false;
+            }
+        }
+        
+        // 3. Contains match (simple substring)
+        if (strpos($message, $pattern) !== false) {
+            return true;
+        }
+        
+        // 4. Word-based fuzzy matching
+        $message_words = explode(' ', $message);
+        $pattern_words = explode(' ', $pattern);
+        
+        // Check if all pattern words exist in message
+        $matches = 0;
+        foreach ($pattern_words as $pattern_word) {
+            $pattern_word = trim($pattern_word);
+            if (strlen($pattern_word) < 2) continue;
+            
+            foreach ($message_words as $message_word) {
+                $message_word = trim($message_word);
+                
+                // Exact word match
+                if ($message_word === $pattern_word) {
+                    $matches++;
+                    break;
+                }
+                
+                // Partial word match (if word is long enough)
+                if (strlen($pattern_word) >= 4 && strpos($message_word, $pattern_word) !== false) {
+                    $matches++;
+                    break;
+                }
+            }
+        }
+        
+        // Require at least 70% of pattern words to match
+        $required_matches = max(1, ceil(count($pattern_words) * 0.7));
+        return $matches >= $required_matches;
+    }
+    
+    /**
+     * Update template usage count
+     */
+    private function updateTemplateUsage($template_id) {
+        try {
+            $stmt = $this->ai_pdo->prepare("
+                UPDATE ai_response_templates 
+                SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ");
+            $stmt->execute([$template_id]);
+        } catch (Exception $e) {
+            error_log("Template usage update error: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Add learning entry for potential future template creation
+     */
+    private function recordLearningOpportunity($message, $response, $conversation_id) {
+        try {
+            // Only record if learning is enabled
+            if (isset($this->settings['learning_enabled']) && $this->settings['learning_enabled'] === 'true') {
+                $stmt = $this->ai_pdo->prepare("
+                    INSERT INTO ai_learning (conversation_id, user_message, ai_response, source, created_at)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([$conversation_id, $message, $response, 'chat_interaction']);
+            }
+        } catch (Exception $e) {
+            error_log("Learning record error: " . $e->getMessage());
+        }
+    }
+
     private function shouldSpeak($message) {
         // Simple heuristic - speak responses to questions
         return preg_match('/\?/', $message) || 
