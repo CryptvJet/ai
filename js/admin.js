@@ -263,17 +263,49 @@ class AIAdmin {
         }
 
         container.innerHTML = templates.map(template => `
-            <div class="template-item" data-id="${template.id}">
+            <div class="template-item" data-id="${template.id}" data-active="${template.active}" id="template-${template.id}">
                 <div class="template-header">
-                    <h4>${template.category} - Priority ${template.priority}</h4>
+                    <h4 class="template-title">${template.category} - Priority ${template.priority}</h4>
                     <div class="template-actions">
-                        <button class="btn-small btn-secondary" onclick="editTemplate(${template.id})">Edit</button>
+                        <button class="btn-small btn-secondary edit-btn" onclick="editTemplate(${template.id})" data-template-id="${template.id}">Edit</button>
                         <button class="btn-small btn-danger" onclick="deleteTemplate(${template.id})">Delete</button>
                     </div>
                 </div>
-                <p><strong>Trigger:</strong> <code>${template.trigger_pattern}</code></p>
-                <p><strong>Response:</strong> ${template.response_text}</p>
-                <p><small>Used ${template.usage_count} times | ${template.active ? 'Active' : 'Inactive'}</small></p>
+                <div class="template-content">
+                    <div class="template-field">
+                        <strong>Trigger:</strong> 
+                        <code class="trigger-display">${template.trigger_pattern}</code>
+                        <textarea class="trigger-edit" style="display: none;" rows="2">${template.trigger_pattern}</textarea>
+                    </div>
+                    <div class="template-field">
+                        <strong>Response:</strong> 
+                        <span class="response-display">${template.response_text}</span>
+                        <textarea class="response-edit" style="display: none;" rows="4">${template.response_text}</textarea>
+                    </div>
+                    <div class="template-field">
+                        <strong>Category:</strong> 
+                        <span class="category-display">${template.category}</span>
+                        <input type="text" class="category-edit" style="display: none;" value="${template.category}">
+                    </div>
+                    <div class="template-field">
+                        <strong>Priority:</strong> 
+                        <span class="priority-display">${template.priority}</span>
+                        <input type="number" class="priority-edit" style="display: none;" value="${template.priority}" min="1" max="100">
+                    </div>
+                    <div class="template-field">
+                        <strong>Active:</strong> 
+                        <span class="active-display">${template.active ? 'Active' : 'Inactive'}</span>
+                        <select class="active-edit" style="display: none;">
+                            <option value="1" ${template.active ? 'selected' : ''}>Active</option>
+                            <option value="0" ${!template.active ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <p><small>Used ${template.usage_count} times</small></p>
+                <div class="edit-actions" style="display: none;">
+                    <button class="btn-small btn-primary" onclick="saveTemplate(${template.id})">Save</button>
+                    <button class="btn-small btn-secondary" onclick="cancelEdit(${template.id})">Cancel</button>
+                </div>
             </div>
         `).join('');
     }
@@ -833,42 +865,65 @@ async function addNewTemplate() {
     }
 }
 
-async function editTemplate(templateId) {
+function editTemplate(templateId) {
+    const templateElement = document.getElementById(`template-${templateId}`);
+    if (!templateElement) {
+        window.aiAdmin.showNotification('Template not found', 'error');
+        return;
+    }
+    
+    // Hide display elements and show edit elements
+    templateElement.querySelectorAll('.trigger-display, .response-display, .category-display, .priority-display, .active-display').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    templateElement.querySelectorAll('.trigger-edit, .response-edit, .category-edit, .priority-edit, .active-edit').forEach(el => {
+        el.style.display = 'inline-block';
+    });
+    
+    // Show edit actions and hide normal actions
+    templateElement.querySelector('.edit-actions').style.display = 'block';
+    templateElement.querySelector('.template-actions').style.display = 'none';
+    
+    // Change edit button text to indicate edit mode
+    const editBtn = templateElement.querySelector('.edit-btn');
+    editBtn.textContent = 'Editing...';
+    editBtn.disabled = true;
+}
+
+async function saveTemplate(templateId) {
+    const templateElement = document.getElementById(`template-${templateId}`);
+    if (!templateElement) {
+        window.aiAdmin.showNotification('Template not found', 'error');
+        return;
+    }
+    
+    // Get values from edit fields
+    const triggerPattern = templateElement.querySelector('.trigger-edit').value.trim();
+    const responseText = templateElement.querySelector('.response-edit').value.trim();
+    const category = templateElement.querySelector('.category-edit').value.trim();
+    const priority = parseInt(templateElement.querySelector('.priority-edit').value);
+    const active = templateElement.querySelector('.active-edit').value === '1';
+    
+    // Validate inputs
+    if (!triggerPattern || !responseText) {
+        window.aiAdmin.showNotification('Trigger pattern and response text are required', 'error');
+        return;
+    }
+    
+    if (isNaN(priority) || priority < 1 || priority > 100) {
+        window.aiAdmin.showNotification('Priority must be between 1 and 100', 'error');
+        return;
+    }
+    
     try {
-        // First, get the current template data by finding it in the loaded templates
-        const templatesContainer = document.getElementById('templatesContainer');
-        const templateElement = templatesContainer.querySelector(`[data-id="${templateId}"]`);
-        
-        if (!templateElement) {
-            window.aiAdmin.showNotification('Template not found', 'error');
-            return;
-        }
-        
-        // Extract current values from the displayed template
-        const triggerText = templateElement.querySelector('code').textContent;
-        const responseText = templateElement.querySelector('p:nth-child(2)').textContent.replace('Response: ', '');
-        const headerText = templateElement.querySelector('h4').textContent;
-        const currentCategory = headerText.split(' - ')[0];
-        const currentPriority = headerText.split('Priority ')[1];
-        
-        // Prompt for new values with current values as defaults
-        const newTrigger = prompt('Enter trigger pattern (regex):', triggerText);
-        if (newTrigger === null) return; // User cancelled
-        
-        const newResponse = prompt('Enter response text:', responseText);
-        if (newResponse === null) return; // User cancelled
-        
-        const newCategory = prompt('Enter category:', currentCategory);
-        if (newCategory === null) return; // User cancelled
-        
-        const newPriority = parseInt(prompt('Enter priority (1-100):', currentPriority)) || parseInt(currentPriority);
-        
         const updatedData = {
             id: templateId,
-            trigger_pattern: newTrigger,
-            response_text: newResponse,
-            category: newCategory,
-            priority: newPriority
+            trigger_pattern: triggerPattern,
+            response_text: responseText,
+            category: category || 'general',
+            priority: priority,
+            active: active
         };
         
         const apiResponse = await fetch('../api/admin/templates.php', {
@@ -883,15 +938,38 @@ async function editTemplate(templateId) {
         
         if (result.success) {
             window.aiAdmin.showNotification('Template updated successfully!', 'success');
-            // Reload templates to show the updated one
+            // Reload templates to show the updated data
             window.aiAdmin.loadTemplates();
         } else {
             window.aiAdmin.showNotification('Error updating template: ' + result.error, 'error');
         }
     } catch (error) {
-        console.error('Error updating template:', error);
-        window.aiAdmin.showNotification('Network error updating template', 'error');
+        console.error('Error saving template:', error);
+        window.aiAdmin.showNotification('Network error saving template', 'error');
     }
+}
+
+function cancelEdit(templateId) {
+    const templateElement = document.getElementById(`template-${templateId}`);
+    if (!templateElement) return;
+    
+    // Show display elements and hide edit elements
+    templateElement.querySelectorAll('.trigger-display, .response-display, .category-display, .priority-display, .active-display').forEach(el => {
+        el.style.display = 'inline';
+    });
+    
+    templateElement.querySelectorAll('.trigger-edit, .response-edit, .category-edit, .priority-edit, .active-edit').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Hide edit actions and show normal actions
+    templateElement.querySelector('.edit-actions').style.display = 'none';
+    templateElement.querySelector('.template-actions').style.display = 'block';
+    
+    // Reset edit button
+    const editBtn = templateElement.querySelector('.edit-btn');
+    editBtn.textContent = 'Edit';
+    editBtn.disabled = false;
 }
 
 async function deleteTemplate(templateId) {
