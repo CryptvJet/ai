@@ -2996,3 +2996,152 @@ body {
     font-size: 0.8rem;
     padding: 0.5rem;
 }
+
+/* ========================================
+   Threshold Meter Styles
+   ======================================== */
+
+/* Horizontal progress bar positioned directly below message input */
+.threshold-meter {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    margin: 4px 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.threshold-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    background: linear-gradient(90deg, 
+        #00ff88 0%,     /* Green start */
+        #00ccff 25%,    /* Blue */
+        #6644ff 50%,    /* Purple */
+        #ff4488 75%,    /* Pink */
+        #ff0044 100%    /* Red end */
+    );
+}
+
+.threshold-critical {
+    animation: pulse-warning 1s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Threshold Dialog Overlay */
+.threshold-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.threshold-dialog {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    color: white;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-header h3 {
+    margin: 0 0 10px 0;
+    color: #ff4488;
+    font-size: 1.5rem;
+}
+
+.dialog-header p {
+    margin: 0 0 20px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+}
+
+.dialog-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.refresh-option {
+    padding: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.refresh-option:hover {
+    border-color: #00d4ff;
+    background: rgba(0, 212, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+}
+
+.refresh-option small {
+    display: block;
+    opacity: 0.7;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    font-weight: normal;
+}
+
+.full-refresh:hover {
+    border-color: #00ff88;
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.partial-refresh:hover {
+    border-color: #6644ff;
+    background: rgba(102, 68, 255, 0.1);
+}
+
+.zip-refresh:hover {
+    border-color: #ff4488;
+    background: rgba(255, 68, 136, 0.1);
+}
+
+/* Threshold meter tooltip */
+.threshold-meter::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.threshold-meter:hover::after {
+    opacity: 1;
+}

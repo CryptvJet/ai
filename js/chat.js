@@ -17,11 +17,26 @@ class AIChat {
         this.journalTimer = null;
         this.journalRecognition = null;
         
+        // Threshold meter properties (will be loaded from admin settings)
+        this.contextThreshold = 5000; // Default 5KB limit for browser cache
+        this.warningLevel = 85; // Default warning threshold percentage
+        this.criticalLevel = 99; // Default critical threshold percentage
+        this.defaultRefreshOption = 'partial'; // Default refresh option
+        this.compressionRatio = 0.10; // Default 10% compression
+        this.autoRefreshEnabled = false; // Default auto-refresh disabled
+        this.currentContextSize = 0;
+        this.conversationMessages = [];
+        this.thresholdDialogShown = false;
+        this.contextLocked = false;
+        
         this.initializeChat();
         this.setupVoiceRecognition();
         this.loadVoices();
         this.checkConnections();
         this.loadPulseCoreStats();
+        
+        // Load dynamic threshold settings from admin panel
+        this.loadThresholdSettings();
     }
 
     generateSessionId() {
@@ -60,6 +75,9 @@ class AIChat {
 
         // Initialize Journal mode
         this.initializeJournalMode();
+        
+        // Initialize threshold meter
+        this.initializeThresholdMeter();
     }
 
     initializeJournalMode() {
@@ -108,6 +126,65 @@ class AIChat {
             }
         } catch (error) {
             console.warn('Could not load AI settings:', error);
+        }
+    }
+
+    /**
+     * Load threshold settings from admin panel memory management
+     */
+    async loadThresholdSettings() {
+        try {
+            const response = await fetch('api/admin/memory-settings.php?action=all');
+            const result = await response.json();
+            
+            if (result.success && result.settings) {
+                const settings = result.settings;
+                
+                // Update threshold properties with admin-configured values
+                if (settings.conversation_memory_limit_mb) {
+                    this.contextThreshold = settings.conversation_memory_limit_mb.value * 1024 * 1024; // Convert MB to bytes
+                }
+                
+                if (settings.threshold_warning_level) {
+                    this.warningLevel = settings.threshold_warning_level.value;
+                }
+                
+                if (settings.threshold_critical_level) {
+                    this.criticalLevel = settings.threshold_critical_level.value;
+                }
+                
+                if (settings.default_refresh_option) {
+                    this.defaultRefreshOption = settings.default_refresh_option.value;
+                }
+                
+                if (settings.compression_ratio) {
+                    this.compressionRatio = settings.compression_ratio.value / 100; // Convert percentage to decimal
+                }
+                
+                if (settings.auto_refresh_enabled) {
+                    this.autoRefreshEnabled = settings.auto_refresh_enabled.value;
+                }
+                
+                console.log('Threshold settings loaded:', {
+                    threshold: this.contextThreshold,
+                    warning: this.warningLevel,
+                    critical: this.criticalLevel,
+                    defaultRefresh: this.defaultRefreshOption,
+                    compression: this.compressionRatio,
+                    autoRefresh: this.autoRefreshEnabled
+                });
+                
+                // Update threshold meter if it exists
+                if (this.thresholdMeter) {
+                    this.updateThresholdMeter();
+                }
+                
+            } else {
+                console.warn('Could not load threshold settings, using defaults');
+            }
+        } catch (error) {
+            console.warn('Could not load threshold settings:', error);
+            // Continue with default values - don't break the chat functionality
         }
     }
 
@@ -610,10 +687,28 @@ class AIChat {
     }
 
     async sendMessage() {
+        // Check if context is locked due to threshold limit
+        if (this.contextLocked) {
+            this.showNotification('Please choose a refresh option to continue', 'warning');
+            return;
+        }
+        
         const input = document.getElementById('messageInput');
         const message = input.value.trim();
         
         if (!message) return;
+        
+        // Check if we're at threshold before adding new message
+        const criticalThreshold = this.contextThreshold * (this.criticalLevel / 100);
+        if (this.currentContextSize >= criticalThreshold) {
+            if (this.autoRefreshEnabled) {
+                console.log('Auto-refresh enabled, performing', this.defaultRefreshOption, 'refresh');
+                this.performRefresh(this.defaultRefreshOption);
+            } else {
+                this.showThresholdDialog();
+                return;
+            }
+        }
 
         // Clear input and disable send button temporarily
         input.value = '';
@@ -673,7 +768,7 @@ class AIChat {
         }
     }
 
-    addMessage(type, content) {
+    addMessage(type, content, track = true) {
         const chatContainer = document.getElementById('chatContainer');
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
@@ -688,6 +783,11 @@ class AIChat {
         `;
         
         chatContainer.appendChild(messageDiv);
+        
+        // Track message for threshold meter (if not rebuilding from cache)
+        if (track) {
+            this.trackMessage(type, content);
+        }
         
         // Smooth scroll to bottom with a slight delay to ensure DOM is updated
         setTimeout(() => {
@@ -2888,13 +2988,264 @@ I'd love to get to know you better - what's your name?`;
                 </div>
             `;
             
+            // Clear all conversation memory and cache
+            this.conversationMessages = [];
+            sessionStorage.removeItem('conversationCache');
+            this.currentContextSize = 0;
+            this.thresholdDialogShown = false;
+            this.contextLocked = false;
+            
             // Generate new session ID
             this.sessionId = this.generateSessionId();
+            
+            // Update threshold meter to reflect cleared state
+            if (this.thresholdMeter) {
+                this.updateThresholdMeter();
+            }
+            
+            console.log('Chat cleared: All conversation memory, cache, and context data reset');
         }
     }
 
     openAdmin() {
         window.open('admin/index.html', '_blank');
+    }
+
+    // ========================================
+    // Threshold Meter Methods
+    // ========================================
+
+    initializeThresholdMeter() {
+        this.thresholdMeter = document.getElementById('thresholdMeter');
+        this.thresholdBar = document.getElementById('thresholdBar');
+        
+        // Load conversation messages from sessionStorage if available
+        const savedMessages = sessionStorage.getItem('conversationCache');
+        if (savedMessages) {
+            try {
+                this.conversationMessages = JSON.parse(savedMessages);
+            } catch (e) {
+                console.warn('Failed to parse saved conversation:', e);
+                this.conversationMessages = [];
+            }
+        }
+        
+        this.updateThresholdMeter();
+    }
+
+    calculateContextSize() {
+        // Calculate total size of conversation data in browser memory
+        const conversationData = {
+            messages: this.conversationMessages,
+            sessionId: this.sessionId,
+            metadata: {
+                startTime: Date.now(),
+                userPreferences: this.getUserPreferences()
+            }
+        };
+        
+        const jsonString = JSON.stringify(conversationData);
+        this.currentContextSize = new Blob([jsonString]).size;
+        return this.currentContextSize;
+    }
+
+    getUserPreferences() {
+        return {
+            autoSpeak: this.autoSpeak,
+            selectedVoice: this.selectedVoice?.name || null,
+            currentMode: this.currentMode,
+            journalMode: this.journalMode
+        };
+    }
+
+    updateThresholdMeter() {
+        const size = this.calculateContextSize();
+        const percentage = Math.min((size / this.contextThreshold) * 100, 100);
+        
+        if (this.thresholdBar) {
+            this.thresholdBar.style.width = percentage + '%';
+            
+            // Update tooltip with current usage
+            if (this.thresholdMeter) {
+                const sizeKB = (size / 1024).toFixed(1);
+                const thresholdKB = (this.contextThreshold / 1024).toFixed(1);
+                this.thresholdMeter.setAttribute('data-tooltip', `Memory: ${sizeKB}KB / ${thresholdKB}KB (${percentage.toFixed(1)}%)`);
+            }
+            
+            // Add visual indicators based on admin-configured thresholds
+            if (percentage >= this.criticalLevel) {
+                this.thresholdBar.classList.remove('threshold-warning');
+                this.thresholdBar.classList.add('threshold-critical');
+            } else if (percentage >= this.warningLevel) {
+                this.thresholdBar.classList.remove('threshold-critical');
+                this.thresholdBar.classList.add('threshold-warning');
+            } else {
+                this.thresholdBar.classList.remove('threshold-warning', 'threshold-critical');
+                this.thresholdDialogShown = false;
+            }
+        }
+    }
+
+    showThresholdDialog() {
+        const dialog = document.createElement('div');
+        dialog.className = 'threshold-dialog-overlay';
+        dialog.innerHTML = `
+            <div class="threshold-dialog">
+                <div class="dialog-header">
+                    <h3>⚠️ Conversation Memory Full</h3>
+                    <p>Choose how to manage conversation context:</p>
+                </div>
+                <div class="dialog-options">
+                    <button class="refresh-option full-refresh" onclick="window.aiChat.performRefresh('full')">
+                        🔄 Full Refresh
+                        <small>Reload entire conversation from database</small>
+                    </button>
+                    <button class="refresh-option partial-refresh" onclick="window.aiChat.performRefresh('partial')">
+                        ⚡ Partial Refresh  
+                        <small>Keep recent 50% of messages</small>
+                    </button>
+                    <button class="refresh-option zip-refresh" onclick="window.aiChat.performRefresh('zip')">
+                        🗜️ Zip Refresh
+                        <small>Compress to 10% size with key context</small>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // Prevent new messages until choice is made
+        this.contextLocked = true;
+        const sendBtn = document.getElementById('sendBtn');
+        const messageInput = document.getElementById('messageInput');
+        if (sendBtn) sendBtn.disabled = true;
+        if (messageInput) messageInput.disabled = true;
+    }
+
+    performRefresh(type) {
+        // Remove dialog
+        const dialog = document.querySelector('.threshold-dialog-overlay');
+        if (dialog) dialog.remove();
+        
+        switch(type) {
+            case 'full':
+                this.fullRefresh();
+                break;
+            case 'partial':
+                this.partialRefresh();
+                break;
+            case 'zip':
+                this.zipRefresh();
+                break;
+        }
+        
+        // Re-enable input
+        this.contextLocked = false;
+        const sendBtn = document.getElementById('sendBtn');
+        const messageInput = document.getElementById('messageInput');
+        if (sendBtn) sendBtn.disabled = false;
+        if (messageInput) messageInput.disabled = false;
+        
+        // Reset threshold tracking
+        this.thresholdDialogShown = false;
+        this.updateThresholdMeter();
+        
+        // Show notification
+        this.showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} refresh completed`, 'success');
+    }
+
+    fullRefresh() {
+        // Clear browser cache, reload from database
+        sessionStorage.removeItem('conversationCache');
+        this.conversationMessages = [];
+        
+        // Reload conversation from database using session_id
+        this.loadConversationFromDatabase(this.sessionId);
+        
+        console.log('🔄 Full refresh completed - conversation reloaded from database');
+    }
+
+    partialRefresh() {
+        // Keep most recent 50% of messages
+        const keepCount = Math.floor(this.conversationMessages.length / 2);
+        this.conversationMessages = this.conversationMessages.slice(-keepCount);
+        
+        // Update session storage
+        sessionStorage.setItem('conversationCache', JSON.stringify(this.conversationMessages));
+        
+        console.log(`⚡ Partial refresh completed - keeping ${keepCount} recent messages`);
+    }
+
+    zipRefresh() {
+        // Compress conversation to 10% size with intelligent summarization
+        const targetSize = Math.max(Math.floor(this.conversationMessages.length * 0.1), 5); // At least 5 messages
+        const compressed = this.compressConversation(this.conversationMessages, targetSize);
+        
+        this.conversationMessages = compressed;
+        sessionStorage.setItem('conversationCache', JSON.stringify(compressed));
+        
+        console.log(`🗜️ Zip refresh completed - compressed to ${compressed.length} messages`);
+    }
+
+    compressConversation(messages, targetSize) {
+        // Intelligent compression algorithm
+        const recent = messages.slice(-Math.ceil(targetSize * 0.3)); // Keep 30% most recent
+        const oldImportant = messages.slice(0, -Math.ceil(targetSize * 0.3))
+            .filter(msg => this.isImportantMessage(msg))
+            .slice(0, Math.floor(targetSize * 0.7)); // Keep 70% important older messages
+        
+        return [...oldImportant, ...recent];
+    }
+
+    isImportantMessage(message) {
+        // Define importance criteria
+        const importantKeywords = ['error', 'help', 'problem', 'question', 'name', 'pulsecore', 'variable', 'nova', 'climax'];
+        const content = message.content?.toLowerCase() || '';
+        
+        return importantKeywords.some(keyword => content.includes(keyword)) || 
+               message.type === 'user' || 
+               content.length > 100;
+    }
+
+    async loadConversationFromDatabase(sessionId) {
+        try {
+            const response = await fetch(`api/get-conversation.php?session_id=${sessionId}`);
+            const result = await response.json();
+            
+            if (result.success && result.data && result.data.messages) {
+                this.conversationMessages = result.data.messages;
+                this.rebuildChatDisplay();
+                sessionStorage.setItem('conversationCache', JSON.stringify(this.conversationMessages));
+            }
+        } catch (error) {
+            console.error('Failed to load conversation from database:', error);
+        }
+    }
+
+    rebuildChatDisplay() {
+        const chatContainer = document.getElementById('chatContainer');
+        if (chatContainer) {
+            chatContainer.innerHTML = '';
+            
+            this.conversationMessages.forEach(msg => {
+                this.addMessage(msg.type, msg.content, false); // false = don't store again
+            });
+        }
+    }
+
+    // Helper method to track messages for threshold meter
+    trackMessage(type, content) {
+        this.conversationMessages.push({
+            type: type,
+            content: content,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Update session storage
+        sessionStorage.setItem('conversationCache', JSON.stringify(this.conversationMessages));
+        
+        // Update threshold meter after each message
+        this.updateThresholdMeter();
     }
 }
 

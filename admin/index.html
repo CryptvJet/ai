@@ -20,6 +20,7 @@
 
         <nav class="admin-nav">
             <button class="nav-btn active" onclick="showSection('identity')">🤖 Identity</button>
+            <button class="nav-btn" onclick="showSection('memory')">🧠 Memory Management</button>
             <button class="nav-btn" onclick="showSection('responses')">💬 Responses</button>
             <button class="nav-btn" onclick="showSection('conversations')">📊 Conversations</button>
             <button class="nav-btn" onclick="showSection('learning')">🧠 Learning</button>
@@ -175,6 +176,95 @@
                     <small>Enable voice recognition and text-to-speech features</small>
                 </div>
 
+            </section>
+
+            <!-- Memory Management Section -->
+            <section id="memory" class="admin-section">
+                <h2>🧠 Memory Management</h2>
+                <p class="section-description">Configure conversation memory limits and threshold behavior</p>
+                
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3>Memory Limits</h3>
+                        
+                        <div class="form-group">
+                            <label for="memoryLimitMB">Memory Limit: <span id="memoryLimitDisplay">5 MB</span></label>
+                            <input type="range" id="memoryLimitMB" min="1" max="20" value="5" step="0.5" oninput="updateMemoryDisplay()">
+                            <small>Maximum conversation memory before threshold actions trigger</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="warningThreshold">Warning Threshold: <span id="warningDisplay">85%</span></label>
+                            <input type="range" id="warningThreshold" min="70" max="95" value="85" step="5" oninput="updateThresholdDisplays()">
+                            <small>Percentage at which warning indicators appear</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="criticalThreshold">Critical Threshold: <span id="criticalDisplay">99%</span></label>
+                            <input type="range" id="criticalThreshold" min="95" max="99" value="99" step="1" oninput="updateThresholdDisplays()">
+                            <small>Percentage at which refresh dialog is triggered</small>
+                        </div>
+                    </div>
+
+                    <div class="setting-card">
+                        <h3>Refresh Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="defaultRefreshOption">Default Refresh Option:</label>
+                            <select id="defaultRefreshOption">
+                                <option value="full">Full Refresh - Clear all conversation history</option>
+                                <option value="partial" selected>Partial Refresh - Keep recent messages</option>
+                                <option value="zip">Zip Refresh - Compress conversation intelligently</option>
+                            </select>
+                            <small>Default suggestion when memory limit is reached</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="compressionRatio">Compression Ratio: <span id="compressionDisplay">10%</span></label>
+                            <input type="range" id="compressionRatio" min="5" max="25" value="10" step="5" oninput="updateCompressionDisplay()">
+                            <small>Percentage of conversation to retain during zip refresh</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="autoRefreshEnabled">Auto-refresh on Critical:</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="autoRefreshEnabled">
+                                <label for="autoRefreshEnabled" class="toggle-label">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <small>Automatically perform default refresh when critical threshold is reached</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-section">
+                    <h3>Settings Preview</h3>
+                    <div class="threshold-preview">
+                        <div class="preview-meter">
+                            <div class="preview-bar" id="previewBar"></div>
+                            <div class="preview-labels">
+                                <span class="warning-marker" id="warningMarker">Warning</span>
+                                <span class="critical-marker" id="criticalMarker">Critical</span>
+                            </div>
+                        </div>
+                        <div class="preview-info">
+                            <p>Memory Usage Simulation</p>
+                            <div class="preview-stats">
+                                <span>Warning: <span id="warningMB">4.25 MB</span></span>
+                                <span>Critical: <span id="criticalMB">4.95 MB</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="memory-actions">
+                    <button onclick="testThresholdScenario('warning')" class="btn-secondary">🟡 Test Warning</button>
+                    <button onclick="testThresholdScenario('critical')" class="btn-warning">🔴 Test Critical</button>
+                    <button onclick="resetMemorySettings()" class="btn-secondary">↻ Reset to Defaults</button>
+                    <button onclick="exportMemorySettings()" class="btn-primary">📤 Export Settings</button>
+                    <button onclick="saveMemorySettings()" class="btn-save">💾 Save Memory Settings</button>
+                </div>
             </section>
 
             <!-- Responses Section -->

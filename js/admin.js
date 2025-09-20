@@ -122,6 +122,30 @@ class AIAdmin {
         } else {
             console.error('Admin active button not found for:', sectionName);
         }
+        
+        // Load section-specific data
+        this.loadSectionData(sectionName);
+    }
+    
+    loadSectionData(sectionName) {
+        switch(sectionName) {
+            case 'memory':
+                // Load memory settings when memory section is shown
+                if (typeof loadMemorySettings === 'function') {
+                    loadMemorySettings();
+                }
+                break;
+            case 'console':
+                // Load debug settings when console section is shown
+                if (typeof loadDebugSettings === 'function') {
+                    setTimeout(() => {
+                        if (document.getElementById('debugSettingsRef')) {
+                            loadDebugSettings();
+                        }
+                    }, 100);
+                }
+                break;
+        }
     }
 
     async loadSettings() {
@@ -4543,12 +4567,325 @@ function restartRouterMonitoring() {
     }
 }
 
+// ===== MEMORY MANAGEMENT FUNCTIONS =====
+
+/**
+ * Update display values for sliders in real-time
+ */
+function updateMemoryDisplay() {
+    const memoryLimit = document.getElementById('memoryLimitMB');
+    const display = document.getElementById('memoryLimitDisplay');
+    if (memoryLimit && display) {
+        display.textContent = memoryLimit.value + ' MB';
+        updatePreviewMeter();
+        updatePreviewStats();
+    }
+}
+
+function updateThresholdDisplays() {
+    const warning = document.getElementById('warningThreshold');
+    const critical = document.getElementById('criticalThreshold');
+    const warningDisplay = document.getElementById('warningDisplay');
+    const criticalDisplay = document.getElementById('criticalDisplay');
+    
+    if (warning && warningDisplay) {
+        warningDisplay.textContent = warning.value + '%';
+    }
+    if (critical && criticalDisplay) {
+        criticalDisplay.textContent = critical.value + '%';
+    }
+    
+    // Ensure critical is always higher than warning
+    if (warning && critical) {
+        if (parseInt(critical.value) <= parseInt(warning.value)) {
+            critical.value = parseInt(warning.value) + 1;
+            if (criticalDisplay) criticalDisplay.textContent = critical.value + '%';
+        }
+    }
+    
+    updatePreviewMeter();
+    updatePreviewStats();
+}
+
+function updateCompressionDisplay() {
+    const compression = document.getElementById('compressionRatio');
+    const display = document.getElementById('compressionDisplay');
+    if (compression && display) {
+        display.textContent = compression.value + '%';
+    }
+}
+
+/**
+ * Update the preview meter to show threshold visualization
+ */
+function updatePreviewMeter() {
+    const previewBar = document.getElementById('previewBar');
+    const warningMarker = document.getElementById('warningMarker');
+    const criticalMarker = document.getElementById('criticalMarker');
+    
+    if (!previewBar || !warningMarker || !criticalMarker) return;
+    
+    const warning = parseInt(document.getElementById('warningThreshold')?.value || 85);
+    const critical = parseInt(document.getElementById('criticalThreshold')?.value || 99);
+    
+    // Position markers based on percentages
+    warningMarker.style.left = warning + '%';
+    criticalMarker.style.left = critical + '%';
+    
+    // Simulate current usage at 70% for preview
+    const simulatedUsage = 70;
+    previewBar.style.width = simulatedUsage + '%';
+    
+    // Apply appropriate visual style
+    previewBar.className = 'preview-bar';
+    if (simulatedUsage >= critical) {
+        previewBar.classList.add('threshold-critical');
+    } else if (simulatedUsage >= warning) {
+        previewBar.classList.add('threshold-warning');
+    }
+}
+
+function updatePreviewStats() {
+    const memoryLimit = parseFloat(document.getElementById('memoryLimitMB')?.value || 5);
+    const warning = parseInt(document.getElementById('warningThreshold')?.value || 85);
+    const critical = parseInt(document.getElementById('criticalThreshold')?.value || 99);
+    
+    const warningMB = (memoryLimit * warning / 100).toFixed(2);
+    const criticalMB = (memoryLimit * critical / 100).toFixed(2);
+    
+    const warningDisplay = document.getElementById('warningMB');
+    const criticalDisplay = document.getElementById('criticalMB');
+    
+    if (warningDisplay) warningDisplay.textContent = warningMB + ' MB';
+    if (criticalDisplay) criticalDisplay.textContent = criticalMB + ' MB';
+}
+
+/**
+ * Load memory settings from the API
+ */
+async function loadMemorySettings() {
+    try {
+        const response = await fetch('api/admin/memory-settings.php?action=all');
+        const result = await response.json();
+        
+        if (result.success && result.settings) {
+            const settings = result.settings;
+            
+            // Update form fields with loaded values
+            if (settings.conversation_memory_limit_mb) {
+                const element = document.getElementById('memoryLimitMB');
+                if (element) {
+                    element.value = settings.conversation_memory_limit_mb.value;
+                    updateMemoryDisplay();
+                }
+            }
+            
+            if (settings.threshold_warning_level) {
+                const element = document.getElementById('warningThreshold');
+                if (element) element.value = settings.threshold_warning_level.value;
+            }
+            
+            if (settings.threshold_critical_level) {
+                const element = document.getElementById('criticalThreshold');
+                if (element) element.value = settings.threshold_critical_level.value;
+            }
+            
+            if (settings.default_refresh_option) {
+                const element = document.getElementById('defaultRefreshOption');
+                if (element) element.value = settings.default_refresh_option.value;
+            }
+            
+            if (settings.compression_ratio) {
+                const element = document.getElementById('compressionRatio');
+                if (element) {
+                    element.value = settings.compression_ratio.value;
+                    updateCompressionDisplay();
+                }
+            }
+            
+            if (settings.auto_refresh_enabled) {
+                const element = document.getElementById('autoRefreshEnabled');
+                if (element) element.checked = settings.auto_refresh_enabled.value;
+            }
+            
+            updateThresholdDisplays();
+            updatePreviewMeter();
+            updatePreviewStats();
+            
+            console.log('Memory settings loaded successfully');
+            
+        } else {
+            console.warn('Could not load memory settings:', result.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error loading memory settings:', error);
+    }
+}
+
+/**
+ * Save memory settings to the API
+ */
+async function saveMemorySettings() {
+    try {
+        const settings = {
+            conversation_memory_limit_mb: parseFloat(document.getElementById('memoryLimitMB')?.value || 5),
+            threshold_warning_level: parseInt(document.getElementById('warningThreshold')?.value || 85),
+            threshold_critical_level: parseInt(document.getElementById('criticalThreshold')?.value || 99),
+            default_refresh_option: document.getElementById('defaultRefreshOption')?.value || 'partial',
+            compression_ratio: parseInt(document.getElementById('compressionRatio')?.value || 10),
+            auto_refresh_enabled: document.getElementById('autoRefreshEnabled')?.checked || false
+        };
+        
+        // Validate settings
+        if (settings.threshold_critical_level <= settings.threshold_warning_level) {
+            alert('Critical threshold must be higher than warning threshold');
+            return;
+        }
+        
+        const response = await fetch('api/admin/memory-settings.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ settings: settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification('Memory settings saved successfully!', 'success');
+            } else {
+                alert('Memory settings saved successfully!');
+            }
+            console.log('Memory settings saved:', result.updated);
+        } else {
+            const errorMsg = 'Error saving memory settings: ' + (result.error || 'Unknown error');
+            if (window.aiAdmin) {
+                window.aiAdmin.showNotification(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving memory settings:', error);
+        const errorMsg = 'Network error saving memory settings';
+        if (window.aiAdmin) {
+            window.aiAdmin.showNotification(errorMsg, 'error');
+        } else {
+            alert(errorMsg);
+        }
+    }
+}
+
+/**
+ * Reset memory settings to defaults
+ */
+function resetMemorySettings() {
+    if (!confirm('Reset all memory settings to defaults? This cannot be undone.')) {
+        return;
+    }
+    
+    // Set default values
+    const memoryLimit = document.getElementById('memoryLimitMB');
+    const warning = document.getElementById('warningThreshold');
+    const critical = document.getElementById('criticalThreshold');
+    const defaultRefresh = document.getElementById('defaultRefreshOption');
+    const compression = document.getElementById('compressionRatio');
+    const autoRefresh = document.getElementById('autoRefreshEnabled');
+    
+    if (memoryLimit) memoryLimit.value = 5;
+    if (warning) warning.value = 85;
+    if (critical) critical.value = 99;
+    if (defaultRefresh) defaultRefresh.value = 'partial';
+    if (compression) compression.value = 10;
+    if (autoRefresh) autoRefresh.checked = false;
+    
+    // Update displays
+    updateMemoryDisplay();
+    updateThresholdDisplays();
+    updateCompressionDisplay();
+    
+    console.log('Memory settings reset to defaults');
+}
+
+/**
+ * Export memory settings as JSON
+ */
+function exportMemorySettings() {
+    const settings = {
+        conversation_memory_limit_mb: parseFloat(document.getElementById('memoryLimitMB')?.value || 5),
+        threshold_warning_level: parseInt(document.getElementById('warningThreshold')?.value || 85),
+        threshold_critical_level: parseInt(document.getElementById('criticalThreshold')?.value || 99),
+        default_refresh_option: document.getElementById('defaultRefreshOption')?.value || 'partial',
+        compression_ratio: parseInt(document.getElementById('compressionRatio')?.value || 10),
+        auto_refresh_enabled: document.getElementById('autoRefreshEnabled')?.checked || false,
+        exported_at: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(settings, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'memory-settings-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    console.log('Memory settings exported');
+}
+
+/**
+ * Test threshold scenarios
+ */
+function testThresholdScenario(type) {
+    if (type === 'warning') {
+        alert('Warning Test: This would show yellow warning indicators in the chat threshold meter when memory usage reaches the configured warning level.');
+    } else if (type === 'critical') {
+        alert('Critical Test: This would show red critical indicators and trigger the refresh dialog when memory usage reaches the critical level.');
+    }
+    
+    // Update preview to show the test scenario
+    const previewBar = document.getElementById('previewBar');
+    if (previewBar) {
+        const testPercentage = type === 'warning' ? 
+            parseInt(document.getElementById('warningThreshold')?.value || 85) : 
+            parseInt(document.getElementById('criticalThreshold')?.value || 99);
+        
+        previewBar.style.width = testPercentage + '%';
+        previewBar.className = 'preview-bar';
+        if (type === 'critical') {
+            previewBar.classList.add('threshold-critical');
+        } else {
+            previewBar.classList.add('threshold-warning');
+        }
+        
+        // Reset preview after 3 seconds
+        setTimeout(() => {
+            updatePreviewMeter();
+        }, 3000);
+    }
+}
+
 // Make debug settings functions globally available
 window.updateDebugSetting = updateDebugSetting;
 window.updateLogLevels = updateLogLevels;
 window.saveDebugSettings = saveDebugSettings;
 window.loadDebugSettings = loadDebugSettings;
 window.resetDebugSettings = resetDebugSettings;
+
+// Make memory management functions globally available
+window.updateMemoryDisplay = updateMemoryDisplay;
+window.updateThresholdDisplays = updateThresholdDisplays;
+window.updateCompressionDisplay = updateCompressionDisplay;
+window.loadMemorySettings = loadMemorySettings;
+window.saveMemorySettings = saveMemorySettings;
+window.resetMemorySettings = resetMemorySettings;
+window.exportMemorySettings = exportMemorySettings;
+window.testThresholdScenario = testThresholdScenario;
 
 // Initialize debug settings on page load
 document.addEventListener('DOMContentLoaded', function() {
