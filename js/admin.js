@@ -137,6 +137,7 @@ class AIAdmin {
                 document.getElementById('systemPrompt').value = result.data.welcome_message || '';
                 document.getElementById('conversationDepth').value = result.data.conversation_depth || 'medium';
                 document.getElementById('maxConversationLength').value = result.data.max_conversation_length || '100';
+                document.getElementById('aiTimezone').value = result.data.user_timezone || 'America/New_York';
                 document.getElementById('askForName').checked = (result.data.ask_for_name === 'true');
                 document.getElementById('dailyCheckIns').checked = (result.data.daily_check_ins === 'true');
                 document.getElementById('followUpQuestions').checked = (result.data.follow_up_questions === 'true');
@@ -208,6 +209,7 @@ class AIAdmin {
             welcome_message: document.getElementById('systemPrompt').value,
             conversation_depth: document.getElementById('conversationDepth').value,
             max_conversation_length: document.getElementById('maxConversationLength').value,
+            user_timezone: document.getElementById('aiTimezone').value,
             ask_for_name: document.getElementById('askForName').checked ? 'true' : 'false',
             daily_check_ins: document.getElementById('dailyCheckIns').checked ? 'true' : 'false',
             follow_up_questions: document.getElementById('followUpQuestions').checked ? 'true' : 'false',

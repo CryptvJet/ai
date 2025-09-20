@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'db_config.php';
 require_once 'smart_router.php';
+require_once 'timezone_helper.php';
 
 class AIChat {
     private $ai_pdo;
@@ -184,6 +185,9 @@ class AIChat {
             // Apply personality to template response
             $response = $this->applyPersonalityToResponse($template_response['response_text'], $message, $conversation_id);
             
+            // Process timezone-aware template variables
+            $response = processTemplateVariables($response);
+            
             error_log("Using response template: " . $template_response['category'] . " (ID: " . $template_response['id'] . ")");
             return $response;
         }
@@ -207,6 +211,9 @@ class AIChat {
         if ($router_response && $router_response['success']) {
             $response = $router_response['response'];
             $final_response = $this->applyPersonalityToResponse($response, $message, $conversation_id);
+            
+            // Process timezone-aware template variables
+            $final_response = processTemplateVariables($final_response);
             
             // Record for learning if enabled
             $this->recordLearningOpportunity($message, $final_response, $conversation_id);
@@ -822,7 +829,10 @@ class AIChat {
             "I appreciate you sharing that, {$name_part}! What aspects of your PulseCore work are you most excited about lately?"
         ];
         
-        return $responses[array_rand($responses)];
+        $response = $responses[array_rand($responses)];
+        
+        // Process timezone-aware template variables
+        return processTemplateVariables($response);
     }
 
     private function generateJournalResponse($message, $conversation_id, $journal_context = null) {

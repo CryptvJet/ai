@@ -76,6 +76,33 @@
                     <small>Maximum number of messages in a single conversation (1-500)</small>
                 </div>
 
+                <!-- Timezone Selection -->
+                <div class="form-group">
+                    <label for="aiTimezone">Timezone:</label>
+                    <select id="aiTimezone" name="ai_timezone">
+                        <option value="America/New_York">Eastern Time (New York)</option>
+                        <option value="America/Chicago">Central Time (Chicago)</option>
+                        <option value="America/Denver">Mountain Time (Denver)</option>
+                        <option value="America/Los_Angeles">Pacific Time (Los Angeles)</option>
+                        <option value="America/Phoenix">Arizona Time (Phoenix)</option>
+                        <option value="America/Anchorage">Alaska Time (Anchorage)</option>
+                        <option value="Pacific/Honolulu">Hawaii Time (Honolulu)</option>
+                        <option value="UTC">UTC (Coordinated Universal Time)</option>
+                        <option value="Europe/London">GMT (London)</option>
+                        <option value="Europe/Paris">CET (Paris/Berlin)</option>
+                        <option value="Europe/Rome">CET (Rome/Madrid)</option>
+                        <option value="Europe/Moscow">MSK (Moscow)</option>
+                        <option value="Asia/Tokyo">JST (Tokyo)</option>
+                        <option value="Asia/Shanghai">CST (Beijing/Shanghai)</option>
+                        <option value="Asia/Mumbai">IST (Mumbai/Delhi)</option>
+                        <option value="Asia/Dubai">GST (Dubai)</option>
+                        <option value="Australia/Sydney">AEDT (Sydney)</option>
+                        <option value="Australia/Melbourne">AEDT (Melbourne)</option>
+                        <option value="Pacific/Auckland">NZDT (Auckland)</option>
+                    </select>
+                    <small class="form-text">Select your timezone for accurate time responses and conversation timestamps</small>
+                </div>
+
                 <div class="form-group toggle-group">
                     <label class="toggle-switch">
                         <input type="checkbox" id="askForName" checked>
