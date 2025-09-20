@@ -3751,7 +3751,10 @@ async function startLiveRouterMonitoring() {
     addDebugLine('🔴 Starting live SmartAIRouter monitoring...', 'success');
     addDebugLine('Use "router" or "router stop" to stop monitoring', 'info');
     
-    // Set up polling for new logs every 2 seconds
+    // Get polling interval from debug settings (default 30 seconds if not available)
+    const intervalMs = await getDebugSetting('router_monitor_interval', 30000);
+    
+    // Set up polling for new logs based on settings
     window.routerMonitorInterval = setInterval(async () => {
         try {
             const response = await fetch('../api/debug-console.php?action=live');
@@ -3773,7 +3776,7 @@ async function startLiveRouterMonitoring() {
         } catch (error) {
             addDebugLine(`Live monitoring error: ${error.message}`, 'error');
         }
-    }, 2000);
+    }, intervalMs);
 }
 
 function stopLiveRouterMonitoring() {
@@ -4190,3 +4193,347 @@ async function toggleTableConfig(configId) {
         window.aiAdmin.showNotification('Network error toggling configuration', 'error');
     }
 }
+
+// ================================================
+// Debug Settings Management Functions
+// ================================================
+
+// Global debug settings cache
+window.debugSettings = {};
+
+// Get a single debug setting value
+async function getDebugSetting(key, defaultValue = null) {
+    try {
+        const response = await fetch(`../api/admin/debug_settings.php?action=get_single&key=${encodeURIComponent(key)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            return result.value;
+        } else {
+            console.warn(`Debug setting '${key}' not found, using default:`, defaultValue);
+            return defaultValue;
+        }
+    } catch (error) {
+        console.error(`Error fetching debug setting '${key}':`, error);
+        return defaultValue;
+    }
+}
+
+// Load all debug settings
+async function loadDebugSettings() {
+    try {
+        const response = await fetch('../api/admin/debug_settings.php?action=get');
+        const result = await response.json();
+        
+        if (result.success) {
+            window.debugSettings = result.settings;
+            
+            // Update UI elements with loaded values
+            updateDebugSettingsUI();
+            
+            // Show success status
+            showSettingsStatus('Settings loaded successfully', 'success');
+            
+            return result.settings;
+        } else {
+            throw new Error(result.error || 'Failed to load settings');
+        }
+    } catch (error) {
+        console.error('Error loading debug settings:', error);
+        showSettingsStatus('Error loading settings: ' + error.message, 'error');
+    }
+}
+
+// Update UI elements with current settings
+function updateDebugSettingsUI() {
+    const settings = window.debugSettings;
+    
+    // Router Monitor Interval
+    if (settings.router_monitor_interval) {
+        const select = document.getElementById('routerInterval');
+        if (select) select.value = settings.router_monitor_interval.value;
+    }
+    
+    // Max Debug Logs
+    if (settings.max_debug_logs) {
+        const input = document.getElementById('maxDebugLogs');
+        if (input) input.value = settings.max_debug_logs.value;
+    }
+    
+    // Auto Clear Logs
+    if (settings.auto_clear_logs) {
+        const checkbox = document.getElementById('autoClearLogs');
+        if (checkbox) checkbox.checked = settings.auto_clear_logs.value;
+    }
+    
+    // Debug Enabled
+    if (settings.debug_enabled) {
+        const checkbox = document.getElementById('debugEnabled');
+        if (checkbox) checkbox.checked = settings.debug_enabled.value;
+    }
+    
+    // Max Logs Display
+    if (settings.max_logs_display) {
+        const input = document.getElementById('maxLogsDisplay');
+        if (input) input.value = settings.max_logs_display.value;
+    }
+    
+    // Auto Scroll Enabled
+    if (settings.auto_scroll_enabled) {
+        const checkbox = document.getElementById('autoScrollEnabled');
+        if (checkbox) checkbox.checked = settings.auto_scroll_enabled.value;
+    }
+    
+    // Timestamp Format
+    if (settings.timestamp_format) {
+        const select = document.getElementById('timestampFormat');
+        if (select) select.value = settings.timestamp_format.value;
+    }
+    
+    // Log Levels
+    if (settings.log_levels && settings.log_levels.value) {
+        const levels = settings.log_levels.value;
+        ['INFO', 'SUCCESS', 'ERROR', 'WARNING'].forEach(level => {
+            const checkbox = document.getElementById(`logLevel_${level}`);
+            if (checkbox) checkbox.checked = levels.includes(level);
+        });
+    }
+}
+
+// Update a single debug setting
+async function updateDebugSetting(key, value) {
+    try {
+        const settings = {
+            [key]: { value: value }
+        };
+        
+        const response = await fetch('../api/admin/debug_settings.php?action=update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update local cache
+            if (!window.debugSettings[key]) {
+                window.debugSettings[key] = {};
+            }
+            window.debugSettings[key].value = value;
+            
+            showSettingsStatus(`Updated ${key}`, 'success');
+            
+            // Apply setting immediately if it affects current monitoring
+            if (key === 'router_monitor_interval') {
+                restartRouterMonitoring();
+            }
+            
+            return true;
+        } else {
+            throw new Error(result.error || 'Failed to update setting');
+        }
+    } catch (error) {
+        console.error(`Error updating setting '${key}':`, error);
+        showSettingsStatus('Error: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// Update log levels setting
+async function updateLogLevels() {
+    const levels = [];
+    ['INFO', 'SUCCESS', 'ERROR', 'WARNING'].forEach(level => {
+        const checkbox = document.getElementById(`logLevel_${level}`);
+        if (checkbox && checkbox.checked) {
+            levels.push(level);
+        }
+    });
+    
+    await updateDebugSetting('log_levels', levels);
+}
+
+// Save all debug settings
+async function saveDebugSettings() {
+    const settings = {};
+    
+    // Collect all setting values from UI
+    const routerInterval = document.getElementById('routerInterval');
+    if (routerInterval) settings.router_monitor_interval = { value: parseInt(routerInterval.value) };
+    
+    const maxDebugLogs = document.getElementById('maxDebugLogs');
+    if (maxDebugLogs) settings.max_debug_logs = { value: parseInt(maxDebugLogs.value) };
+    
+    const autoClearLogs = document.getElementById('autoClearLogs');
+    if (autoClearLogs) settings.auto_clear_logs = { value: autoClearLogs.checked };
+    
+    const debugEnabled = document.getElementById('debugEnabled');
+    if (debugEnabled) settings.debug_enabled = { value: debugEnabled.checked };
+    
+    const maxLogsDisplay = document.getElementById('maxLogsDisplay');
+    if (maxLogsDisplay) settings.max_logs_display = { value: parseInt(maxLogsDisplay.value) };
+    
+    const autoScrollEnabled = document.getElementById('autoScrollEnabled');
+    if (autoScrollEnabled) settings.auto_scroll_enabled = { value: autoScrollEnabled.checked };
+    
+    const timestampFormat = document.getElementById('timestampFormat');
+    if (timestampFormat) settings.timestamp_format = { value: timestampFormat.value };
+    
+    // Log levels
+    const levels = [];
+    ['INFO', 'SUCCESS', 'ERROR', 'WARNING'].forEach(level => {
+        const checkbox = document.getElementById(`logLevel_${level}`);
+        if (checkbox && checkbox.checked) {
+            levels.push(level);
+        }
+    });
+    settings.log_levels = { value: levels };
+    
+    try {
+        const response = await fetch('../api/admin/debug_settings.php?action=update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update local cache
+            window.debugSettings = { ...window.debugSettings, ...settings };
+            
+            showSettingsStatus('All settings saved successfully!', 'success');
+            
+            // Restart monitoring with new interval
+            restartRouterMonitoring();
+            
+            return true;
+        } else {
+            throw new Error(result.error || 'Failed to save settings');
+        }
+    } catch (error) {
+        console.error('Error saving debug settings:', error);
+        showSettingsStatus('Error saving settings: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// Reset debug settings to defaults
+async function resetDebugSettings() {
+    if (!confirm('Are you sure you want to reset all debug settings to defaults? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('../api/admin/debug_settings.php?action=reset', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSettingsStatus('Settings reset to defaults', 'success');
+            
+            // Reload settings and update UI
+            await loadDebugSettings();
+            
+            // Restart monitoring with new interval
+            restartRouterMonitoring();
+            
+            return true;
+        } else {
+            throw new Error(result.error || 'Failed to reset settings');
+        }
+    } catch (error) {
+        console.error('Error resetting debug settings:', error);
+        showSettingsStatus('Error resetting settings: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// Show settings status message
+function showSettingsStatus(message, type = 'info') {
+    const statusElement = document.getElementById('settingsStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `settings-status ${type}`;
+        
+        // Clear message after 5 seconds for non-error messages
+        if (type !== 'error') {
+            setTimeout(() => {
+                statusElement.textContent = '';
+                statusElement.className = 'settings-status';
+            }, 5000);
+        }
+    }
+}
+
+// Switch between reference tabs
+function switchReferenceMode(mode) {
+    // Update tab buttons
+    document.querySelectorAll('.reference-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Update active tab
+    const activeTab = document.getElementById(`${mode}RefTab`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    // Update mode indicator
+    const modeIndicator = document.getElementById('referenceMode');
+    if (modeIndicator) {
+        switch (mode) {
+            case 'debug':
+                modeIndicator.textContent = 'Debug Commands';
+                break;
+            case 'browser':
+                modeIndicator.textContent = 'Browser Commands';
+                break;
+            case 'settings':
+                modeIndicator.textContent = 'Debug Settings';
+                break;
+        }
+    }
+    
+    // Show/hide panels
+    document.querySelectorAll('.commands-list').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    const activePanel = document.getElementById(`${mode}CommandsRef`) || document.getElementById(`${mode}SettingsRef`);
+    if (activePanel) {
+        activePanel.classList.add('active');
+    }
+    
+    // Load settings when switching to settings tab
+    if (mode === 'settings') {
+        loadDebugSettings();
+    }
+}
+
+// Restart router monitoring with updated interval
+function restartRouterMonitoring() {
+    if (window.routerMonitorInterval) {
+        stopLiveRouterMonitoring();
+        // Small delay before restarting
+        setTimeout(() => {
+            startLiveRouterMonitoring();
+        }, 1000);
+    }
+}
+
+// Initialize debug settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load debug settings when page loads
+    setTimeout(() => {
+        if (document.getElementById('debugSettingsRef')) {
+            loadDebugSettings();
+        }
+    }, 1000);
+});

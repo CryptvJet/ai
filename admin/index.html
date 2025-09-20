@@ -692,6 +692,11 @@
                 <div class="command-reference-box">
                     <div class="command-reference-header">
                         <h3>📚 Command Reference</h3>
+                        <div class="reference-tabs">
+                            <button class="reference-tab active" onclick="switchReferenceMode('debug')" id="debugRefTab">Debug Commands</button>
+                            <button class="reference-tab" onclick="switchReferenceMode('browser')" id="browserRefTab">Browser Commands</button>
+                            <button class="reference-tab" onclick="switchReferenceMode('settings')" id="settingsRefTab">Debug Settings</button>
+                        </div>
                         <div class="reference-mode-indicator">
                             <span id="referenceMode">Debug Commands</span>
                         </div>
@@ -1361,6 +1366,148 @@
                                     <code>promise.then(result => {})</code>
                                     <span>Handle promise result</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Debug Settings Panel -->
+                    <div id="debugSettingsRef" class="commands-list">
+                        <div class="debug-settings-container">
+                            <div class="settings-section">
+                                <h4>⚙️ Debug Configuration</h4>
+                                <div class="settings-grid">
+                                    
+                                    <!-- Router Monitor Interval -->
+                                    <div class="setting-item">
+                                        <label for="routerInterval">Router Monitor Interval</label>
+                                        <div class="setting-control">
+                                            <select id="routerInterval" onchange="updateDebugSetting('router_monitor_interval', this.value)">
+                                                <option value="1000">1 second</option>
+                                                <option value="2000">2 seconds</option>
+                                                <option value="5000">5 seconds</option>
+                                                <option value="10000">10 seconds</option>
+                                                <option value="30000" selected>30 seconds</option>
+                                                <option value="60000">1 minute</option>
+                                                <option value="0">Disabled</option>
+                                            </select>
+                                            <span class="setting-description">How often to poll for new debug logs</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Max Debug Logs -->
+                                    <div class="setting-item">
+                                        <label for="maxDebugLogs">Max Debug Logs</label>
+                                        <div class="setting-control">
+                                            <input type="number" id="maxDebugLogs" min="100" max="10000" step="100" value="1000" 
+                                                   onchange="updateDebugSetting('max_debug_logs', this.value)">
+                                            <span class="setting-description">Maximum logs to store in database</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Auto Clear Logs -->
+                                    <div class="setting-item">
+                                        <label for="autoClearLogs">Auto Clear Logs</label>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="autoClearLogs" checked 
+                                                       onchange="updateDebugSetting('auto_clear_logs', this.checked)">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                            <span class="setting-description">Automatically clear old logs when limit reached</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Debug Enabled -->
+                                    <div class="setting-item">
+                                        <label for="debugEnabled">Debug Logging</label>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="debugEnabled" checked 
+                                                       onchange="updateDebugSetting('debug_enabled', this.checked)">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                            <span class="setting-description">Enable or disable all debug logging</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Max Logs Display -->
+                                    <div class="setting-item">
+                                        <label for="maxLogsDisplay">Console Display Limit</label>
+                                        <div class="setting-control">
+                                            <input type="number" id="maxLogsDisplay" min="50" max="2000" step="50" value="500" 
+                                                   onchange="updateDebugSetting('max_logs_display', this.value)">
+                                            <span class="setting-description">Maximum logs to show in console</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Auto Scroll -->
+                                    <div class="setting-item">
+                                        <label for="autoScrollEnabled">Auto Scroll</label>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="autoScrollEnabled" checked 
+                                                       onchange="updateDebugSetting('auto_scroll_enabled', this.checked)">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                            <span class="setting-description">Auto-scroll console to latest logs</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Timestamp Format -->
+                                    <div class="setting-item">
+                                        <label for="timestampFormat">Timestamp Format</label>
+                                        <div class="setting-control">
+                                            <select id="timestampFormat" onchange="updateDebugSetting('timestamp_format', this.value)">
+                                                <option value="HH:MM:SS" selected>HH:MM:SS</option>
+                                                <option value="YYYY-MM-DD HH:MM:SS">Full DateTime</option>
+                                                <option value="relative">Relative (1m ago)</option>
+                                                <option value="none">No Timestamp</option>
+                                            </select>
+                                            <span class="setting-description">How to display log timestamps</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Log Levels -->
+                                    <div class="setting-item">
+                                        <label>Log Levels</label>
+                                        <div class="setting-control">
+                                            <div class="log-levels-grid">
+                                                <label class="log-level-item">
+                                                    <input type="checkbox" id="logLevel_INFO" checked onchange="updateLogLevels()">
+                                                    <span class="log-level-badge info">INFO</span>
+                                                </label>
+                                                <label class="log-level-item">
+                                                    <input type="checkbox" id="logLevel_SUCCESS" checked onchange="updateLogLevels()">
+                                                    <span class="log-level-badge success">SUCCESS</span>
+                                                </label>
+                                                <label class="log-level-item">
+                                                    <input type="checkbox" id="logLevel_ERROR" checked onchange="updateLogLevels()">
+                                                    <span class="log-level-badge error">ERROR</span>
+                                                </label>
+                                                <label class="log-level-item">
+                                                    <input type="checkbox" id="logLevel_WARNING" checked onchange="updateLogLevels()">
+                                                    <span class="log-level-badge warning">WARNING</span>
+                                                </label>
+                                            </div>
+                                            <span class="setting-description">Which log levels to display</span>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            
+                            <!-- Settings Actions -->
+                            <div class="settings-actions">
+                                <button class="btn btn-primary" onclick="saveDebugSettings()">
+                                    💾 Save All Settings
+                                </button>
+                                <button class="btn btn-secondary" onclick="loadDebugSettings()">
+                                    🔄 Reload Settings
+                                </button>
+                                <button class="btn btn-warning" onclick="resetDebugSettings()">
+                                    ⚠️ Reset to Defaults
+                                </button>
+                                <div class="settings-status" id="settingsStatus"></div>
                             </div>
                         </div>
                     </div>
