@@ -3221,6 +3221,7 @@ window.executeDebugCommand = function() {
 
 window.switchConsoleMode = switchConsoleMode;
 window.toggleDebugAutoScroll = toggleDebugAutoScroll;
+window.switchReferenceMode = switchReferenceMode;
 
 // Essential navigation function - must be available globally
 window.showSection = function(sectionName) {
@@ -4506,9 +4507,21 @@ function switchReferenceMode(mode) {
         panel.classList.remove('active');
     });
     
-    const activePanel = document.getElementById(`${mode}CommandsRef`) || document.getElementById(`${mode}SettingsRef`);
+    // Handle different panel naming conventions
+    let activePanel;
+    if (mode === 'settings') {
+        activePanel = document.getElementById('debugSettingsRef');
+    } else {
+        activePanel = document.getElementById(`${mode}CommandsRef`);
+    }
+    
+    console.log(`Switching to mode: ${mode}, found panel:`, activePanel);
+    
     if (activePanel) {
         activePanel.classList.add('active');
+        console.log(`Activated panel: ${activePanel.id}`);
+    } else {
+        console.error(`No panel found for mode: ${mode}`);
     }
     
     // Load settings when switching to settings tab
@@ -4527,6 +4540,13 @@ function restartRouterMonitoring() {
         }, 1000);
     }
 }
+
+// Make debug settings functions globally available
+window.updateDebugSetting = updateDebugSetting;
+window.updateLogLevels = updateLogLevels;
+window.saveDebugSettings = saveDebugSettings;
+window.loadDebugSettings = loadDebugSettings;
+window.resetDebugSettings = resetDebugSettings;
 
 // Initialize debug settings on page load
 document.addEventListener('DOMContentLoaded', function() {
